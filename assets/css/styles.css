@@ -1,0 +1,500 @@
+:root{
+  --bg: #0b0f1a;
+  --glass: rgba(255,255,255,.08);
+  --glass2: rgba(255,255,255,.12);
+  --text: #0f172a;
+  --muted: rgba(255,255,255,.70);
+  --radius: 18px;
+
+  --brand: #611e63;   /* ✅ tu morado */
+  --brandDark: #4f1851; /* ✅ hover más oscuro */
+}
+
+*{ box-sizing: border-box; }
+html{ scroll-behavior: smooth; }
+body{
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+}
+
+/* ✅ Fijar Topbar y Navbar juntas */
+.header-fixed-wrapper {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1030;
+}
+
+/* Compensar el alto del header fijo para que el scroll no tape títulos */
+html {
+  scroll-padding-top: 140px; 
+}
+
+/* ✅ Navbar: Fondo #f8f9fa4f, texto negro con hover gris */
+.navglass{
+  background: #f8f9fa4f !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.navglass .nav-link {
+  color: #000000 !important;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.navglass .nav-link:hover {
+  color: #6c757d !important;
+}
+
+/* ✅ Bootstrap primary -> morado Oxilife */
+.btn-primary{
+  --bs-btn-bg: var(--brand);
+  --bs-btn-border-color: var(--brand);
+  --bs-btn-hover-bg: var(--brandDark);
+  --bs-btn-hover-border-color: var(--brandDark);
+  --bs-btn-active-bg: var(--brandDark);
+  --bs-btn-active-border-color: var(--brandDark);
+}
+
+.topbar{
+  background: #611e63;
+  color: rgba(255,255,255,.9);
+}
+.topbar-link{
+  color: rgba(255,255,255,.85);
+  text-decoration: none;
+  font-size: .9rem;
+}
+.topbar-link:hover{ color: #fff; }
+.topbar-social{
+  color: rgba(255,255,255,.8);
+  font-size: 1.05rem;
+}
+.topbar-social:hover{ color: #fff; }
+
+.brand-dot{
+  width: 10px; height: 10px;
+  background: var(--brand);
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 6px rgba(97,30,99,.18);
+}
+
+.hero{
+  position: relative;
+  min-height: 86vh;
+  display: flex;
+  align-items: center;
+  color: #fff;
+  overflow: hidden;
+  margin-top: 110px; /* ✅ Margen para evitar que el header fijo tape el Hero */
+}
+
+.hero-bg{
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 1;
+  transition: opacity .8s ease;
+}
+.hero-overlay{
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(900px 500px at 25% 30%, rgba(97,30,99,.35), transparent 60%),
+    linear-gradient( to bottom, rgba(0,0,0,.55), rgba(0,0,0,.55) );
+}
+.hero-inner{
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  justify-content: space-between;
+}
+.hero-content{
+  max-width: 720px;
+  padding: 56px 0;
+}
+.hero-kicker{
+  margin: 0 0 12px 0;
+  color: rgba(255,255,255,.85);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: .85rem;
+}
+.hero-title{
+  font-size: clamp(2.1rem, 3.6vw, 3.4rem);
+  line-height: 1.05;
+  margin: 0 0 14px 0;
+}
+.hero-em{
+  color: #fff;
+  text-shadow: 0 0 28px rgba(97,30,99,.45);
+}
+.hero-subtitle{
+  color: rgba(255,255,255,.80);
+  max-width: 52ch;
+  font-size: 1.05rem;
+}
+.hero-badges{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.badge-card{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+  font-size: .92rem;
+}
+
+.hero-aside{
+  display: none;
+}
+@media (min-width: 992px){
+  .hero-aside{
+    display: block;
+    padding: 56px 0;
+    width: 320px;
+  }
+}
+.glass-card{
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius);
+  padding: 18px;
+  backdrop-filter: blur(10px);
+}
+
+.section{
+  padding: 72px 0;
+}
+.section-alt{
+  background: #611e63;
+  color: #fff;
+}
+.section-head{
+  margin-bottom: 24px;
+}
+.section-title{
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.section-subtitle{
+  margin: 8px 0 0;
+  color: rgba(0,0,0,.6);
+}
+.section-alt .section-subtitle{
+  color: rgba(255,255,255,.7);
+}
+
+/* ✅ NUEVOS GRUPOS DE SERVICIOS */
+.service-group-wrapper {
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: var(--radius);
+  padding: 30px;
+  background: rgba(248, 249, 250, 0.4);
+}
+.group-header {
+  margin-bottom: 25px;
+  border-left: 4px solid var(--brand);
+  padding-left: 15px;
+}
+
+/* ✅ SERVICE CARDS: Sin bordes blancos, mascara perfecta */
+.service-card{
+  border-radius: var(--radius);
+  border: 1px solid rgba(15,23,42,.10);
+  padding: 0; 
+  height: 100%;
+  background: #fff;
+  transition: transform .18s ease, box-shadow .18s ease;
+  overflow: hidden; 
+  display: flex;
+  flex-direction: column;
+}
+
+.service-card:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(2,6,23,.10);
+}
+
+.service-img {
+  width: 100%;
+  /* Alto dinámico proporcional para no dejar huecos blancos */
+  aspect-ratio: 16 / 12; 
+  overflow: hidden;
+  background: #f8f9fa;
+}
+.service-img img {
+  width: 100%;
+  height: 100%;
+  /* ✅ Cover + top para que la imagen rellene la card desde arriba sin cortes feos ni espacios */
+  object-fit: cover; 
+  object-position: top;
+}
+
+.service-card-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.service-card h3 {
+  color: var(--brand) !important;
+  font-weight: 800 !important;
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.service-card-body p {
+  font-size: 0.85rem;
+  flex-grow: 1;
+}
+
+.service-icon{
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(97,30,99,.12);
+  color: var(--brand);
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.link-soft{
+  text-decoration: none;
+  color: var(--brand);
+  font-weight: 600;
+}
+.link-soft:hover{ text-decoration: underline; }
+
+.btn-card-morado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background-color: var(--brand);
+  color: #fff !important;
+  text-decoration: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: background-color .2s ease;
+  width: fit-content;
+  margin-top: 15px;
+}
+.btn-card-morado:hover {
+  background-color: var(--brandDark);
+}
+
+/* ✅ NOSOTROS: Texto blanco puro y JUSTIFICADO */
+#nosotros p.lead {
+  color: #ffffff !important; 
+}
+.text-justify-custom {
+  text-align: justify;
+}
+
+/* ✅ DATOS: Cajas con borde blanco */
+.stat-card{
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.06);
+  border: 2px solid #ffffff !important; /* Borde blanco solicitado */
+  padding: 16px;
+  height: 100%;
+}
+.stat-icon{
+  font-size: 1.2rem;
+  color: rgba(255,255,255,.9);
+}
+.stat-number{
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 10px;
+}
+.stat-label{
+  color: rgba(255,255,255,.72);
+  font-size: .95rem;
+}
+
+.review-card{
+  border-radius: var(--radius);
+  border: 1px solid rgba(15,23,42,.10);
+  padding: 16px;
+  background: #fff;
+  height: 100%;
+}
+.review-head{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.avatar{
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(97,30,99,.14);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.section-dark{
+  background: #611e63;
+}
+
+/* ✅ CARRUSEL OPTIMIZADO PARA 12+12 LOGOS (SIN SALTOS) */
+.logo-marquee{
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  padding: 30px 0; /* Mantenemos tu padding incrementado */
+}
+.logo-track{
+  display: flex;
+  align-items: center;
+  gap: 45px; /* Mantenemos tu gap incrementado */
+  width: max-content;
+  /* Ajuste a 40s para fluidez con 24 elementos */
+  animation: marquee 40s linear infinite !important;
+  padding: 0 18px;
+}
+.logo-marquee:hover .logo-track{
+  animation-play-state: paused; 
+}
+.logo-item{
+  flex-shrink: 0; /* ✅ Crucial para que el cálculo del 50% sea exacto */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 22px; 
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+.logo-item:hover{
+  transform: translateY(-2px);
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.16);
+}
+.logo-item img{
+  height: 42px; 
+  width: auto;
+  filter: brightness(0) invert(1); 
+  opacity: .92;
+}
+
+@keyframes marquee{
+  from{ transform: translateX(0); }
+  /* ✅ Al llegar al -50%, el segundo bloque de 12 logos está en la misma posición que el primero al inicio */
+  to{ transform: translateX(-50%); }
+}
+
+.contact-card, .form-card{
+  border-radius: var(--radius);
+  border: 1px solid rgba(15,23,42,.10);
+  background: #fff;
+  padding: 18px;
+}
+
+/* ✅ CONTACTO: Enlaces negros sin subrayado */
+.contact-link {
+  color: #000000 !important;
+  text-decoration: none !important;
+}
+.contact-link:hover {
+  color: var(--brand) !important;
+}
+
+.footer{
+  border-top: 1px solid rgba(15,23,42,.08);
+  background: #fff;
+}
+.footer-social{
+  color: rgba(15,23,42,.75);
+  font-size: 1.2rem;
+}
+.footer-social:hover{ color: var(--brand); }
+
+/* ✅ WHATSAPP: 20% más grande */
+.wa-float{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 67px; 
+  height: 67px; 
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #25D366;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 18px 40px rgba(0,0,0,.25);
+  z-index: 999;
+  font-size: 1.5rem; 
+}
+
+/* --- ESTILOS AGREGADOS PARA EL POPUP --- */
+.night-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.night-content {
+  background: #ffffff;
+  max-width: 450px;
+  width: 100%;
+  border-radius: var(--radius);
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  animation: popupFadeIn 0.3s ease-out;
+}
+
+.night-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #f8f9fa;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.night-close:hover {
+  background: #e9ecef;
+}
+
+@keyframes popupFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
