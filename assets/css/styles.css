@@ -156,9 +156,19 @@ html {
   font-size: .92rem;
 }
 
+/*NUEVA BURBUJA CLIKEABLE DE PUNTUACION EN GOOGLE*/
 .no-link-style{
   color: rgba(255,255,255,.92) !important;
   text-decoration: none !important;
+  transition: all 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.no-link-style:hover {
+  color: black;
+  background-color: white;
+  text-decoration: none;
 }
 
 .hero-aside{
