@@ -156,6 +156,11 @@ html {
   font-size: .92rem;
 }
 
+.no-link-style {
+  color: rgba(255,255,255,.92) !important;
+  text-decoration: none !important;
+}
+
 .hero-aside{
   display: none;
 }
