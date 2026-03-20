@@ -157,18 +157,9 @@ html {
 }
 
 /*NUEVA BURBUJA CLIKEABLE DE PUNTUACION EN GOOGLE*/
-.no-link-style-1{
+.no-link-style{
   color: rgba(255,255,255,.92) !important;
   text-decoration: none !important;
-}
-
-.no-link-style-1:hover{
-  color: black;
-  text-decoration: none !important;
-}
-
-.no-link-style:hover{
-  background-color: rgba(255,255,255,.92);
 }
 
 .hero-aside{
