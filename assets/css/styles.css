@@ -161,14 +161,12 @@ html {
   color: rgba(255,255,255,.92) !important;
   text-decoration: none !important;
   transition: all 0.3s ease;
-  padding: 4px 8px;
-  border-radius: 6px;
 }
 
 .no-link-style:hover {
   color: black;
-  background-color: white;
-  text-decoration: none;
+  background-color: rgba(255,255,255,.92);
+  text-decoration: none !important;
 }
 
 .hero-aside{
