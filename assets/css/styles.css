@@ -497,12 +497,6 @@ html {
   transform: translateY(-50%) rotate(45deg);;
 }
 
-/* Mostrar en hover (desktop) */
-.wa-container:hover .wa-bubble {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* Animación latido */
 @keyframes pulseBubble {
   0% { transform: scale(1); }

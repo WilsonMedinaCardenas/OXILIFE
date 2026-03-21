@@ -439,23 +439,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 
   <script>
+
     const bubble = document.querySelector('.wa-bubble');
 
-    function showBubble() {
+    function loopBubble() {
+      // Mostrar
       bubble.classList.add('active');
 
-      setTimeout(() => {
-        bubble.classList.remove('active');
-      }, 8000); // visible 8s
+      // Ocultar después de 8s
+        setTimeout(() => {
+          bubble.classList.remove('active');
+
+          // Esperar 10s oculto y repetir ciclo
+          setTimeout(loopBubble, 10000);
+
+        }, 8000);
     }
 
-    // Loop
-    setInterval(() => {
-      showBubble();
-    }, 10000); // cada 10s aparece
+    // Primera ejecución
+    setTimeout(loopBubble, 2000);
 
-    // Primera (rápido)
-    setTimeout(showBubble, 2000);
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/app.js"></script>
