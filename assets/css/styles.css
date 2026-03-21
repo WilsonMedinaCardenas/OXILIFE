@@ -469,11 +469,12 @@ html {
   position: absolute;
   bottom: 75px;
   right: 0;
-  background: white;
-  color: #333;
+  background: rgba(255,255,255,.10);
+  color: #000000;
   font-size: 0.85rem;
   padding: 8px 12px;
   border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.10);
   box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   white-space: nowrap;
   opacity: 0;
@@ -508,6 +509,29 @@ html {
     max-width: 200px;
     white-space: normal;
   }
+}
+
+/* ANIMACIÓN LATIDO */
+@keyframes pulseBubble {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* VIBRACIÓN SUTIL */
+@keyframes shakeBubble {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  50% { transform: translateX(1px); }
+  75% { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
+}
+
+/* ESTADO ACTIVO */
+.wa-bubble.active {
+  opacity: 1;
+  transform: translateY(0);
+  animation: pulseBubble 1s ease, shakeBubble 0.3s ease;
 }
 
 /* --- ESTILOS AGREGADOS PARA EL POPUP --- */
