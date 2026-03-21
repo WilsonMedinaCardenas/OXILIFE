@@ -457,6 +457,7 @@ html {
   font-size: 1.5rem; 
 }
 
+/* Contenedor whatsapp y burbuja */
 .wa-container {
   position: fixed;
   right: 18px;
@@ -464,7 +465,7 @@ html {
   z-index: 999;
 }
 
-/* BURBUJA */
+/* Burbuja */
 .wa-bubble {
   position: absolute;
   bottom: 75px;
@@ -491,6 +492,8 @@ html {
   width: 10px;
   height: 10px;
   background: white;
+  border: 1px solid #611e63;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   transform: rotate(45deg);
 }
 
@@ -500,25 +503,14 @@ html {
   transform: translateY(0);
 }
 
-/* Mostrar automático (mobile también) */
-@media (max-width: 768px) {
-  .wa-bubble {
-    opacity: 1;
-    transform: translateY(0);
-    font-size: 0.8rem;
-    max-width: 200px;
-    white-space: normal;
-  }
-}
-
-/* ANIMACIÓN LATIDO */
+/* Animación latido */
 @keyframes pulseBubble {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
 
-/* VIBRACIÓN SUTIL */
+/* Vibración sutil */
 @keyframes shakeBubble {
   0% { transform: translateX(0); }
   25% { transform: translateX(-1px); }
@@ -527,7 +519,7 @@ html {
   100% { transform: translateX(0); }
 }
 
-/* ESTADO ACTIVO */
+/* Estado activo */
 .wa-bubble.active {
   opacity: 1;
   transform: translateY(0);
