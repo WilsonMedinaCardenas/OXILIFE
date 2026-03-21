@@ -468,8 +468,8 @@ html {
 /* Burbuja */
 .wa-bubble {
   position: absolute;
-  bottom: 75px;
-  right: 0;
+  bottom: 10px;
+  right: 75px;
   background: #ffffff;
   color: #000000;
   font-size: 0.85rem;
@@ -479,7 +479,7 @@ html {
   box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   white-space: nowrap;
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateX(10px);
   transition: all 0.3s ease;
 }
 
@@ -487,14 +487,14 @@ html {
 .wa-bubble::after {
   content: "";
   position: absolute;
-  bottom: -6px;
-  right: 15px;
+  right: -5px;
+  top: 50%;
   width: 10px;
   height: 10px;
   background: white;
   border: 1px solid #611e63;
   box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  transform: rotate(45deg);
+  transform: translateY(-50%) rotate(45deg);;
 }
 
 /* Mostrar en hover (desktop) */
@@ -522,7 +522,7 @@ html {
 /* Estado activo */
 .wa-bubble.active {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
   animation: pulseBubble 1s ease, shakeBubble 0.3s ease;
 }
 
