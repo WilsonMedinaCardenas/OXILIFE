@@ -469,12 +469,12 @@ html {
   position: absolute;
   bottom: 75px;
   right: 0;
-  background: rgba(255,255,255,.10);
+  background: #ffffff;
   color: #000000;
   font-size: 0.85rem;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.10);
+  border: 1px solid #611e63;
   box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   white-space: nowrap;
   opacity: 0;

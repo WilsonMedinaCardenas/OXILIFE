@@ -412,7 +412,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </footer>
 
   <div class="wa-container">
-  <div class="wa-bubble">¿Necesitas oxígeno urgente? Escríbenos</div>
+  <div class="wa-bubble">¿Oxígeno urgente? <br/> Escríbenos ahora</div>
 
   <a class="wa-float" href="https://wa.link/7pteyf" target="_blank" rel="noopener" aria-label="WhatsApp">
     <i class="bi bi-whatsapp"></i>
@@ -439,23 +439,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 
   <script>
-  const bubble = document.querySelector('.wa-bubble');
+    const bubble = document.querySelector('.wa-bubble');
 
-  function showBubble() {
-    bubble.classList.add('active');
+    function showBubble() {
+      bubble.classList.add('active');
 
-    setTimeout(() => {
-      bubble.classList.remove('active');
-    }, 4000); // visible 4s
-  }
+      setTimeout(() => {
+        bubble.classList.remove('active');
+      }, 8000); // visible 8s
+    }
 
-  // LOOP
-  setInterval(() => {
-    showBubble();
-  }, 8000); // cada 8s aparece
+    // LOOP
+    setInterval(() => {
+      showBubble();
+    }, 10000); // cada 10s aparece
 
-  // PRIMERA VEZ (rápido)
-  setTimeout(showBubble, 2000);
+    // PRIMERA VEZ (rápido)
+    setTimeout(showBubble, 2000);
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/app.js"></script>
