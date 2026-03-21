@@ -457,6 +457,59 @@ html {
   font-size: 1.5rem; 
 }
 
+.wa-container {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 999;
+}
+
+/* BURBUJA */
+.wa-bubble {
+  position: absolute;
+  bottom: 75px;
+  right: 0;
+  background: white;
+  color: #333;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+/* Flechita */
+.wa-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  right: 15px;
+  width: 10px;
+  height: 10px;
+  background: white;
+  transform: rotate(45deg);
+}
+
+/* Mostrar en hover (desktop) */
+.wa-container:hover .wa-bubble {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Mostrar automático (mobile también) */
+@media (max-width: 768px) {
+  .wa-bubble {
+    opacity: 1;
+    transform: translateY(0);
+    font-size: 0.8rem;
+    max-width: 200px;
+    white-space: normal;
+  }
+}
+
 /* --- ESTILOS AGREGADOS PARA EL POPUP --- */
 .night-overlay {
   position: fixed;

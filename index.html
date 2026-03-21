@@ -411,9 +411,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </footer>
 
+  <div class="wa-container">
+  <div class="wa-bubble">¿Necesitas oxígeno urgente? Escríbenos</div>
+
   <a class="wa-float" href="https://wa.link/7pteyf" target="_blank" rel="noopener" aria-label="WhatsApp">
     <i class="bi bi-whatsapp"></i>
   </a>
+  </div>
 
   <div id="nightPopup" class="night-overlay" style="display: none;">
     <div class="night-content">
@@ -434,6 +438,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </div>
 
+  <script>
+  setTimeout(() => {
+    document.querySelector('.wa-bubble').style.opacity = '1';
+  }, 2000);
+
+  setTimeout(() => {
+    document.querySelector('.wa-bubble').style.opacity = '0';
+  }, 8000);
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
