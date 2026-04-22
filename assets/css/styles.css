@@ -57,6 +57,12 @@ html {
   --bs-btn-active-border-color: var(--brandDark);
 }
 
+.topbar-text {
+  color: #fff; /* blanco */
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .topbar{
   background: #611e63;
   color: rgba(255,255,255,.9);
