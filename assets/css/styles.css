@@ -57,13 +57,6 @@ html {
   --bs-btn-active-border-color: var(--brandDark);
 }
 
-.topbar-text {
-  color: #fff;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  font-family: inherit; /* usa la misma fuente del sitio */
-}
-
 .topbar{
   background: #611e63;
   color: rgba(255,255,255,.9);
@@ -79,6 +72,13 @@ html {
   font-size: 1.05rem;
 }
 .topbar-social:hover{ color: #fff; }
+
+.topbar-text {
+  color: rgba(255,255,255,.8);
+  font-size: .9rem;
+  white-space: nowrap;
+  font-family: inherit; /* usa la misma fuente del sitio */
+}
 
 .brand-dot{
   width: 10px; height: 10px;
