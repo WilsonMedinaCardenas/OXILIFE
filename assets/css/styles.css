@@ -58,9 +58,10 @@ html {
 }
 
 .topbar-text {
-  color: #fff; /* blanco */
+  color: #fff;
   font-size: 0.9rem;
   white-space: nowrap;
+  font-family: inherit; /* usa la misma fuente del sitio */
 }
 
 .topbar{
