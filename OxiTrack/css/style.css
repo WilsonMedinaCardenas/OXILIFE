@@ -1,0 +1,189 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#f4f6f8;
+    display:flex;
+    justify-content:center;
+    padding:25px;
+}
+
+.contenedor{
+
+    width:100%;
+    max-width:450px;
+
+    background:white;
+
+    border-radius:15px;
+
+    padding:25px;
+
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+
+}
+
+h1{
+
+    text-align:center;
+
+    color:#0066cc;
+
+    margin-bottom:5px;
+
+}
+
+.subtitulo{
+
+    text-align:center;
+
+    color:#666;
+
+    margin-bottom:25px;
+
+}
+
+label{
+
+    display:block;
+
+    margin-top:15px;
+
+    margin-bottom:5px;
+
+    font-weight:bold;
+
+}
+
+input,
+textarea{
+
+    width:100%;
+
+    padding:12px;
+
+    border:1px solid #ccc;
+
+    border-radius:8px;
+
+    font-size:16px;
+
+}
+
+textarea{
+
+    resize:none;
+
+    height:90px;
+
+}
+
+.titulo{
+
+    margin-top:25px;
+
+    color:#0066cc;
+
+    font-size:18px;
+
+    border-bottom:2px solid #0066cc;
+
+    padding-bottom:5px;
+
+}
+
+button{
+
+    width:100%;
+
+    padding:15px;
+
+    margin-top:20px;
+
+    border:none;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+    font-size:17px;
+
+}
+
+#btnEnviar{
+
+    background:#0066cc;
+
+    color:white;
+
+}
+
+#btnLimpiar{
+
+    background:#999;
+
+    color:white;
+
+}
+
+canvas{
+
+    width:100%;
+
+    height:220px;
+
+    border:2px solid #d9d9d9;
+
+    border-radius:10px;
+
+    background:white;
+
+    touch-action:none;
+
+}
+
+.contador{
+
+display:flex;
+
+align-items:center;
+
+gap:10px;
+
+margin-bottom:15px;
+
+}
+
+.contador button{
+
+width:55px;
+
+height:55px;
+
+margin:0;
+
+font-size:28px;
+
+font-weight:bold;
+
+background:#0066cc;
+
+color:white;
+
+}
+
+.contador input{
+
+text-align:center;
+
+font-size:24px;
+
+font-weight:bold;
+
+background:#f7f7f7;
+
+}

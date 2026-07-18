@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>OxiTrack</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="contenedor">
+
+<h1>OxiTrack</h1>
+
+<p class="subtitulo">
+Registro de entrega de cilindros
+</p>
+
+<form id="formulario">
+
+<label>Cliente</label>
+
+<input
+type="text"
+id="cliente"
+maxlength="80"
+placeholder="Nombre del cliente">
+
+<label>Operario</label>
+
+<input
+type="text"
+id="operario"
+maxlength="80"
+placeholder="Nombre del operario">
+
+<div class="titulo">
+
+ENTREGADOS
+
+</div>
+
+<label>Cilindros 0.7 m³</label>
+
+<div class="contador">
+
+<button type="button" onclick="disminuir('e07')">−</button>
+
+<input id="e07" value="0" readonly>
+
+<button type="button" onclick="aumentar('e07')">+</button>
+
+</div>
+
+<label>Cilindros 10 m³</label>
+
+<div class="contador">
+
+<button type="button" onclick="disminuir('e10')">−</button>
+
+<input id="e10" value="0" readonly>
+
+<button type="button" onclick="aumentar('e10')">+</button>
+
+</div>
+
+<div class="titulo">
+
+RETIRADOS
+
+</div>
+
+<label>Cilindros 0.7 m³</label>
+
+<div class="contador">
+
+<button type="button" onclick="disminuir('r07')">−</button>
+
+<input id="r07" value="0" readonly>
+
+<button type="button" onclick="aumentar('r07')">+</button>
+
+</div>
+
+<label>Cilindros 10 m³</label>
+
+<div class="contador">
+
+<button type="button" onclick="disminuir('r10')">−</button>
+
+<input id="r10" value="0" readonly>
+
+<button type="button" onclick="aumentar('r10')">+</button>
+
+</div>
+
+<label>Observaciones</label>
+
+<textarea id="obs"></textarea>
+
+<label>Firma</label>
+
+<canvas id="firma"></canvas>
+
+<button
+type="button"
+id="btnLimpiar">
+
+Limpiar Firma
+
+</button>
+
+<button
+type="submit"
+id="btnEnviar">
+
+Enviar Registro
+
+</button>
+
+</form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<script src="js/config.js"></script>
+
+<script src="js/app.js"></script>
+
+</body>
+
+</html>
