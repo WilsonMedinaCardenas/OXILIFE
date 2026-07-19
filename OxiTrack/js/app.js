@@ -102,28 +102,24 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 
     };
 
-    try {
-
-        const formData = new URLSearchParams();
-
-        formData.append("datos", JSON.stringify(datos));
-
-        const respuesta = await fetch(CONFIG.API_URL, {
-
+        try {
+        // Enviamos los datos directamente como un objeto JSON nativo
+        const respuesta = await fetch(CONFIG.WORKER_URL, {
             method: "POST",
-
-            body: formData
-
-});
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datos) // Enviamos el objeto directo, no dentro de un URLSearchParams
+        });
 
         const resultado = await respuesta.json();
 
-        if(resultado.ok){
+        if (resultado.ok) {
 
-            alert("Registro " + resultado.id + " enviado correctamente.");
+            alert("Registro enviado correctamente."); // Nota: Cambiado porque el ID se genera internamente
 
             document.getElementById("formulario").reset();
-
+            
             document.getElementById("e07").value = 0;
             document.getElementById("e10").value = 0;
             document.getElementById("r07").value = 0;
@@ -131,13 +127,13 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 
             signaturePad.clear();
 
-        }else{
+        } else {
 
-            alert(resultado.error);
+            alert("Error del servidor: " + resultado.error);
 
         }
 
-    }catch(error){
+    } catch (error) {
 
         alert("No fue posible conectar con el servidor.");
 
