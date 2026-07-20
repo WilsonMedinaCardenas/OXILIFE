@@ -1,3 +1,3 @@
 const CONFIG = {
-    WORKER_URL: "https://oxitrack-api.oxilife.workers.dev/"
+    WORKER_URL: "https://oxitrack-api.oxilife.workers.dev"
 };

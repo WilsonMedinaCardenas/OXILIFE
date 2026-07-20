@@ -1,6 +1,9 @@
 // ----------------------------
 // CONTADORES
 // ----------------------------
+
+//const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev/";
+
 function aumentar(id) {
     const input = document.getElementById(id);
     input.value = parseInt(input.value) + 1;
@@ -57,6 +60,8 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 
             try {
             const respuesta = await fetch(CONFIG.WORKER_URL, {
+
+
                 method: "POST",
                 body: payload // El navegador maneja el Content-Type automáticamente
             });
