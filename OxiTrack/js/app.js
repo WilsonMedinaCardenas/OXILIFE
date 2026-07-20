@@ -55,52 +55,45 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     btn.disabled = true;
     btn.textContent = "Enviando...";
 
-    try {
-        // 1. Convertir la firma de SignaturePad a un archivo binario (Blob) real
-        const dataUrl = signaturePad.toDataURL("image/png");
-        const respuestaBlob = await fetch(dataUrl);
-        const blobFirma = await respuestaBlob.blob();
+            try {
+            const respuesta = await fetch(CONFIG.WORKER_URL, {
+                method: "POST",
+                body: payload // El navegador maneja el Content-Type automáticamente
+            });
 
-        // 2. Crear un contenedor FormData para enviar los datos y el archivo juntos
-        const payload = new FormData();
-        payload.append("cliente", document.getElementById("cliente").value);
-        payload.append("operario", document.getElementById("operario").value);
-        payload.append("entrega07", document.getElementById("e07").value);
-        payload.append("entrega10", document.getElementById("e10").value);
-        payload.append("retiro07", document.getElementById("r07").value);
-        payload.append("retiro10", document.getElementById("r10").value);
-        payload.append("observaciones", document.getElementById("obs").value);
-        payload.append("dispositivo", navigator.userAgent);
-        
-        // Adjuntamos la firma como un archivo físico llamado 'firma.png'
-        payload.append("firma", blobFirma, "firma.png");
+            // 1. Capturamos la respuesta del servidor como TEXTO PLANO primero
+            const textoRespuesta = await respuesta.text();
 
-        // 3. Enviar la petición al Worker
-        const respuesta = await fetch(CONFIG.WORKER_URL, {
-            method: "POST",
-            body: payload // El navegador configura automáticamente el Content-Type correcto
-        });
+            // 2. Intentamos verificar si el texto es un JSON antes de parsearlo
+            try {
+                const resultado = JSON.parse(textoRespuesta);
 
-        const resultado = await respuesta.json();
+                if (resultado.ok) {
+                    alert("Registro enviado correctamente.");
+                    document.getElementById("formulario").reset();
+                    document.getElementById("e07").value = 0;
+                    document.getElementById("e10").value = 0;
+                    document.getElementById("r07").value = 0;
+                    document.getElementById("r10").value = 0;
+                    signaturePad.clear();
+                } else {
+                    alert("Error del servidor Google: " + resultado.error);
+                }
+            } catch (jsonError) {
+                // 3. ¡AQUÍ CAZAMOS EL ERROR! Si el Worker devolvió HTML, te mostrará la verdad
+                console.error("El servidor no devolvió un JSON válido. Respuesta recibida:", textoRespuesta);
+                
+                // Cortamos los primeros 250 caracteres de la página de error para ver el título o código HTTP
+                const fragmentoError = textoRespuesta.substring(0, 250).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                
+                alert("¡Cloudflare bloqueó el envío! El servidor respondió con una página HTML:\n\n" + fragmentoError + "\n\n(Revisa la consola F12 para ver el código completo)");
+            }
 
-        if (resultado.ok) {
-            alert("Registro enviado correctamente.");
-
-            // Reiniciar el formulario y contadores a cero
-            document.getElementById("formulario").reset();
-            document.getElementById("e07").value = 0;
-            document.getElementById("e10").value = 0;
-            document.getElementById("r07").value = 0;
-            document.getElementById("r10").value = 0;
-            signaturePad.clear();
-        } else {
-            alert("Error del servidor: " + resultado.error);
+        } catch (error) {
+            alert("No fue posible conectar con el servidor.");
+            console.error(error);
         }
 
-    } catch (error) {
-        alert("No fue posible conectar con el servidor.");
-        console.error(error);
-    }
 
     btn.disabled = false;
     btn.textContent = "Enviar Registro";
