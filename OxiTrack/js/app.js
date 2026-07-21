@@ -2,7 +2,7 @@
 // CONTADORES
 // ----------------------------
 
-//const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev/";
+const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev";
 
 function aumentar(id) {
     const input = document.getElementById(id);
@@ -59,7 +59,8 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     btn.textContent = "Enviando...";
 
             try {
-            const respuesta = await fetch(CONFIG.WORKER_URL, {
+            const respuesta = await fetch(WORKER_URL, {
+
 
 
                 method: "POST",
