@@ -1,4 +1,4 @@
-// URL directa de tu Cloudflare Worker sin dependencias de otros archivos externos
+// URL directa de tu Cloudflare Worker
 const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev";
 
 // ----------------------------
@@ -47,7 +47,6 @@ document.getElementById("btnLimpiar").addEventListener("click", () => {
 // ENVIAR FORMULARIO
 // ----------------------------
 document.getElementById("formulario").addEventListener("submit", async (e) => {
-    // 1. Detener por completo cualquier intento de recarga o comportamiento nativo del HTML
     e.preventDefault();
     e.stopPropagation();
 
@@ -61,19 +60,20 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     btn.textContent = "Enviando...";
 
     try {
-        // 2. Extraer el Base64 puro de SignaturePad de forma inmediata
+        // 1. Extraer el Base64 y aislar los bytes limpios sin prefijos url
         const dataUrl = signaturePad.toDataURL("image/png");
-        const partesData = dataUrl.split(",")[1]; // Aislamos los bytes base64 de la imagen
+        const partesData = dataUrl.split(","); 
+        const base64Limpio = partesData.pop(); // EXTRAE ÚNICAMENTE LA CADENA ALFANUMÉRICA VALIDA
 
-        // 3. Convertir de Base64 a archivo binario (Blob) de forma síncrona e instantánea
-        const caracteresBinarios = atob(partesData);
+        // 2. Convertir de Base64 a binario real de forma síncrona e instantánea
+        const caracteresBinarios = atob(base64Limpio);
         const arrayConBytes = new Uint8Array(caracteresBinarios.length);
         for (let i = 0; i < caracteresBinarios.length; i++) {
             arrayConBytes[i] = caracteresBinarios.charCodeAt(i);
         }
         const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
 
-        // 4. Construir el contenedor FormData estándar de envío de archivos
+        // 3. Construir el contenedor FormData estándar de envío de archivos
         const payload = new FormData();
         payload.append("cliente", document.getElementById("cliente").value);
         payload.append("operario", document.getElementById("operario").value);
@@ -83,29 +83,26 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         payload.append("retiro10", document.getElementById("r10").value);
         payload.append("observaciones", document.getElementById("obs").value);
         payload.append("dispositivo", navigator.userAgent);
-        
-        // Adjuntamos el archivo físico de la firma
         payload.append("firma", blobFirma, "firma.png");
 
-        console.log("Iniciando conexión con el servidor...");
-
-        // 5. Despachar la petición de red directo a la URL de tu Worker
+        // 4. Despachar la petición de red directo al Worker
         const respuesta = await fetch(WORKER_URL, {
             method: "POST",
             body: payload
         });
 
-        // 6. Leer la respuesta directamente como texto plano para evitar fallos de formato JSON
+        // 5. Leer la respuesta de forma segura
         const textoServidor = await respuesta.text();
-        console.log("Respuesta recibida del servidor:", textoServidor);
-
-        // 7. Evaluar el contenido de la respuesta
-        const resultado = JSON.parse(textoServidor);
+        let resultado;
+        
+        try {
+            resultado = JSON.parse(textoServidor);
+        } catch (err) {
+            throw new Error("El servidor devolvió una respuesta inesperada (HTML). Código HTTP: " + respuesta.status);
+        }
 
         if (resultado.ok) {
             alert("Registro enviado correctamente.");
-            
-            // Reiniciar el estado visual del formulario y contadores
             document.getElementById("formulario").reset();
             document.getElementById("e07").value = 0;
             document.getElementById("e10").value = 0;
@@ -113,13 +110,12 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             document.getElementById("r10").value = 0;
             signaturePad.clear();
         } else {
-            alert("Error reportado por Google: " + resultado.error);
+            alert("Error del servidor: " + resultado.error);
         }
 
     } catch (error) {
-        // Si el navegador llega a abortar la petición, imprimiremos el error técnico real en la consola
-        alert("No fue posible conectar con el servidor.");
-        console.error("Detalle técnico del fallo capturado:", error);
+        alert("Error en el envío: " + error.message);
+        console.error("Detalle técnico del fallo:", error);
     }
 
     btn.disabled = false;
