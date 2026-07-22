@@ -211,14 +211,16 @@ background:#f7f7f7;
     padding: 0 !important;
 }
 
-/* CONTENEDOR DE TEXTOS ALINEADO */
+/* CONTENEDOR DE TEXTOS ALINEADO Y CENTRADO VERTICALMENTE */
 .textos-cabecera {
     background: transparent !important;
     box-shadow: none !important;
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
+    margin-top: 6px !important;    /* NUEVA PROPIEDAD: Baja los textos para centrarlos con el logo */
 }
+
 
 .textos-cabecera h1 {
     margin: 0 !important;
