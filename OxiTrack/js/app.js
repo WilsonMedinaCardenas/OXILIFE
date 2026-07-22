@@ -1,35 +1,36 @@
 // URL directa de tu Cloudflare Worker
-const WORKER_URL = "https://workers.dev";
+const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev";
 
-// 🛡️ CAPTURA AUTOMÁTICA DE CLIENTES DIRECTO DE GOOGLE SHEETS
+// ----------------------------
+// CARGA DINÁMICA DE CLIENTES (MÉTODO TUYO ORIGINAL RESTAURADO)
+// ----------------------------
 document.addEventListener("DOMContentLoaded", async () => {
-    // Intentar sincronizar datos pendientes guardados offline al abrir la app
+    // Al cargar la app, intentamos enviar registros offline si quedaron guardados en la memoria
     intentarSincronizarOffline();
 
     try {
         const datalist = document.getElementById("listaEmpresas");
-        const respuesta = await fetch(WORKER_URL); // Realiza el GET automático
+        const respuesta = await fetch(WORKER_URL); // Realiza el GET limpio al Worker
         const datos = await respuesta.json();
 
         if (datos.ok && datos.clientes) {
-            datalist.innerHTML = ""; // Limpiar cualquier opción previa
+            datalist.innerHTML = ""; // Limpieza preventiva
             datos.clientes.forEach(empresa => {
                 const opcion = document.createElement("option");
                 opcion.value = empresa;
                 datalist.appendChild(opcion);
             });
-            console.log("Lista de empresas cargada dinámicamente con éxito.");
         }
     } catch (error) {
-        console.warn("Modo Offline: No se pudo conectar para actualizar la lista de empresas. Usando caché local.");
+        console.warn("Aviso: No se pudo actualizar la lista de clientes (Modo Offline activo).");
     }
 });
 
-// Detectar automáticamente cuando el celular recupera internet para vaciar la memoria interna
+// Sincronizar automáticamente si el celular recupera internet mientras la app está abierta
 window.addEventListener("online", intentarSincronizarOffline);
 
 // ----------------------------
-// CONTADORES
+// CONTADORES (TUS FUNCIONES ORIGINALES)
 // ----------------------------
 function aumentar(id) {
     const input = document.getElementById(id);
@@ -45,13 +46,16 @@ function disminuir(id) {
     input.value = valor;
 }
 
+// ----------------------------
+// FILTRO DE TEXTO SOLO OPERARIO (CLIENTE QUEDA LIBRE PARA SELECCIÓN)
+// ----------------------------
 function limpiarTexto(e) {
     e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9 ]/g, '');
 }
 document.getElementById("operario").addEventListener("input", limpiarTexto);
 
 // ----------------------------
-// FIRMA
+// FIRMA (TU CONFIGURACIÓN ORIGINAL)
 // ----------------------------
 const canvas = document.getElementById("firma");
 canvas.width = canvas.offsetWidth;
@@ -63,7 +67,7 @@ document.getElementById("btnLimpiar").addEventListener("click", () => {
 });
 
 // ----------------------------
-// ENVIAR FORMULARIO CON SEGUNDA COMPROBACIÓN & CONTROL OFFLINE
+// ENVIAR FORMULARIO (CAPA PROTEGIDA)
 // ----------------------------
 document.getElementById("formulario").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -74,14 +78,13 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         return;
     }
 
-    // Capturar datos para el Popup de validación
+    // 1. CAPTURA DE DATOS PARA SEGUNDA COMPROBACIÓN (POPUP DE CILINDROS)
     const e07 = document.getElementById("e07").value;
     const e10 = document.getElementById("e10").value;
     const r07 = document.getElementById("r07").value;
     const r10 = document.getElementById("r10").value;
     const cliente = document.getElementById("cliente").value;
 
-    // POPUP DE CONFIRMACIÓN EN SEGUNDA CAPA
     const mensajeConfirmacion = 
         `¿Está seguro del conteo de los cilindros para ${cliente}?\n\n` +
         `📥 ENTREGADOS:\n` +
@@ -91,26 +94,16 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         `• Cilindros 0.7 m³: ${r07}\n` +
         `• Cilindros 10 m³: ${r10}`;
 
+    // Si el operario presiona "Cancelar", detenemos el envío para que revise
     if (!confirm(mensajeConfirmacion)) {
-        return; // El operario canceló el envío para revisar el formulario
+        return;
     }
 
     const btn = document.getElementById("btnEnviar");
     btn.disabled = true;
-    btn.textContent = "Procesando...";
+    btn.textContent = "Enviando...";
 
-    // Estructurar el payload de envío
-    const payload = new FormData();
-    payload.append("cliente", cliente);
-    payload.append("operario", document.getElementById("operario").value);
-    payload.append("entrega07", e07);
-    payload.append("entrega10", e10);
-    payload.append("retiro07", r07);
-    payload.append("retiro10", r10);
-    payload.append("observaciones", document.getElementById("obs").value);
-    payload.append("dispositivo", navigator.userAgent);
-
-    // Convertir la firma a binario síncrono estándar
+    // 2. CONVERSIÓN BINARIA SÍNCRONA DE LA FIRMA (TU PROCESO INDESTRUCTIBLE)
     const dataUrl = signaturePad.toDataURL("image/png");
     const partesData = dataUrl.split(","); 
     const base64Limpio = partesData.pop();
@@ -120,9 +113,20 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         arrayConBytes[i] = caracteresBinarios.charCodeAt(i);
     }
     const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
+
+    // 3. CONSTRUCCIÓN DEL FORM DATA ORIGINAL
+    const payload = new FormData();
+    payload.append("cliente", cliente);
+    payload.append("operario", document.getElementById("operario").value);
+    payload.append("entrega07", e07);
+    payload.append("entrega10", e10);
+    payload.append("retiro07", r07);
+    payload.append("retiro10", r10);
+    payload.append("observaciones", document.getElementById("obs").value);
+    payload.append("dispositivo", navigator.userAgent);
     payload.append("firma", blobFirma, "firma.png");
 
-    // EJECUCIÓN DEL ENVÍO CON RESPALDO OFFLINE INTELIGENTE
+    // 4. DESPACHO DE RED CON RESPALDO OFFLINE AUTOMÁTICO
     try {
         const respuesta = await fetch(WORKER_URL, {
             method: "POST",
@@ -133,14 +137,15 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         const resultado = JSON.parse(textoServidor);
 
         if (resultado.ok) {
-            alert("Registro enviado correctamente a la base de datos.");
+            alert("Registro enviado correctamente.");
             limpiarCamposFormulario();
         } else {
             throw new Error(resultado.error);
         }
 
     } catch (error) {
-        console.warn("Sin señal o error de red detectado. Guardando copia local...", error);
+        // RESPALDO EN CASO DE PÉRDIDA REAL DE INTERNET (SUBTERRÁNEOS / SIN SEÑAL)
+        console.warn("Fallo de red detectado. Guardando copia en almacenamiento local...", error);
         
         const registroOffline = {
             cliente: cliente,
@@ -151,11 +156,10 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             retiro10: r10,
             observaciones: document.getElementById("obs").value,
             dispositivo: navigator.userAgent,
-            firmaBase64: base64Limpio, 
-            timestamp: Date.now()
+            firmaBase64: base64Limpio
         };
 
-        // Guardar en el histórico de la memoria del teléfono
+        // Almacenar en la memoria interna del teléfono
         let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
         registrosGuardados.push(registroOffline);
         localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
@@ -168,7 +172,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     btn.textContent = "Enviar Registro";
 });
 
-// Función auxiliar para resetear los componentes visuales
+// Función auxiliar de reseteo limpio
 function limpiarCamposFormulario() {
     document.getElementById("formulario").reset();
     document.getElementById("e07").value = 0;
@@ -178,12 +182,12 @@ function limpiarCamposFormulario() {
     signaturePad.clear();
 }
 
-// PROCESADOR EN SEGUNDO PLANO PARA VACIAR REGISTROS OFFLINE AL VOLVER EL INTERNET
+// SINCRONIZADOR EN SEGUNDO PLANO (CORREGIDO DE FORMA ESTRICTA)
 async function intentarSincronizarOffline() {
     let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
     if (registrosGuardados.length === 0) return;
 
-    console.log(`Detectados ${registrosGuardados.length} registros fuera de línea pendientes. Sincronizando...`);
+    console.log(`Sincronizador: Procesando ${registrosGuardados.length} registros offline pendientes...`);
 
     for (let i = registrosGuardados.length - 1; i >= 0; i--) {
         const reg = registrosGuardados[i];
@@ -195,10 +199,9 @@ async function intentarSincronizarOffline() {
         payloadOffline.append("entrega10", reg.entrega10);
         payloadOffline.append("retiro07", reg.retiro07);
         payloadOffline.append("retiro10", reg.retiro10);
-        payloadOffline.append("observaciones", reg.observaciones + " (Enviado en modo Offline diferido)");
+        payloadOffline.append("observaciones", reg.observaciones + " (Sincronizado de modo Offline)");
         payloadOffline.append("dispositivo", reg.dispositivo);
 
-        // CORRECCIÓN QUIRÚRGICA AQUÍ: Cambiada la variable condicional de 'i' a 'j' para que el archivo compile sin errores
         const caracteresBinarios = atob(reg.firmaBase64);
         const arrayConBytes = new Uint8Array(caracteresBinarios.length);
         for (let j = 0; j < caracteresBinarios.length; j++) {
@@ -210,12 +213,12 @@ async function intentarSincronizarOffline() {
         try {
             const res = await fetch(WORKER_URL, { method: "POST", body: payloadOffline });
             if (res.ok) {
+                // Si la red responde bien, removemos este elemento específico de la lista
                 registrosGuardados.splice(i, 1);
-                localStorage.setItem("oxitrack_offline", JSON.stringify(registrogGuardados));
-                console.log("Registro diferido sincronizado con éxito.");
+                localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
             }
         } catch (err) {
-            console.error("El reintento de envío offline falló. Esperando señal...");
+            console.error("El reintento offline falló. Conexión inestable.");
             break; 
         }
     }
