@@ -218,7 +218,8 @@ background:#f7f7f7;
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    margin-top: 6px !important;    /* NUEVA PROPIEDAD: Baja los textos para centrarlos con el logo */
+    margin-top: 6px !important;
+    margin-left: 6px !important;  
 }
 
 
