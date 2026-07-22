@@ -26,12 +26,15 @@ Registro de cilindros
 <form id="formulario">
 
 <label>Empresa</label>
+<input 
+    type="text" 
+    id="cliente" 
+    list="listaEmpresas" 
+    placeholder="Seleccione o busque la empresa...">
+<datalist id="listaEmpresas">
+    <!-- Las empresas de tu Sheets aparecerán aquí mágicamente por código -->
+</datalist>
 
-<input
-type="text"
-id="cliente"
-maxlength="80"
-placeholder="Nombre del cliente">
 
 <label>Operario</label>
 

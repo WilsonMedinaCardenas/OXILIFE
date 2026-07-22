@@ -1,6 +1,25 @@
 // URL directa de tu Cloudflare Worker
 const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev";
 
+// 🛡️ CAPTURA AUTOMÁTICA DE CLIENTES DIRECTO DE GOOGLE SHEETS
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const datalist = document.getElementById("listaEmpresas");
+        const respuesta = await fetch(WORKER_URL); // Realiza un fetch tipo GET automático
+        const datos = await respuesta.json();
+
+        if (datos.ok && datos.clientes) {
+            datos.clientes.forEach(empresa => {
+                const opcion = document.createElement("option");
+                opcion.value = empresa;
+                datalist.appendChild(opcion);
+            });
+        }
+    } catch (error) {
+        console.error("No se pudo cargar la lista de empresas de Sheets:", error);
+    }
+});
+
 // ----------------------------
 // CONTADORES
 // ----------------------------
@@ -25,7 +44,7 @@ function limpiarTexto(e) {
     e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9 ]/g, '');
 }
 
-document.getElementById("cliente").addEventListener("input", limpiarTexto);
+// Se mantiene el filtro solo para el operario (el cliente ya viene filtrado de la lista)
 document.getElementById("operario").addEventListener("input", limpiarTexto);
 
 // ----------------------------
@@ -60,12 +79,10 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     btn.textContent = "Enviando...";
 
     try {
-        // 1. Extraer el Base64 y aislar los bytes limpios sin prefijos url
         const dataUrl = signaturePad.toDataURL("image/png");
         const partesData = dataUrl.split(","); 
-        const base64Limpio = partesData.pop(); // EXTRAE ÚNICAMENTE LA CADENA ALFANUMÉRICA VALIDA
+        const base64Limpio = partesData.pop();
 
-        // 2. Convertir de Base64 a binario real de forma síncrona e instantánea
         const caracteresBinarios = atob(base64Limpio);
         const arrayConBytes = new Uint8Array(caracteresBinarios.length);
         for (let i = 0; i < caracteresBinarios.length; i++) {
@@ -73,7 +90,6 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         }
         const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
 
-        // 3. Construir el contenedor FormData estándar de envío de archivos
         const payload = new FormData();
         payload.append("cliente", document.getElementById("cliente").value);
         payload.append("operario", document.getElementById("operario").value);
@@ -85,20 +101,18 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         payload.append("dispositivo", navigator.userAgent);
         payload.append("firma", blobFirma, "firma.png");
 
-        // 4. Despachar la petición de red directo al Worker
         const respuesta = await fetch(WORKER_URL, {
             method: "POST",
             body: payload
         });
 
-        // 5. Leer la respuesta de forma segura
         const textoServidor = await respuesta.text();
         let resultado;
         
         try {
             resultado = JSON.parse(textoServidor);
         } catch (err) {
-            throw new Error("El servidor devolvió una respuesta inesperada (HTML). Código HTTP: " + respuesta.status);
+            throw new Error("El servidor devolvió una respuesta inesperada. Código HTTP: " + respuesta.status);
         }
 
         if (resultado.ok) {
