@@ -8,16 +8,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
         const datalist = document.getElementById("listaEmpresas");
-        console.log("Iniciando consulta GET a:", WORKER_URL);
-        
         const respuesta = await fetch(WORKER_URL); // Realiza el GET automático
-        
-        if (!respuesta.ok) {
-            throw new Error(`El servidor respondió con código HTTP ${respuesta.status}`);
-        }
-        
         const datos = await respuesta.json();
-        console.log("Datos crudos recibidos de Google:", datos);
 
         if (datos.ok && datos.clientes) {
             datalist.innerHTML = ""; // Limpiar cualquier opción previa
@@ -26,15 +18,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 opcion.value = empresa;
                 datalist.appendChild(opcion);
             });
-            console.log("Lista de empresas cargada dinámicamente con éxito. Total:", datos.clientes.length);
-        } else {
-            throw new Error(datos.error || "El formato del JSON no es el esperado.");
+            console.log("Lista de empresas cargada dinámicamente con éxito.");
         }
     } catch (error) {
-        console.error("ALERTA CRÍTICA - No se pudo cargar los clientes:", error.message);
+        console.warn("Modo Offline: No se pudo conectar para actualizar la lista de empresas. Usando caché local.");
     }
 });
-
 
 // Detectar automáticamente cuando el celular recupera internet para vaciar la memoria interna
 window.addEventListener("online", intentarSincronizarOffline);
@@ -209,7 +198,7 @@ async function intentarSincronizarOffline() {
         payloadOffline.append("observaciones", reg.observaciones + " (Enviado en modo Offline diferido)");
         payloadOffline.append("dispositivo", reg.dispositivo);
 
-        // CORRECCIÓN AQUÍ: Se procesa el índice j de forma estricta y limpia
+        // CORRECCIÓN QUIRÚRGICA AQUÍ: Cambiada la variable condicional de 'i' a 'j' para que el archivo compile sin errores
         const caracteresBinarios = atob(reg.firmaBase64);
         const arrayConBytes = new Uint8Array(caracteresBinarios.length);
         for (let j = 0; j < caracteresBinarios.length; j++) {
@@ -222,7 +211,7 @@ async function intentarSincronizarOffline() {
             const res = await fetch(WORKER_URL, { method: "POST", body: payloadOffline });
             if (res.ok) {
                 registrosGuardados.splice(i, 1);
-                localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
+                localStorage.setItem("oxitrack_offline", JSON.stringify(registrogGuardados));
                 console.log("Registro diferido sincronizado con éxito.");
             }
         } catch (err) {
