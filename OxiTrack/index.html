@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
@@ -19,120 +20,73 @@
 
     <!-- CABECERA CON LOGO Y TÍTULOS -->
     <div class="cabecera-logo">
-        <img src="..\assets\img\favicon.png" alt="Logo Oxilfe" class="logo-marca">
+        <img src="https://oxilfe.cl" alt="Logo Oxilfe" class="logo-marca">
         <div class="textos-cabecera">
             <h1>OxiTrack</h1>
             <p class="subtitulo">Registro de cilindros</p>
         </div>
     </div>
 
-<form id="formulario">
-        <!-- El resto de tu formulario hacia abajo sigue exactamente igual -->
-<label>Empresa</label>
-<input 
-    type="text" 
-    id="cliente" 
-    list="listaEmpresas" 
-    placeholder="Seleccione o busque la empresa...">
-<datalist id="listaEmpresas">
-    <!-- Las empresas de tu Sheets aparecerán aquí mágicamente por código -->
-</datalist>
+    <form id="formulario">
 
+        <label>Empresa</label>
+        <input type="text" id="cliente" list="listaEmpresas" placeholder="Seleccione o busque la empresa...">
+        <datalist id="listaEmpresas"></datalist>
 
-<label>Operario</label>
+        <!-- NUEVO CAMPO: SERVICIO DESPLEGABLE -->
+        <label>Servicio</label>
+        <input type="text" id="servicio" list="listaServicios" placeholder="Seleccione el tipo de servicio...">
+        <datalist id="listaServicios"></datalist>
 
-<input
-type="text"
-id="operario"
-maxlength="80"
-placeholder="Nombre del operario">
+        <!-- NUEVO CAMPO: PACIENTE MANUAL -->
+        <label>Paciente</label>
+        <input type="text" id="paciente" placeholder="Nombre del paciente (Ingreso manual)">
 
-<div class="titulo">
+        <label>Operario</label>
+        <input type="text" id="operario" maxlength="80" placeholder="Nombre del operario">
 
-ENTREGADOS
+        <div class="titulo">ENTREGADOS</div>
 
-</div>
+        <label>Cilindros 0.7 m³</label>
+        <div class="contador">
+            <button type="button" onclick="disminuir('e07')">−</button>
+            <input id="e07" value="0" readonly>
+            <button type="button" onclick="aumentar('e07')">+</button>
+        </div>
 
-<label>Cilindros 0.7 m³</label>
+        <label>Cilindros 10 m³</label>
+        <div class="contador">
+            <button type="button" onclick="disminuir('e10')">−</button>
+            <input id="e10" value="0" readonly>
+            <button type="button" onclick="aumentar('e10')">+</button>
+        </div>
 
-<div class="contador">
+        <div class="titulo">RETIRADOS</div>
 
-<button type="button" onclick="disminuir('e07')">−</button>
+        <label>Cilindros 0.7 m³</label>
+        <div class="contador">
+            <button type="button" onclick="disminuir('r07')">−</button>
+            <input id="r07" value="0" readonly>
+            <button type="button" onclick="aumentar('r07')">+</button>
+        </div>
 
-<input id="e07" value="0" readonly>
+        <label>Cilindros 10 m³</label>
+        <div class="contador">
+            <button type="button" onclick="disminuir('r10')">−</button>
+            <input id="r10" value="0" readonly>
+            <button type="button" onclick="aumentar('r10')">+</button>
+        </div>
 
-<button type="button" onclick="aumentar('e07')">+</button>
+        <label>Observaciones</label>
+        <textarea id="obs"></textarea>
 
-</div>
+        <label>Firma Cliente</label>
+        <canvas id="firma"></canvas>
 
-<label>Cilindros 10 m³</label>
+        <button type="button" id="btnLimpiar">Limpiar Firma</button>
+        <button type="submit" id="btnEnviar">Enviar Registro</button>
 
-<div class="contador">
-
-<button type="button" onclick="disminuir('e10')">−</button>
-
-<input id="e10" value="0" readonly>
-
-<button type="button" onclick="aumentar('e10')">+</button>
-
-</div>
-
-<div class="titulo">
-
-RETIRADOS
-
-</div>
-
-<label>Cilindros 0.7 m³</label>
-
-<div class="contador">
-
-<button type="button" onclick="disminuir('r07')">−</button>
-
-<input id="r07" value="0" readonly>
-
-<button type="button" onclick="aumentar('r07')">+</button>
-
-</div>
-
-<label>Cilindros 10 m³</label>
-
-<div class="contador">
-
-<button type="button" onclick="disminuir('r10')">−</button>
-
-<input id="r10" value="0" readonly>
-
-<button type="button" onclick="aumentar('r10')">+</button>
-
-</div>
-
-<label>Observaciones</label>
-
-<textarea id="obs"></textarea>
-
-<label>Firma Cliente</label>
-
-<canvas id="firma"></canvas>
-
-<button
-type="button"
-id="btnLimpiar">
-
-Limpiar Firma
-
-</button>
-
-<button
-type="submit"
-id="btnEnviar">
-
-Enviar Registro
-
-</button>
-
-</form>
-
+    </form>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
