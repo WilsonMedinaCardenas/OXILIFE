@@ -188,27 +188,46 @@ background:#f7f7f7;
 
 }
 
-/* CONTEXTO FLEXIBLE PARA ALINEAR LOGO Y TÍTULO LADO A LADO */
+/* CONTEXTO FLEXIBLE ALINEADO Y MODERNO */
 .cabecera-logo {
-    display: flex;
-    align-items: center;    /* Centra verticalmente el logo con respecto al texto */
-    gap: 15px;              /* Espacio de separación horizontal entre el logo y el texto */
-    margin-bottom: 25px;    /* Espacio de separación con respecto al inicio del formulario */
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    margin-bottom: 25px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-/* CONTROL DEL TAMAÑO DEL ICONO DE LA MARCA */
+/* REDUCCIÓN ESTRICTA DEL LOGO (EVITA QUE SE DESBORDE) */
 .logo-marca {
-    width: 60px;            /* Ajusta este valor en píxeles según el tamaño de tu marca */
-    height: auto;           /* Mantiene la proporción original para que no se deforme */
-    object-fit: contain;    /* Asegura que el logo se encuadre de forma perfecta */
+    width: 60px !important;        /* Forzamos el ancho máximo en el celular */
+    height: 60px !important;       /* Forzamos el alto máximo para que sea un cuadro perfecto */
+    min-width: 60px !important;    /* Evita que el contenedor flexible lo aplaste */
+    object-fit: contain !important; /* Centra y encuadra la imagen sin deformarla */
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* ELIMINAR MÁRGENES INTERNOS QUE PUEDAN DESALINEAR LOS TEXTOS */
+/* CONTENEDOR DE TEXTOS ALINEADO */
+.textos-cabecera {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
 .textos-cabecera h1 {
-    margin: 0;
-    line-height: 1.2;
+    margin: 0 !important;
+    font-size: 28px !important;    /* Tamaño profesional para el título */
+    line-height: 1.1 !important;
 }
 
 .textos-cabecera .subtitulo {
-    margin: 4px 0 0 0;
+    margin: 4px 0 0 0 !important;
+    font-size: 14px !important;
 }
+
