@@ -187,3 +187,28 @@ font-weight:bold;
 background:#f7f7f7;
 
 }
+
+/* CONTEXTO FLEXIBLE PARA ALINEAR LOGO Y TÍTULO LADO A LADO */
+.cabecera-logo {
+    display: flex;
+    align-items: center;    /* Centra verticalmente el logo con respecto al texto */
+    gap: 15px;              /* Espacio de separación horizontal entre el logo y el texto */
+    margin-bottom: 25px;    /* Espacio de separación con respecto al inicio del formulario */
+}
+
+/* CONTROL DEL TAMAÑO DEL ICONO DE LA MARCA */
+.logo-marca {
+    width: 60px;            /* Ajusta este valor en píxeles según el tamaño de tu marca */
+    height: auto;           /* Mantiene la proporción original para que no se deforme */
+    object-fit: contain;    /* Asegura que el logo se encuadre de forma perfecta */
+}
+
+/* ELIMINAR MÁRGENES INTERNOS QUE PUEDAN DESALINEAR LOS TEXTOS */
+.textos-cabecera h1 {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.textos-cabecera .subtitulo {
+    margin: 4px 0 0 0;
+}
