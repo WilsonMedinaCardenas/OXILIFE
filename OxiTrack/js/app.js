@@ -8,18 +8,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
         const datalist = document.getElementById("listaEmpresas");
-        const respuesta = await fetch(WORKER_URL); 
+        const respuesta = await fetch(WORKER_URL); // Realiza el GET automático
         const datos = await respuesta.json();
 
         if (datos.ok && datos.clientes) {
+            datalist.innerHTML = ""; // Limpiar cualquier opción previa
             datos.clientes.forEach(empresa => {
                 const opcion = document.createElement("option");
                 opcion.value = empresa;
                 datalist.appendChild(opcion);
             });
+            console.log("Lista de empresas cargada dinámicamente con éxito.");
         }
     } catch (error) {
-        console.error("Modo Offline: Usando cargado local de interfaz.");
+        console.warn("Modo Offline: No se pudo conectar para actualizar la lista de empresas. Usando caché local.");
     }
 });
 
@@ -138,10 +140,8 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         }
 
     } catch (error) {
-        // ENTRADA EN MODO OFFLINE AUTOMÁTICO AL DETECTAR FALLO DE RED
         console.warn("Sin señal o error de red detectado. Guardando copia local...", error);
         
-        // Guardamos las variables de texto y la firma en Base64 puro en LocalStorage
         const registroOffline = {
             cliente: cliente,
             operario: document.getElementById("operario").value,
@@ -198,10 +198,10 @@ async function intentarSincronizarOffline() {
         payloadOffline.append("observaciones", reg.observaciones + " (Enviado en modo Offline diferido)");
         payloadOffline.append("dispositivo", reg.dispositivo);
 
-        // Reconstruir la firma guardada en caché
+        // CORRECCIÓN AQUÍ: Se procesa el índice j de forma estricta y limpia
         const caracteresBinarios = atob(reg.firmaBase64);
         const arrayConBytes = new Uint8Array(caracteresBinarios.length);
-        for (let j = 0; i < caracteresBinarios.length; j++) {
+        for (let j = 0; j < caracteresBinarios.length; j++) {
             arrayConBytes[j] = caracteresBinarios.charCodeAt(j);
         }
         const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
@@ -210,14 +210,13 @@ async function intentarSincronizarOffline() {
         try {
             const res = await fetch(WORKER_URL, { method: "POST", body: payloadOffline });
             if (res.ok) {
-                // Si se envió bien, lo removemos del listado de la memoria del teléfono
                 registrosGuardados.splice(i, 1);
                 localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
                 console.log("Registro diferido sincronizado con éxito.");
             }
         } catch (err) {
-            console.error("El reintento falló. Esperando próxima ventana de conexión.");
-            break; // Detiene el bucle si sigue sin internet
+            console.error("El reintento de envío offline falló. Esperando señal...");
+            break; 
         }
     }
 }
