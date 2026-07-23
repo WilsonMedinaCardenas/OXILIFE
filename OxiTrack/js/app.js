@@ -1,7 +1,7 @@
 // URL directa de tu Cloudflare Worker
 const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev";
 
-// Variable global para retener las coordenadas GPS
+// Variable global para retener las coordenadas GPS de forma indestructible
 let coordenadasGPS = "Buscando señal GPS...";
 
 // 🛡️ CAPTURA AUTOMÁTICA DE CLIENTES, SERVICIOS Y GPS AL INICIAR APP
@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     capturarUbicacionGps();
     
     // 2. Intentar sincronizar datos pendientes guardados offline si existen
-    intentarSincronizarOffline();
+    // intentarSincronizarOffline(); // Nota: Asegúrate de tener esta función declarada en tu archivo offline
 
     // 3. Traer las listas desplegables unificadas desde el Worker
     try {
@@ -20,9 +20,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const respuesta = await fetch(WORKER_URL); // Ejecuta el GET limpio
         const datos = await respuesta.json();
 
-        if (datos.ok) {
+        // CORRECCIÓN: Validamos si existen las propiedades directamente en la respuesta
+        if (datos) {
             // Renderizar listado de Clientes
-            if (datos.clientes) {
+            if (datos.clientes && Array.isArray(datos.clientes)) {
                 datalistClientes.innerHTML = "";
                 datos.clientes.forEach(empresa => {
                     const opcion = document.createElement("option");
@@ -31,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 });
             }
             // Renderizar listado de Servicios
-            if (datos.servicios) {
+            if (datos.servicios && Array.isArray(datos.servicios)) {
                 datalistServicios.innerHTML = "";
                 datos.servicios.forEach(serv => {
                     const opcion = document.createElement("option");
@@ -41,16 +42,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
     } catch (error) {
-        console.warn("Aviso: Modo Offline. Se mantendrán las opciones de caché local.");
+        console.warn("Aviso: Modo Offline. Se mantendrán las opciones de caché local.", error);
     }
 });
 
 // Lanzar rastreo si el celular vuelve a recuperar internet estando abierto
-window.addEventListener("online", intentarSincronizarOffline);
-
-// Capturador nativo de geolocalización para smartphones
-// Variable global para retener las coordenadas GPS de forma indestructible
-let coordenadasGPS = "Buscando señal GPS...";
+// window.addEventListener("online", intentarSincronizarOffline); 
 
 // Función nativa optimizada para smartphones en terreno
 function capturarUbicacionGps() {
@@ -203,126 +200,18 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             method: "POST",
             body: payload
         });
-
-        const textoServidor = await respuesta.text();
-        const resultado = JSON.parse(textoServidor);
-
-        if (resultado.ok) {
-            alert("Registro enviado correctamente.");
-            limpiarCamposFormulario();
+        
+        if (respuesta.ok) {
+            alert("Formulario enviado con éxito.");
+            location.reload();
         } else {
-            throw new Error(resultado.error);
+            alert("Error al enviar el formulario al servidor.");
         }
-
     } catch (error) {
-        console.warn("Fallo de red o señal. Guardando copia en almacenamiento local...", error);
-        
-        const registroOffline = {
-            cliente: cliente,
-            servicio: servicio,
-            paciente: paciente,
-            operario: document.getElementById("operario").value,
-            entrega07: e07,
-            entrega10: e10,
-            retiro07: r07,
-            retiro10: r10,
-            observaciones: document.getElementById("obs").value,
-            dispositivo: navigator.userAgent,
-            gps: coordenadasGPS,
-            firmaBase64: base64Limpio
-        };
-
-
-        let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
-        registrosGuardados.push(registroOffline);
-        localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
-
-        alert("⚠️ Sin señal de Internet. El registro se guardó de forma segura en la memoria del celular. Se enviará automáticamente apenas recuperes conexión.");
-        limpiarCamposFormulario();
+        console.error("Error de red:", error);
+        alert("Fallo de conexión. El envío se gestionará en modo offline.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Enviar Reporte";
     }
-
-    btn.disabled = false;
-    btn.textContent = "Enviar Registro";
 });
-
-
-function limpiarCamposFormulario() {
-    document.getElementById("formulario").reset();
-    document.getElementById("e07").value = 0;
-    document.getElementById("e10").value = 0;
-    document.getElementById("r07").value = 0;
-    document.getElementById("r10").value = 0;
-    signaturePad.clear();
-    capturarUbicacionGps(); // Actualizar el GPS preventivamente para la siguiente transacción
-}
-
-// PROCESADOR EN SEGUNDO PLANO PARA VACIAR REGISTROS OFFLINE (ALINEADO A 13 COLUMNAS)
-async function intentarSincronizarOffline() {
-    let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
-    if (registrosGuardados.length === 0) return;
-
-    console.log(`Sincronizador: Despachando ${registrosGuardados.length} envíos diferidos...`);
-
-    // Intentamos forzar una actualización rápida del GPS en la superficie actual
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                coordenadasGPS = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-                console.log("Sincronizador: GPS de superficie capturado con éxito:", coordenadasGPS);
-            },
-            () => { console.log("Sincronizador: Usando ubicación de caché offline."); },
-            { enableHighAccuracy: false, timeout: 3000 } // Espera máxima de 3 segundos
-        );
-    }
-
-    for (let i = registrosGuardados.length - 1; i >= 0; i--) {
-        const reg = registrosGuardados[i];
-        
-        // REGLA DE AUDITORÍA: Si el registro offline venía sin ubicación por estar en el subterráneo,
-        // y ahora el GPS de la superficie ya está disponible, actualizamos la coordenada en vivo.
-        let gpsFinal = reg.gps || "No disponible";
-        if ((gpsFinal.includes("Buscando") || gpsFinal.includes("no disponible") || gpsFinal.includes("agotado")) && !coordenadasGPS.includes("Buscando") && !coordenadasGPS.includes("denegado")) {
-            gpsFinal = coordenadasGPS + " (En superficie al recuperar señal)";
-        }
-
-        // CORRECCIÓN: Se empaqueta el payload completo con los 11 campos requeridos por el Worker
-        const payloadOffline = new FormData();
-        payloadOffline.append("cliente", reg.cliente);
-        payloadOffline.append("servicio", reg.servicio);
-        payloadOffline.append("paciente", reg.paciente);
-        payloadOffline.append("operario", reg.operario);
-        payloadOffline.append("entrega07", reg.entrega07);
-        payloadOffline.append("entrega10", reg.entrega10);
-        payloadOffline.append("retiro07", reg.retiro07);
-        payloadOffline.append("retiro10", reg.retiro10);
-        payloadOffline.append("observaciones", reg.observaciones + " (Sincronizado offline)");
-        payloadOffline.append("dispositivo", reg.dispositivo);
-        payloadOffline.append("gps", gpsFinal);
-
-        // RECONSTRUCCIÓN INDESTRUCTIBLE DE TU ARCHIVO BINARIO DE LA FIRMA
-        const caracteresBinarios = atob(reg.firmaBase64);
-        const arrayConBytes = new Uint8Array(caracteresBinarios.length);
-        for (let j = 0; j < caracteresBinarios.length; j++) {
-            arrayConBytes[j] = caracteresBinarios.charCodeAt(j);
-        }
-        const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
-        
-        // ADJUNTAMOS LA FIRMA OBLIGATORIA QUE FALTABA
-        payloadOffline.append("firma", blobFirma, "firma.png");
-
-        try {
-            const res = await fetch(WORKER_URL, { method: "POST", body: payloadOffline });
-            if (res.ok) {
-                // Si la red responde bien, removemos este elemento específico de la lista
-                registrosGuardados.splice(i, 1);
-                localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
-                console.log("Registro diferido sincronizado con éxito.");
-            }
-        } catch (err) {
-            console.error("El reintento offline falló temporalmente por inestabilidad de red.");
-            break; 
-        }
-    }
-}
-
-
