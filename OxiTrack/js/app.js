@@ -49,35 +49,49 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.addEventListener("online", intentarSincronizarOffline);
 
 // Capturador nativo de geolocalización para smartphones
+// Variable global para retener las coordenadas GPS de forma indestructible
+let coordenadasGPS = "Buscando señal GPS...";
+
+// Función nativa optimizada para smartphones en terreno
 function capturarUbicacionGps() {
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
+        // Usamos watchPosition para que el celular rastree continuamente la señal mientras el operario llena el formulario
+        navigator.geolocation.watchPosition(
             (position) => {
-                // Formato oficial: Latitud, Longitud (Listo para Google Maps)
+                // Formato oficial: Latitud, Longitud limpio para Google Sheets y Google Maps
                 coordenadasGPS = `${position.coords.latitude}, ${position.coords.longitude}`;
-                console.log("Coordenadas obtenidas:", coordenadasGPS);
+                console.log("GPS Actualizado en tiempo real con éxito:", coordenadasGPS);
             },
             (error) => {
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        coordenadasGPS = "Permiso GPS denegado por operario";
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        coordenadasGPS = "Señal GPS no disponible (Subterráneo)";
-                        break;
-                    case error.TIMEOUT:
-                        coordenadasGPS = "Tiempo de espera GPS agotado";
-                        break;
-                    default:
-                        coordenadasGPS = "Error de ubicación no identificado";
+                // Control defensivo secundario si hay pérdida total de señal
+                if (coordenadasGPS === "Buscando señal GPS...") {
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            coordenadasGPS = "Permiso GPS denegado por operario";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            coordenadasGPS = "Señal GPS no disponible (Subterráneo)";
+                            break;
+                        case error.TIMEOUT:
+                            coordenadasGPS = "Tiempo de espera GPS agotado";
+                            break;
+                        default:
+                            coordenadasGPS = "Error de ubicación no identificado";
+                    }
                 }
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            // CONFIGURACIÓN FLEXIBLE CORPORATIVA PARA CELULARES
+            { 
+                enableHighAccuracy: false, // Permite usar antenas de red celular si el satélite puro tarda en enganchar bajo techo
+                timeout: 15000,            // Ampliamos el tiempo de espera a 15 segundos para dar margen al teléfono
+                maximumAge: 30000          // Permite usar ubicaciones guardadas en la caché del celular de los últimos 30 segundos si la señal es inestable
+            }
         );
     } else {
         coordenadasGPS = "GPS no soportado en este dispositivo";
     }
 }
+
 
 // ----------------------------
 // CONTADORES (TUS FUNCIONES NATIVAS)
