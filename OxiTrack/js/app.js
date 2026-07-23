@@ -144,7 +144,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     const r10 = document.getElementById("r10").value;
     const cliente = document.getElementById("cliente").value;
     const servicio = document.getElementById("servicio").value;
-    const paciente = document.getElementById("paciente").value;
+    const paciente = document.getElementById("paciente").value.toUpperCase();
 
     // POPUP ENRIQUECIDO DE CONTROL DE CILINDROS
     const mensajeConfirmacion = 
@@ -184,7 +184,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("cliente", cliente);
     payload.append("servicio", servicio);
     payload.append("paciente", paciente);
-    payload.append("operario", document.getElementById("operario").value);
+    payload.append("operario", document.getElementById("operario").value.toUpperCase());
     payload.append("entrega07", e07);
     payload.append("entrega10", e10);
     payload.append("retiro07", r07);
@@ -215,7 +215,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             cliente: cliente,
             servicio: servicio,
             paciente: paciente,
-            operario: document.getElementById("operario").value,
+            operario: document.getElementById("operario").value.toUpperCase(),
             entrega07: e07,
             entrega10: e10,
             retiro07: r07,
