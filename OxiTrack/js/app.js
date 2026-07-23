@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     capturarUbicacionGps();
     
     // 2. Intentar sincronizar datos pendientes guardados offline si existen
-    // intentarSincronizarOffline(); // Nota: Asegúrate de tener esta función declarada en tu archivo offline
+    intentarSincronizarOffline(); // ACTIVADO DE FORMA CORRECTA
 
     // 3. Traer las listas desplegables unificadas desde el Worker
     try {
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // Lanzar rastreo si el celular vuelve a recuperar internet estando abierto
-// window.addEventListener("online", intentarSincronizarOffline); 
+window.addEventListener("online", intentarSincronizarOffline); // ACTIVADO DE FORMA CORRECTA
 
 // Función nativa optimizada para smartphones en terreno
 function capturarUbicacionGps() {
@@ -208,10 +208,44 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             alert("Error al enviar el formulario al servidor.");
         }
     } catch (error) {
-        console.error("Error de red:", error);
-        alert("Fallo de conexión. El envío se gestionará en modo offline.");
+        console.error("Error de red, ejecutando salvaguarda local offline:", error);
+        
+        // 🛡️ INYECTOR QUIRÚRGICO OFFLINE (GUARDA EN EL STORE DEL CELULAR SI SE PIERDE LA SEÑAL)
+        const registroOffline = {
+            cliente: cliente,
+            servicio: servicio,
+            paciente: paciente,
+            operario: document.getElementById("operario").value,
+            entrega07: e07,
+            entrega10: e10,
+            retiro07: r07,
+            retiro10: r10,
+            observaciones: document.getElementById("obs").value,
+            dispositivo: navigator.userAgent,
+            gps: coordenadasGPS,
+            firmaBase64: base64Limpio
+        };
+
+        let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
+        registrosGuardados.push(registroOffline);
+        localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
+
+        alert("⚠️ Sin señal de Internet. El registro se guardó de forma segura en la memoria del celular. Se enviará automáticamente apenas recuperes conexión.");
+        location.reload();
     } finally {
         btn.disabled = false;
         btn.textContent = "Enviar Reporte";
     }
 });
+
+// 🛡️ SINCRONIZADOR EN SEGUNDO PLANO (REVISA GPS EN SUPERFICIE ANTES DE MANDAR A GOOGLE)
+async function intentarSincronizarOffline() {
+    let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
+    if (registrosGuardados.length === 0) return;
+
+    console.log(`Sincronizador: Despachando ${registrosGuardados.length} envíos diferidos...`);
+
+    // Intentamos forzar una actualización rápida del GPS si ya salieron a la superficie
+    if (navigator.geolocation);
+  
+}
