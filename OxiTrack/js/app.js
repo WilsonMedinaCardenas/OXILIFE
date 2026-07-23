@@ -238,14 +238,71 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     }
 });
 
-// 🛡️ SINCRONIZADOR EN SEGUNDO PLANO (REVISA GPS EN SUPERFICIE ANTES DE MANDAR A GOOGLE)
+// 🛡️ SINCRONIZADOR EN SEGUNDO PLANO (CORREGIDO ASÍNCRONO & INMUNE A ERRORES)
 async function intentarSincronizarOffline() {
     let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
     if (registrosGuardados.length === 0) return;
 
-    console.log(`Sincronizador: Despachando ${registrosGuardados.length} envíos diferidos...`);
+    console.log(`Sincronizador: Procesando ${registrosGuardados.length} envíos diferidos...`);
 
-    // Intentamos forzar una actualización rápida del GPS si ya salieron a la superficie
-    if (navigator.geolocation);
-  
+    // Intentamos forzar una actualización rápida del GPS de forma controlada
+    if (navigator.geolocation) {
+        try {
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 3000 });
+            });
+            coordenadasGPS = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+            console.log("Sincronizador: GPS de superficie capturado con éxito.");
+        } catch (e) {
+            console.log("Sincronizador: Usando ubicación fija o guardada en caché.");
+        }
+    }
+
+    // Recorremos el bucle de atrás hacia adelante para poder borrar elementos de forma segura
+    for (let i = registrosGuardados.length - 1; i >= 0; i--) {
+        const reg = registrosGuardados[i];
+        
+        let gpsFinal = reg.gps || "No disponible";
+        if ((gpsFinal.includes("Buscando") || gpsFinal.includes("no disponible") || gpsFinal.includes("agotado")) && !coordenadasGPS.includes("Buscando")) {
+            gpsFinal = coordenadasGPS + " (En superficie al recuperar señal)";
+        }
+
+        const payloadOffline = new FormData();
+        payloadOffline.append("cliente", reg.cliente);
+        payloadOffline.append("servicio", reg.servicio);
+        payloadOffline.append("paciente", reg.paciente);
+        payloadOffline.append("operario", reg.operario);
+        payloadOffline.append("entrega07", reg.entrega07);
+        payloadOffline.append("entrega10", reg.entrega10);
+        payloadOffline.append("retiro07", reg.retiro07);
+        payloadOffline.append("retiro10", reg.retiro10);
+        payloadOffline.append("observaciones", reg.observaciones + " (Sincronizado offline)");
+        payloadOffline.append("dispositivo", reg.dispositivo);
+        payloadOffline.append("gps", gpsFinal);
+
+        const caracteresBinarios = atob(reg.firmaBase64);
+        const arrayConBytes = new Uint8Array(caracteresBinarios.length);
+        for (let j = 0; j < caracteresBinarios.length; j++) {
+            arrayConBytes[j] = caracteresBinarios.charCodeAt(j);
+        }
+        const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
+        payloadOffline.append("firma", blobFirma, "firma.png");
+
+        try {
+            // Enviamos la petición esperando su respuesta de forma síncrona
+            const res = await fetch(WORKER_URL, { method: "POST", body: payloadOffline });
+            
+            if (res.ok) {
+                // CORRECCIÓN ORTOGRÁFICA: Eliminada la 'g' fantasma para que la variable limpie el store de forma correcta
+                registrosGuardados.splice(i, 1);
+                localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
+                console.log(`✅ Registro diferido de ${reg.cliente} sincronizado con éxito.`);
+            } else {
+                console.error("El servidor rechazó la sincronización. Código:", res.status);
+            }
+        } catch (err) {
+            console.error("El reintento offline falló por inestabilidad. Se reintentará en la próxima ventana de red.");
+            break; // Rompe el ciclo si la señal sigue inestable para no saturar el celular
+        }
+    }
 }
