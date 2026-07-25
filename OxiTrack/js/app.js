@@ -150,7 +150,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
      // CAPTURA EL EMAIL OCULTO POR DETRÁS EN BASE AL NOMBRE SELECCIONADO
     const mapeoCliente = baseDatosClientes.find(item => item.nombre.trim() === cliente.trim());
     const emailDetectado = mapeoCliente ? mapeoCliente.email : "";
-    alert("🔍 DIAGNÓSTICO: El sistema detectó para " + cliente + " el correo: " + (emailDetectado || "VACÍO/NO ENCONTRADO"));
+    // alert("🔍 DIAGNÓSTICO: El sistema detectó para " + cliente + " el correo: " + (emailDetectado || "VACÍO/NO ENCONTRADO"));
 
 
 
