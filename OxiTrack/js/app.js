@@ -3,6 +3,7 @@ const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev";
 
 // Variable global para retener las coordenadas GPS de forma indestructible
 let coordenadasGPS = "Buscando señal GPS...";
+let baseDatosClientes = [];
 
 // 🛡️ CAPTURA AUTOMÁTICA DE CLIENTES, SERVICIOS Y GPS AL INICIAR APP
 document.addEventListener("DOMContentLoaded", async () => {
@@ -24,10 +25,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (datos) {
             // Renderizar listado de Clientes
             if (datos.clientes && Array.isArray(datos.clientes)) {
+                baseDatosClientes = datos.clientes; // Guarda la lista con los correos
                 datalistClientes.innerHTML = "";
-                datos.clientes.forEach(empresa => {
+                datos.clientes.forEach(item => {
                     const opcion = document.createElement("option");
-                    opcion.value = empresa;
+                    opcion.value = item.nombre; // El operario sólo sigue viendo el nombre en pantalla
                     datalistClientes.appendChild(opcion);
                 });
             }
@@ -145,6 +147,10 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     const cliente = document.getElementById("cliente").value;
     const servicio = document.getElementById("servicio").value;
     const paciente = document.getElementById("paciente").value.toUpperCase();
+     // CAPTURA EL EMAIL OCULTO POR DETRÁS EN BASE AL NOMBRE SELECCIONADO
+    const mapeoCliente = baseDatosClientes.find(item => item.nombre.trim() === cliente.trim());
+    const emailDetectado = mapeoCliente ? mapeoCliente.email : "";
+
 
     // POPUP ENRIQUECIDO DE CONTROL DE CILINDROS
     const mensajeConfirmacion = 
@@ -191,7 +197,8 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("retiro10", r10);
     payload.append("observaciones", document.getElementById("obs").value);
     payload.append("dispositivo", navigator.userAgent);
-    payload.append("gps", coordenadasGPS); 
+    payload.append("gps", coordenadasGPS);
+    payload.append("emailCliente", emailDetectado);
     payload.append("firma", blobFirma, "firma.png");
 
 
@@ -223,6 +230,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             observaciones: document.getElementById("obs").value,
             dispositivo: navigator.userAgent,
             gps: coordenadasGPS,
+            emailCliente: emailDetectado,
             firmaBase64: base64Limpio
         };
 
@@ -279,6 +287,7 @@ async function intentarSincronizarOffline() {
         payloadOffline.append("observaciones", reg.observaciones + " (Sincronizado offline)");
         payloadOffline.append("dispositivo", reg.dispositivo);
         payloadOffline.append("gps", gpsFinal);
+        payloadOffline.append("emailCliente", reg.emailCliente);
 
         const caracteresBinarios = atob(reg.firmaBase64);
         const arrayConBytes = new Uint8Array(caracteresBinarios.length);
