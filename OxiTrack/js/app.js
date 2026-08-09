@@ -197,7 +197,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("entrega10", e10);
     payload.append("retiro07", r07);
     payload.append("retiro10", r10);
-    payload.append("observaciones", document.getElementById("obs").value);
+    payload.append("observaciones", document.getElementById("obs").value.toUpperCase());
     payload.append("dispositivo", navigator.userAgent);
     payload.append("gps", coordenadasGPS);
     payload.append("emailCliente", emailDetectado);
@@ -229,7 +229,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             entrega10: e10,
             retiro07: r07,
             retiro10: r10,
-            observaciones: document.getElementById("obs").value,
+            observaciones: document.getElementById("obs").value.toUpperCase(),
             dispositivo: navigator.userAgent,
             gps: coordenadasGPS,
             emailCliente: emailDetectado,
@@ -286,7 +286,7 @@ async function intentarSincronizarOffline() {
         payloadOffline.append("entrega10", reg.entrega10);
         payloadOffline.append("retiro07", reg.retiro07);
         payloadOffline.append("retiro10", reg.retiro10);
-        payloadOffline.append("observaciones", reg.observaciones + " (Sincronizado offline)");
+        payloadOffline.append("observaciones", reg.observaciones + "Sincronizado offline");
         payloadOffline.append("dispositivo", reg.dispositivo);
         payloadOffline.append("gps", gpsFinal);
         payloadOffline.append("emailCliente", reg.emailCliente);
