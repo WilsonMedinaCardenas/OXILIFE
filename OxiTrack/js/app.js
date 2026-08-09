@@ -286,7 +286,7 @@ async function intentarSincronizarOffline() {
         payloadOffline.append("entrega10", reg.entrega10);
         payloadOffline.append("retiro07", reg.retiro07);
         payloadOffline.append("retiro10", reg.retiro10);
-        payloadOffline.append("observaciones", reg.observaciones + "Sincronizado offline");
+        payloadOffline.append("observaciones", reg.observaciones + " Sincronizado offline");
         payloadOffline.append("dispositivo", reg.dispositivo);
         payloadOffline.append("gps", gpsFinal);
         payloadOffline.append("emailCliente", reg.emailCliente);
