@@ -1,5 +1,5 @@
 // URL directa de tu Cloudflare Worker
-const WORKER_URL = "https://oxitrack-api.oxilife.workers.dev";
+const WORKER_URL = "https://api.oxilife.cl";
 
 // Variable global para retener las coordenadas GPS de forma indestructible
 let coordenadasGPS = "Buscando señal GPS...";
