@@ -5,47 +5,208 @@ const WORKER_URL = "https://api.oxilife.cl";
 let coordenadasGPS = "Buscando señal GPS...";
 let baseDatosClientes = [];
 
-// 🛡️ CAPTURA AUTOMÁTICA DE CLIENTES, SERVICIOS Y GPS AL INICIAR APP
+// ==========================================================
+// INICIO OXITRACK
+// GPS + OFFLINE + SERVICIOS + BUSCADOR DE CLIENTES
+// ==========================================================
+
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Iniciar captura del GPS nativo de forma asíncrona pasiva
+
+    // ------------------------------------------------------
+    // 1. Iniciar GPS
+    // ------------------------------------------------------
     capturarUbicacionGps();
-    
-    // 2. Intentar sincronizar datos pendientes guardados offline si existen
-    intentarSincronizarOffline(); // ACTIVADO DE FORMA CORRECTA
 
-    // 3. Traer las listas desplegables unificadas desde el Worker
+
+    // ------------------------------------------------------
+    // 2. Intentar sincronizar registros pendientes offline
+    // ------------------------------------------------------
+    intentarSincronizarOffline();
+
+
+    // ------------------------------------------------------
+    // 3. Cargar solamente los SERVICIOS al iniciar
+    // ------------------------------------------------------
     try {
-        const datalistClientes = document.getElementById("listaEmpresas");
-        const datalistServicios = document.getElementById("listaServicios");
-        
-        const respuesta = await fetch(WORKER_URL); // Ejecuta el GET limpio
-        const datos = await respuesta.json();
 
-        // CORRECCIÓN: Validamos si existen las propiedades directamente en la respuesta
-        if (datos) {
-            // Renderizar listado de Clientes
-            if (datos.clientes && Array.isArray(datos.clientes)) {
-                baseDatosClientes = datos.clientes; // Guarda la lista con los correos
-                datalistClientes.innerHTML = "";
-                datos.clientes.forEach(item => {
-                    const opcion = document.createElement("option");
-                    opcion.value = item.nombre; // El operario sólo sigue viendo el nombre en pantalla
-                    datalistClientes.appendChild(opcion);
-                });
-            }
-            // Renderizar listado de Servicios
-            if (datos.servicios && Array.isArray(datos.servicios)) {
-                datalistServicios.innerHTML = "";
-                datos.servicios.forEach(serv => {
-                    const opcion = document.createElement("option");
-                    opcion.value = serv;
-                    datalistServicios.appendChild(opcion);
-                });
-            }
+        const datalistServicios =
+            document.getElementById("listaServicios");
+
+        const respuesta =
+            await fetch(WORKER_URL);
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            datos &&
+            datos.servicios &&
+            Array.isArray(datos.servicios)
+        ) {
+
+            datalistServicios.innerHTML = "";
+
+            datos.servicios.forEach(serv => {
+
+                const opcion =
+                    document.createElement("option");
+
+                opcion.value = serv;
+
+                datalistServicios.appendChild(opcion);
+            });
         }
+
     } catch (error) {
-        console.warn("Aviso: Modo Offline. Se mantendrán las opciones de caché local.", error);
+
+        console.warn(
+            "Aviso: no fue posible cargar los servicios.",
+            error
+        );
     }
+
+
+    // ======================================================
+    // 4. BUSCADOR DE CLIENTES
+    // ======================================================
+
+    const inputCliente =
+        document.getElementById("cliente");
+
+    const inputClienteId =
+        document.getElementById("clienteId");
+
+    const datalistClientes =
+        document.getElementById("listaEmpresas");
+
+
+    let clientesEncontrados = [];
+
+    let temporizadorBusqueda = null;
+
+
+    // ------------------------------------------------------
+    // BUSCAR CUANDO EL OPERARIO ESCRIBA
+    // ------------------------------------------------------
+    inputCliente.addEventListener("input", () => {
+
+        const textoBusqueda =
+            inputCliente.value.trim();
+
+
+        // Si modifica el texto, invalidamos
+        // cualquier selección anterior.
+        inputClienteId.value = "";
+
+
+        clearTimeout(temporizadorBusqueda);
+
+
+        // Menos de 3 caracteres:
+        // no hacemos ninguna consulta.
+        if (textoBusqueda.length < 3) {
+
+            datalistClientes.innerHTML = "";
+
+            clientesEncontrados = [];
+
+            return;
+        }
+
+
+        // Esperamos 300 ms para no llamar al Worker
+        // por cada tecla que escribe.
+        temporizadorBusqueda =
+            setTimeout(async () => {
+
+                try {
+
+                    const respuesta =
+                        await fetch(
+                            WORKER_URL +
+                            "?buscar=" +
+                            encodeURIComponent(textoBusqueda)
+                        );
+
+
+                    const datos =
+                        await respuesta.json();
+
+
+                    datalistClientes.innerHTML = "";
+
+                    clientesEncontrados = [];
+
+
+                    if (
+                        datos &&
+                        datos.clientes &&
+                        Array.isArray(datos.clientes)
+                    ) {
+
+                        clientesEncontrados =
+                            datos.clientes;
+
+
+                        datos.clientes.forEach(item => {
+
+                            const opcion =
+                                document.createElement("option");
+
+                            opcion.value =
+                                item.nombre;
+
+                            datalistClientes
+                                .appendChild(opcion);
+                        });
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        "Error al buscar empresas:",
+                        error
+                    );
+                }
+
+            }, 300);
+
+    });
+
+
+    // ------------------------------------------------------
+    // GUARDAR EL ID CUANDO SELECCIONA UNA EMPRESA
+    // ------------------------------------------------------
+    inputCliente.addEventListener("change", () => {
+
+        const nombreSeleccionado =
+            inputCliente.value
+                .trim()
+                .toLowerCase();
+
+
+        const clienteEncontrado =
+            clientesEncontrados.find(item =>
+                item.nombre
+                    .trim()
+                    .toLowerCase() ===
+                nombreSeleccionado
+            );
+
+
+        if (clienteEncontrado) {
+
+            inputClienteId.value =
+                clienteEncontrado.id;
+
+        } else {
+
+            inputClienteId.value = "";
+        }
+
+    });
+
 });
 
 // Lanzar rastreo si el celular vuelve a recuperar internet estando abierto

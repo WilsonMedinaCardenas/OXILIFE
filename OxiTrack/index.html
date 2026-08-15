@@ -28,9 +28,10 @@
         </div>
 
         <form id="formulario">
-
             <label>Empresa</label>
-            <input type="text" id="cliente" list="listaEmpresas" placeholder="Seleccione o busque la empresa...">
+
+            <input type="text" id="cliente" list="listaEmpresas" placeholder="Escriba al menos 3 letras de la empresa..." autocomplete="off">
+            <input type="hidden" id="clienteId">
             <datalist id="listaEmpresas"></datalist>
 
             <!-- NUEVO CAMPO: SERVICIO DESPLEGABLE -->
