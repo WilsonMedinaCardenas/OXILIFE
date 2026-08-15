@@ -361,7 +361,11 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("observaciones", document.getElementById("obs").value.toUpperCase());
     payload.append("dispositivo", navigator.userAgent);
     payload.append("gps", coordenadasGPS);
-    payload.append("emailCliente", emailDetectado);
+    const clienteIdSeleccionado = document.getElementById("clienteId").value;
+    if (!clienteIdSeleccionado) {
+        alert("Debe seleccionar una empresa válida de la lista.");
+        return;}
+    payload.append("clienteId", clienteIdSeleccionado);
     payload.append("firma", blobFirma, "firma.png");
 
 
