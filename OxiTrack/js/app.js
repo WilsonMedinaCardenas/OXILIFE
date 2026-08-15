@@ -370,19 +370,40 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 
 
     try {
-        const respuesta = await fetch(WORKER_URL, {
-            method: "POST",
-            body: payload
-        });
-        
-        if (respuesta.ok) {
-            alert("Formulario enviado con éxito.");
-            location.reload();
-        } else {
-            alert("Error al enviar el formulario al servidor.");
-        }
-    } catch (error) {
-        console.error("Error de red, ejecutando salvaguarda local offline:", error);
+
+    const respuesta = await fetch(WORKER_URL, {
+        method: "POST",
+        body: payload
+    });
+
+    const resultado = await respuesta.json();
+
+    console.log("RESPUESTA DEL WORKER:", resultado);
+
+    if (respuesta.ok && resultado.ok === true) {
+
+        alert("Formulario enviado con éxito.");
+        location.reload();
+
+    } else {
+
+        console.error(
+            "ERROR REPORTADO POR EL WORKER:",
+            resultado.error
+        );
+
+        alert(
+            "Error al enviar el formulario:\n\n" +
+            (resultado.error || "Error desconocido del servidor.")
+        );
+    }
+
+} catch (error) {
+
+    console.error(
+        "Error de red, ejecutando salvaguarda local offline:",
+        error
+    );
         
         // 🛡️ INYECTOR QUIRÚRGICO OFFLINE (GUARDA EN EL STORE DEL CELULAR SI SE PIERDE LA SEÑAL)
         const registroOffline = {
