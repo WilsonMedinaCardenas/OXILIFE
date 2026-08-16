@@ -284,7 +284,7 @@ function disminuir(id) {
 function limpiarTexto(e) {
     e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9 ]/g, '');
 }
-document.getElementById("operario").addEventListener("input", limpiarTexto);
+//document.getElementById("operario").addEventListener("input", limpiarTexto);
 
 // ----------------------------
 // FIRMA ELECTRONICA
@@ -502,7 +502,29 @@ async function intentarSincronizarOffline() {
         // INTENTAR CAPTURAR UNA UBICACIÓN AL RECUPERAR SEÑAL
         // --------------------------------------------------
 
-        if (!gpsOriginalValido && navigator.geolocation) {
+       // --------------------------------------------------
+        // CALCULAR CUÁNTO TIEMPO HA PASADO DESDE EL REGISTRO
+        // --------------------------------------------------
+
+        const fechaOriginal = reg.fechaRegistroOffline
+            ? new Date(reg.fechaRegistroOffline)
+            : null;
+
+        const minutosDesdeRegistro = fechaOriginal
+            ? (Date.now() - fechaOriginal.getTime()) / 60000
+            : Infinity;
+
+
+        // --------------------------------------------------
+        // SI NO HUBO GPS ORIGINAL:
+        // SOLO ACEPTAR GPS POSTERIOR SI HAN PASADO <= 10 MIN
+        // --------------------------------------------------
+
+        if (
+            !gpsOriginalValido &&
+            navigator.geolocation &&
+            minutosDesdeRegistro <= 10
+        ) {
 
             try {
 
@@ -521,31 +543,39 @@ async function intentarSincronizarOffline() {
 
                     });
 
-
                 const lat =
                     posicionRecuperada.coords.latitude;
 
                 const lng =
                     posicionRecuperada.coords.longitude;
 
-
                 gpsFinal =
                     `${lat}, ${lng} (Ubicación capturada al recuperar señal)`;
 
-
                 console.log(
-                    "Sincronizador: ubicación recuperada después del registro offline."
+                    "Sincronizador: ubicación cercana recuperada después del registro offline."
                 );
-
 
             } catch (errorGps) {
 
-                gpsFinal = "No disponible";
+                gpsFinal =
+                    "No disponible";
 
                 console.warn(
-                    "Sincronizador: no fue posible obtener ubicación al recuperar señal."
+                    "Sincronizador: no fue posible obtener ubicación cercana al recuperar señal."
                 );
             }
+
+
+        // --------------------------------------------------
+        // SI HAN PASADO MÁS DE 10 MINUTOS:
+        // NO USAR LA UBICACIÓN ACTUAL
+        // --------------------------------------------------
+
+        } else if (!gpsOriginalValido) {
+
+            gpsFinal =
+                "No disponible (sin ubicación válida cercana al momento del registro)";
         }
 
 
