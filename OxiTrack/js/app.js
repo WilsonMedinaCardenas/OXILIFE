@@ -5,23 +5,99 @@ const WORKER_URL = "https://oxilife.cl/api/oxitrack/";
 let coordenadasGPS = "Buscando señal GPS...";
 
 // ==========================================================
+// CACHE LOCAL DE CLIENTES
+// SOLO GUARDA ID + NOMBRE
+// ==========================================================
+
+const CLAVE_CLIENTES_OFFLINE = "oxitrack_clientes_cache";
+
+function guardarClientesOffline(clientes) {
+
+    const cache = {
+        actualizado: Date.now(),
+        clientes: clientes
+    };
+
+    localStorage.setItem(
+        CLAVE_CLIENTES_OFFLINE,
+        JSON.stringify(cache)
+    );
+}
+
+
+function obtenerClientesOffline() {
+
+    try {
+
+        const cache = JSON.parse(
+            localStorage.getItem(CLAVE_CLIENTES_OFFLINE) || "null"
+        );
+
+        if (
+            !cache ||
+            !Array.isArray(cache.clientes)
+        ) {
+            return [];
+        }
+
+        return cache.clientes;
+
+    } catch (error) {
+
+        return [];
+    }
+}
+
+// ==========================================================
 // INICIO OXITRACK
 // GPS + OFFLINE + SERVICIOS + BUSCADOR DE CLIENTES
 // ==========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-
     // ------------------------------------------------------
     // 1. Iniciar GPS
     // ------------------------------------------------------
     capturarUbicacionGps();
-
-
     // ------------------------------------------------------
     // 2. Intentar sincronizar registros pendientes offline
     // ------------------------------------------------------
     intentarSincronizarOffline();
+    // ------------------------------------------------------
+    // ACTUALIZAR CACHE LOCAL DE CLIENTES SI HAY INTERNET
+    // ------------------------------------------------------
 
+    if (navigator.onLine) {
+
+        try {
+
+            const respuestaClientes = await fetch(
+                WORKER_URL + "?syncClientes=1"
+            );
+
+            const datosClientes =
+                await respuestaClientes.json();
+
+            if (
+                datosClientes.ok === true &&
+                Array.isArray(datosClientes.clientes)
+            ) {
+
+                guardarClientesOffline(
+                    datosClientes.clientes
+                );
+
+                console.log(
+                    "Catálogo local de clientes actualizado."
+                );
+            }
+
+        } catch (error) {
+
+            console.warn(
+                "No fue posible actualizar el catálogo local de clientes."
+            );
+        }
+    }
 
     // ------------------------------------------------------
     // 3. Cargar solamente los SERVICIOS al iniciar
@@ -70,21 +146,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 4. BUSCADOR DE CLIENTES
     // ======================================================
 
-    const inputCliente =
-        document.getElementById("cliente");
-
-    const inputClienteId =
-        document.getElementById("clienteId");
-
-    const datalistClientes =
-        document.getElementById("listaEmpresas");
-
+    const inputCliente = document.getElementById("cliente");
+    const inputClienteId = document.getElementById("clienteId");
+    const datalistClientes = document.getElementById("listaEmpresas");
 
     let clientesEncontrados = [];
-
     let temporizadorBusqueda = null;
-
-
     // ------------------------------------------------------
     // BUSCAR CUANDO EL OPERARIO ESCRIBA
     // ------------------------------------------------------
@@ -116,62 +183,138 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Esperamos 300 ms para no llamar al Worker
         // por cada tecla que escribe.
-        temporizadorBusqueda =
-            setTimeout(async () => {
+        temporizadorBusqueda = setTimeout(async () => {
 
-                try {
+        try {
 
-                    const respuesta =
-                        await fetch(
-                            WORKER_URL +
-                            "?buscar=" +
-                            encodeURIComponent(textoBusqueda)
-                        );
+            let listaResultados = [];
 
 
-                    const datos =
-                        await respuesta.json();
+            // ==================================================
+            // CON INTERNET: CONSULTAR WORKER
+            // ==================================================
 
+            if (navigator.onLine) {
 
-                    datalistClientes.innerHTML = "";
-
-                    clientesEncontrados = [];
-
-
-                    if (
-                        datos &&
-                        datos.clientes &&
-                        Array.isArray(datos.clientes)
-                    ) {
-
-                        clientesEncontrados =
-                            datos.clientes;
-
-
-                        datos.clientes.forEach(item => {
-
-                            const opcion =
-                                document.createElement("option");
-
-                            opcion.value =
-                                item.nombre;
-
-                            datalistClientes
-                                .appendChild(opcion);
-                        });
-                    }
-
-                } catch (error) {
-
-                    console.error(
-                        "Error al buscar empresas:",
-                        error
+                const respuesta =
+                    await fetch(
+                        WORKER_URL +
+                        "?buscar=" +
+                        encodeURIComponent(textoBusqueda)
                     );
+
+                const datos =
+                    await respuesta.json();
+
+                if (
+                    datos &&
+                    Array.isArray(datos.clientes)
+                ) {
+
+                    listaResultados =
+                        datos.clientes;
                 }
 
-            }, 300);
 
+            // ==================================================
+            // SIN INTERNET: CONSULTAR CACHE LOCAL
+            // ==================================================
+
+            } else {
+
+                const clientesLocales =
+                    obtenerClientesOffline();
+
+                const textoNormalizado =
+                    textoBusqueda.toLowerCase();
+
+                listaResultados =
+                    clientesLocales
+                        .filter(item =>
+                            String(item.nombre || "")
+                                .toLowerCase()
+                                .includes(textoNormalizado)
+                        )
+                        .slice(0, 10);
+            }
+
+
+            // ==================================================
+            // MOSTRAR RESULTADOS
+            // ==================================================
+
+            datalistClientes.innerHTML = "";
+
+            clientesEncontrados =
+                listaResultados;
+
+
+            listaResultados.forEach(item => {
+
+                const opcion =
+                    document.createElement("option");
+
+                opcion.value =
+                    item.nombre;
+
+                datalistClientes
+                    .appendChild(opcion);
+            });
+
+        } catch (error) {
+
+            // Si parecía haber internet pero falló la petición,
+            // hacemos respaldo automático con la cache local.
+
+            const clientesLocales =
+                obtenerClientesOffline();
+
+            const textoNormalizado =
+                textoBusqueda.toLowerCase();
+
+            const resultadosLocales =
+                clientesLocales
+                    .filter(item =>
+                        String(item.nombre || "")
+                            .toLowerCase()
+                            .includes(textoNormalizado)
+                    )
+                    .slice(0, 10);
+
+
+            datalistClientes.innerHTML = "";
+
+            clientesEncontrados =
+                resultadosLocales;
+
+
+            resultadosLocales.forEach(item => {
+
+                const opcion =
+                    document.createElement("option");
+
+                opcion.value =
+                    item.nombre;
+
+                datalistClientes
+                    .appendChild(opcion);
+        
     });
+
+
+            console.warn(
+                "Búsqueda realizada desde catálogo offline."
+            );
+        }
+
+        // Cierra setTimeout de la búsqueda
+        }, 300);
+
+    }); // Cierra inputCliente.addEventListener("input")
+
+
+    // ------------------------------------------------------
+    // GUARDAR EL ID CUANDO SELECCIONA UNA EMPRESA
 
 
     // ------------------------------------------------------
