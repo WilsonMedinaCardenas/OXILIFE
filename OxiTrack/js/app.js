@@ -356,7 +356,6 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     const payload = new FormData();
 
     payload.append("cliente", cliente);
-    payload.append("clienteId", clienteIdSeleccionado);
     payload.append("servicio", servicio);
     payload.append("paciente", paciente);
     payload.append("entrega07", e07);
@@ -368,6 +367,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("gps", coordenadasGPS);
     const clienteIdSeleccionado = document.getElementById("clienteId").value.trim();
     if (!clienteIdSeleccionado) { alert("Debe seleccionar una empresa válida de la lista."); return;}
+    payload.append("clienteId", clienteIdSeleccionado);
     payload.append("firma", blobFirma, "firma.png");
 
     try {
