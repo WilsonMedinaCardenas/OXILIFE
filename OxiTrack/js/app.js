@@ -3,7 +3,6 @@ const WORKER_URL = "https://oxilife.cl/api/oxitrack/";
 
 // Variable global para retener las coordenadas GPS de forma indestructible
 let coordenadasGPS = "Buscando señal GPS...";
-let baseDatosClientes = [];
 
 // ==========================================================
 // INICIO OXITRACK
@@ -212,6 +211,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 // Lanzar rastreo si el celular vuelve a recuperar internet estando abierto
 window.addEventListener("online", intentarSincronizarOffline); // ACTIVADO DE FORMA CORRECTA
 
+// ==========================================================
+// REINTENTAR CUANDO EL OPERARIO REGRESA A OXITRACK
+// ==========================================================
+
+document.addEventListener("visibilitychange", () => {
+        if ( document.visibilityState === "visible" && navigator.onLine) {
+            intentarSincronizarOffline();
+            }
+        }
+);
+
 // Función nativa optimizada para smartphones en terreno
 function capturarUbicacionGps() {
     if (navigator.geolocation) {
@@ -308,12 +318,6 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     const cliente = document.getElementById("cliente").value;
     const servicio = document.getElementById("servicio").value;
     const paciente = document.getElementById("paciente").value.toUpperCase();
-     // CAPTURA EL EMAIL OCULTO POR DETRÁS EN BASE AL NOMBRE SELECCIONADO
-    const mapeoCliente = baseDatosClientes.find(item => item.nombre.trim() === cliente.trim());
-    const emailDetectado = mapeoCliente ? mapeoCliente.email : "";
-    // alert("🔍 DIAGNÓSTICO: El sistema detectó para " + cliente + " el correo: " + (emailDetectado || "VACÍO/NO ENCONTRADO"));
-
-
 
     // POPUP ENRIQUECIDO DE CONTROL DE CILINDROS
     const mensajeConfirmacion = 
@@ -352,9 +356,9 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     const payload = new FormData();
 
     payload.append("cliente", cliente);
+    payload.append("clienteId", clienteIdSeleccionado);
     payload.append("servicio", servicio);
     payload.append("paciente", paciente);
-    payload.append("operario", document.getElementById("operario").value.toUpperCase());
     payload.append("entrega07", e07);
     payload.append("entrega10", e10);
     payload.append("retiro07", r07);
@@ -363,12 +367,8 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("dispositivo", navigator.userAgent);
     payload.append("gps", coordenadasGPS);
     const clienteIdSeleccionado = document.getElementById("clienteId").value.trim();
-    if (!clienteIdSeleccionado) {
-        alert("Debe seleccionar una empresa válida de la lista.");
-        return;}
-    payload.append("clienteId", clienteIdSeleccionado);
+    if (!clienteIdSeleccionado) { alert("Debe seleccionar una empresa válida de la lista."); return;}
     payload.append("firma", blobFirma, "firma.png");
-
 
     try {
 
@@ -407,11 +407,11 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     );
         
         // 🛡️ INYECTOR QUIRÚRGICO OFFLINE (GUARDA EN EL STORE DEL CELULAR SI SE PIERDE LA SEÑAL)
-        const registroOffline = {
+        const registroOffline = { 
             cliente: cliente,
+            clienteId: clienteIdSeleccionado,
             servicio: servicio,
             paciente: paciente,
-            operario: document.getElementById("operario").value.toUpperCase(),
             entrega07: e07,
             entrega10: e10,
             retiro07: r07,
@@ -419,7 +419,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
             observaciones: document.getElementById("obs").value.toUpperCase(),
             dispositivo: navigator.userAgent,
             gps: coordenadasGPS,
-            emailCliente: emailDetectado,
+            fechaRegistroOffline: new Date().toISOString(),
             firmaBase64: base64Limpio
         };
 
@@ -436,71 +436,239 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 });
 
 // 🛡️ SINCRONIZADOR EN SEGUNDO PLANO (CORREGIDO ASÍNCRONO & INMUNE A ERRORES)
+// ==========================================================
+// SINCRONIZADOR DE REGISTROS OFFLINE
+// ==========================================================
+
 async function intentarSincronizarOffline() {
-    let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
-    if (registrosGuardados.length === 0) return;
 
-    console.log(`Sincronizador: Procesando ${registrosGuardados.length} envíos diferidos...`);
+    // ------------------------------------------------------
+    // 1. LEER REGISTROS PENDIENTES
+    // ------------------------------------------------------
 
-    // Intentamos forzar una actualización rápida del GPS de forma controlada
-    if (navigator.geolocation) {
-        try {
-            const pos = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 3000 });
-            });
-            coordenadasGPS = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-            console.log("Sincronizador: GPS de superficie capturado con éxito.");
-        } catch (e) {
-            console.log("Sincronizador: Usando ubicación fija o guardada en caché.");
-        }
+    let registrosGuardados = JSON.parse(
+        localStorage.getItem("oxitrack_offline") || "[]"
+    );
+
+    if (registrosGuardados.length === 0) {
+        return;
     }
 
-    // Recorremos el bucle de atrás hacia adelante para poder borrar elementos de forma segura
-    for (let i = registrosGuardados.length - 1; i >= 0; i--) {
+
+    // Si el navegador todavía considera que no hay conexión,
+    // ni siquiera intentamos sincronizar.
+    if (!navigator.onLine) {
+
+        console.log(
+            "Sincronizador: aún no hay conexión. Registros conservados."
+        );
+
+        return;
+    }
+
+
+    console.log(
+        `Sincronizador: Procesando ${registrosGuardados.length} envíos diferidos...`
+    );
+
+
+    // ------------------------------------------------------
+    // 2. PROCESAR DE ATRÁS HACIA ADELANTE
+    // ------------------------------------------------------
+
+    for (
+        let i = registrosGuardados.length - 1;
+        i >= 0;
+        i--
+    ) {
+
         const reg = registrosGuardados[i];
-        
+
+
+        // --------------------------------------------------
+        // GPS DEL REGISTRO OFFLINE
+        // --------------------------------------------------
+
         let gpsFinal = reg.gps || "No disponible";
-        if ((gpsFinal.includes("Buscando") || gpsFinal.includes("no disponible") || gpsFinal.includes("agotado")) && !coordenadasGPS.includes("Buscando")) {
-            gpsFinal = coordenadasGPS + " (En superficie al recuperar señal)";
+
+        // Verificamos si realmente tenemos coordenadas válidas.
+        // Ejemplo válido:
+        // -33.412345, -70.598765
+        const gpsOriginalValido = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(String(gpsFinal).trim());
+
+
+        // --------------------------------------------------
+        // SI NO HUBO GPS AL MOMENTO DEL REGISTRO,
+        // INTENTAR CAPTURAR UNA UBICACIÓN AL RECUPERAR SEÑAL
+        // --------------------------------------------------
+
+        if (!gpsOriginalValido && navigator.geolocation) {
+
+            try {
+
+                const posicionRecuperada =
+                    await new Promise((resolve, reject) => {
+
+                        navigator.geolocation.getCurrentPosition(
+                            resolve,
+                            reject,
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 8000,
+                                maximumAge: 0
+                            }
+                        );
+
+                    });
+
+
+                const lat =
+                    posicionRecuperada.coords.latitude;
+
+                const lng =
+                    posicionRecuperada.coords.longitude;
+
+
+                gpsFinal =
+                    `${lat}, ${lng} (Ubicación capturada al recuperar señal)`;
+
+
+                console.log(
+                    "Sincronizador: ubicación recuperada después del registro offline."
+                );
+
+
+            } catch (errorGps) {
+
+                gpsFinal = "No disponible";
+
+                console.warn(
+                    "Sincronizador: no fue posible obtener ubicación al recuperar señal."
+                );
+            }
         }
+
+
+        // --------------------------------------------------
+        // 3. RECONSTRUIR FORMDATA
+        // --------------------------------------------------
 
         const payloadOffline = new FormData();
-        payloadOffline.append("cliente", reg.cliente);
-        payloadOffline.append("servicio", reg.servicio);
-        payloadOffline.append("paciente", reg.paciente);
-        payloadOffline.append("operario", reg.operario);
-        payloadOffline.append("entrega07", reg.entrega07);
-        payloadOffline.append("entrega10", reg.entrega10);
-        payloadOffline.append("retiro07", reg.retiro07);
-        payloadOffline.append("retiro10", reg.retiro10);
-        payloadOffline.append("observaciones", reg.observaciones + " Sincronizado offline");
-        payloadOffline.append("dispositivo", reg.dispositivo);
-        payloadOffline.append("gps", gpsFinal);
-        payloadOffline.append("emailCliente", reg.emailCliente);
 
-        const caracteresBinarios = atob(reg.firmaBase64);
+        payloadOffline.append("cliente", reg.cliente || "");
+        payloadOffline.append("clienteId", reg.clienteId || "");
+        payloadOffline.append("servicio", reg.servicio || "");
+        payloadOffline.append("paciente", reg.paciente || "");
+        payloadOffline.append("entrega07", reg.entrega07 || "0");
+        payloadOffline.append("entrega10", reg.entrega10 || "0");
+        payloadOffline.append("retiro07", reg.retiro07 || "0");
+        payloadOffline.append("retiro10", reg.retiro10 || "0");
+        payloadOffline.append("observaciones", (reg.observaciones || "") + " Sincronizado offline");
+        payloadOffline.append("dispositivo", reg.dispositivo || "");
+        payloadOffline.append("gps", gpsFinal);
+        // Guardamos también cuándo se creó originalmente.
+        payloadOffline.append("fechaRegistroOffline", reg.fechaRegistroOffline || "");
+
+        // --------------------------------------------------
+        // 4. RECONSTRUIR FIRMA PNG
+        // --------------------------------------------------
+
+        const caracteresBinarios =atob(reg.firmaBase64);
+
         const arrayConBytes = new Uint8Array(caracteresBinarios.length);
+
         for (let j = 0; j < caracteresBinarios.length; j++) {
-            arrayConBytes[j] = caracteresBinarios.charCodeAt(j);
-        }
-        const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
+                arrayConBytes[j] =
+                caracteresBinarios.charCodeAt(j);
+            }
+
+
+        const blobFirma = new Blob(
+                [arrayConBytes],
+                { type: "image/png" }
+            );
+
         payloadOffline.append("firma", blobFirma, "firma.png");
+        // --------------------------------------------------
+        // 5. INTENTAR SINCRONIZAR
+        // --------------------------------------------------
 
         try {
-            // Enviamos la petición esperando su respuesta de forma síncrona
-            const res = await fetch(WORKER_URL, { method: "POST", body: payloadOffline });
-            
-            if (res.ok) {
-                // CORRECCIÓN ORTOGRÁFICA: Eliminada la 'g' fantasma para que la variable limpie el store de forma correcta
-                registrosGuardados.splice(i, 1);
-                localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
-                console.log(`✅ Registro diferido de ${reg.cliente} sincronizado con éxito.`);
-            } else {
-                console.error("El servidor rechazó la sincronización. Código:", res.status);
+
+            const res = await fetch(
+                WORKER_URL,
+                {
+                    method: "POST",
+                    body: payloadOffline
+                }
+            );
+            // ------------------------------------------------
+            // NO CONFIAR ÚNICAMENTE EN res.ok
+            // ------------------------------------------------
+            let resultado;
+
+            try {
+
+                resultado = await res.json();
+
+            } catch (errorJson) {
+
+                console.error(
+                    "Sincronizador: el servidor no devolvió JSON válido. " +
+                    "El registro se conservará."
+                );
+
+                break;
             }
+
+            // ------------------------------------------------
+            // BORRAR SOLO SI EL WORKER CONFIRMA ok:true
+            // ------------------------------------------------
+
+            if (
+                res.ok &&
+                resultado &&
+                resultado.ok === true
+            ) {
+
+                registrosGuardados.splice(i, 1);
+
+                localStorage.setItem(
+                    "oxitrack_offline",
+                    JSON.stringify(
+                        registrosGuardados
+                    )
+                );
+
+
+                console.log(
+                    `✅ Registro diferido de ${reg.cliente} sincronizado con éxito.`
+                );
+
+            } else {
+
+                console.error(
+                    "❌ El Worker rechazó el registro offline:",
+                    resultado?.error ||
+                    "Error desconocido"
+                );
+
+                // NO eliminamos nada.
+                // Queda pendiente para otro intento.
+                break;
+            }
+
         } catch (err) {
-            console.error("El reintento offline falló por inestabilidad. Se reintentará en la próxima ventana de red.");
-            break; // Rompe el ciclo si la señal sigue inestable para no saturar el celular
+
+            console.error(
+                "Sincronizador: volvió a fallar la conexión. " +
+                "El registro permanecerá guardado."
+            );
+
+
+            // Detenemos el resto para no generar múltiples
+            // intentos con una conexión inestable.
+            break;
         }
     }
 }
