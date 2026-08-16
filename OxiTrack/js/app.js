@@ -350,6 +350,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 
     // Construcción del FormData dinámico con las nuevas propiedades
     const payload = new FormData();
+
     payload.append("cliente", cliente);
     payload.append("servicio", servicio);
     payload.append("paciente", paciente);
@@ -361,7 +362,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("observaciones", document.getElementById("obs").value.toUpperCase());
     payload.append("dispositivo", navigator.userAgent);
     payload.append("gps", coordenadasGPS);
-    const clienteIdSeleccionado = document.getElementById("clienteId").value;
+    const clienteIdSeleccionado = document.getElementById("clienteId").value.trim();
     if (!clienteIdSeleccionado) {
         alert("Debe seleccionar una empresa válida de la lista.");
         return;}
