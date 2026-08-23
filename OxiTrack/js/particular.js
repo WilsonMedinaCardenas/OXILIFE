@@ -69,6 +69,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     selectServicio.addEventListener("change", async () => {
         const servicio = selectServicio.value.trim();
 
+        actualizarVistaSegunServicio(servicio);
+
         inputPacienteId.value = "";
         pacientesDisponibles = [];
         selectPaciente.disabled = true;
@@ -209,7 +211,7 @@ async function cargarElementos(tipo) {
 
             fila.innerHTML = `
                 <label class="elemento-nombre">${elemento}</label>
-                <div class="elemento-contador">
+                <div class="contador elemento-contador">
                     <button type="button" class="btn-elemento-menos" data-index="${index}">−</button>
                     <input id="elemento-${index}" value="0" readonly>
                     <button type="button" class="btn-elemento-mas" data-index="${index}">+</button>
@@ -261,6 +263,26 @@ function limpiarElementos() {
 
     if (lista) lista.innerHTML = "";
     if (seccion) seccion.hidden = true;
+}
+
+// ==========================================================
+// MOSTRAR / OCULTAR SECCIONES SEGÚN SERVICIO
+// ==========================================================
+
+function actualizarVistaSegunServicio(servicio) {
+    const seccionCilindros = document.getElementById("seccionCilindros");
+    const esImplementacion = String(servicio || "").toLowerCase().includes("implement");
+
+    if (seccionCilindros) seccionCilindros.hidden = esImplementacion;
+
+    if (esImplementacion) {
+        ["e07", "e10", "r07", "r10"].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.value = "0";
+        });
+    } else {
+        limpiarElementos();
+    }
 }
 
 
