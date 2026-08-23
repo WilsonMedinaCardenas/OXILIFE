@@ -234,3 +234,250 @@ background:#f7f7f7;
     font-size: 14px !important;
 }
 
+/* ==========================================================
+   MENU PRINCIPAL OXITRACK
+   ========================================================== */
+
+.menu-oxitrack {
+    width: 100%;
+    max-width: 420px;
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.menu-logo {
+    width: 190px;
+    max-width: 70%;
+    height: auto;
+    margin-bottom: 45px;
+}
+
+.menu-botones {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.menu-boton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    min-height: 64px;
+
+    border-radius: 12px;
+    text-decoration: none;
+
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.menu-boton:active {
+    transform: scale(0.98);
+}
+
+/* COLORES PROVISORIOS */
+
+.menu-particular {
+    background: #611e63;
+    color: white;
+}
+
+.menu-empresa {
+    background: #333333;
+    color: white;
+}
+
+@media (max-width: 480px) {
+
+    .menu-oxitrack {
+        padding: 25px 20px;
+    }
+
+    .menu-logo {
+        width: 165px;
+        margin-bottom: 35px;
+    }
+
+    .menu-boton {
+        min-height: 60px;
+        font-size: 16px;
+    }
+}
+
+/* ==========================================================
+   OXITRACK - FORMULARIO PARTICULAR
+   ========================================================== */
+
+
+/* ----------------------------------------------------------
+   CONTENEDOR
+   ---------------------------------------------------------- */
+
+.particular-contenedor {
+    width: 100%;
+}
+
+
+/* ----------------------------------------------------------
+   SELECTS SERVICIO / PACIENTE
+   ---------------------------------------------------------- */
+
+.select-particular {
+    width: 100%;
+    min-height: 48px;
+
+    padding: 10px 12px;
+
+    margin-top: 6px;
+    margin-bottom: 18px;
+
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    font-size: 16px;
+    font-family: inherit;
+
+    cursor: pointer;
+}
+
+
+/* Estado deshabilitado del selector Paciente */
+
+.select-particular:disabled {
+    background: #eeeeee;
+    color: #777777;
+    cursor: not-allowed;
+}
+
+
+/* Foco */
+
+.select-particular:focus {
+    outline: none;
+    border-width: 2px;
+}
+
+
+/* ==========================================================
+   BLOQUE FOTOGRAFÍA
+   ========================================================== */
+
+.bloque-foto {
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 25px;
+}
+
+
+/* Texto explicativo */
+
+.texto-ayuda-foto {
+    margin: 5px 0 10px 0;
+
+    font-size: 13px;
+    line-height: 1.4;
+
+    color: #666666;
+}
+
+
+/* Input fotografía */
+
+.input-foto {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    font-size: 14px;
+}
+
+
+/* ==========================================================
+   VISTA PREVIA FOTOGRAFÍA
+   ========================================================== */
+
+.preview-foto-contenedor {
+    width: 100%;
+
+    margin-top: 15px;
+
+    text-align: center;
+}
+
+
+.preview-foto {
+    display: block;
+
+    width: 100%;
+    max-height: 320px;
+
+    margin: 0 auto 12px auto;
+
+    object-fit: contain;
+
+    border-radius: 10px;
+
+    border: 1px solid #dddddd;
+
+    background: #f5f5f5;
+}
+
+
+/* Botón para quitar fotografía */
+
+.btn-eliminar-foto {
+    width: 100%;
+    min-height: 44px;
+
+    border: none;
+    border-radius: 8px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    background: #e8e8e8;
+    color: #333333;
+}
+
+
+.btn-eliminar-foto:active {
+    transform: scale(0.99);
+}
+
+
+/* ==========================================================
+   RESPONSIVE MÓVIL
+   ========================================================== */
+
+@media (max-width: 480px) {
+
+    .select-particular {
+        min-height: 52px;
+        font-size: 16px;
+    }
+
+    .input-foto {
+        min-height: 52px;
+    }
+
+    .preview-foto {
+        max-height: 280px;
+    }
+
+}

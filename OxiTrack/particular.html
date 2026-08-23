@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>OxiTrack - Particular</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <div class="contenedor particular-contenedor">
+
+        <!-- ==================================================
+             CABECERA
+             ================================================== -->
+
+        <div class="cabecera-logo">
+
+            <img
+                src="../assets/img/favicon.png"
+                alt="Logo Oxilife"
+                class="logo-marca"
+            >
+
+            <div class="textos-cabecera">
+
+                <h1>OxiTrack</h1>
+
+                <p class="subtitulo">
+                    Registro Particular
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             FORMULARIO PARTICULAR
+             ================================================== -->
+
+        <form id="formularioParticular">
+
+
+            <!-- ==================================================
+                 SERVICIO
+                 PRIMER CAMPO PORQUE DETERMINA QUÉ HOJA CONSULTAR
+                 ================================================== -->
+
+            <label for="servicioParticular">
+                Servicio
+            </label>
+
+            <select
+                id="servicioParticular"
+                class="select-particular"
+                required
+            >
+
+                <option value="">
+                    Seleccione el tipo de servicio...
+                </option>
+
+            </select>
+
+
+            <!-- ==================================================
+                 PACIENTE
+                 SE LLENA DESPUÉS DE SELECCIONAR SERVICIO
+                 ================================================== -->
+
+            <label for="pacienteParticular">
+                Paciente
+            </label>
+
+            <select
+                id="pacienteParticular"
+                class="select-particular"
+                required
+                disabled
+            >
+
+                <option value="">
+                    Primero seleccione un servicio...
+                </option>
+
+            </select>
+
+
+            <!-- ID INTERNO DEL REGISTRO/PACIENTE -->
+            <input
+                type="hidden"
+                id="pacienteId"
+            >
+
+
+            <!-- ==================================================
+                 ENTREGADOS
+                 ================================================== -->
+
+            <div class="titulo">
+                ENTREGADOS
+            </div>
+
+
+            <label>
+                Cilindros 0.7 m³
+            </label>
+
+            <div class="contador">
+
+                <button
+                    type="button"
+                    onclick="disminuir('e07')"
+                >
+                    −
+                </button>
+
+                <input
+                    id="e07"
+                    value="0"
+                    readonly
+                >
+
+                <button
+                    type="button"
+                    onclick="aumentar('e07')"
+                >
+                    +
+                </button>
+
+            </div>
+
+
+            <label>
+                Cilindros 10 m³
+            </label>
+
+            <div class="contador">
+
+                <button
+                    type="button"
+                    onclick="disminuir('e10')"
+                >
+                    −
+                </button>
+
+                <input
+                    id="e10"
+                    value="0"
+                    readonly
+                >
+
+                <button
+                    type="button"
+                    onclick="aumentar('e10')"
+                >
+                    +
+                </button>
+
+            </div>
+
+
+            <!-- ==================================================
+                 RETIRADOS
+                 ================================================== -->
+
+            <div class="titulo">
+                RETIRADOS
+            </div>
+
+
+            <label>
+                Cilindros 0.7 m³
+            </label>
+
+            <div class="contador">
+
+                <button
+                    type="button"
+                    onclick="disminuir('r07')"
+                >
+                    −
+                </button>
+
+                <input
+                    id="r07"
+                    value="0"
+                    readonly
+                >
+
+                <button
+                    type="button"
+                    onclick="aumentar('r07')"
+                >
+                    +
+                </button>
+
+            </div>
+
+
+            <label>
+                Cilindros 10 m³
+            </label>
+
+            <div class="contador">
+
+                <button
+                    type="button"
+                    onclick="disminuir('r10')"
+                >
+                    −
+                </button>
+
+                <input
+                    id="r10"
+                    value="0"
+                    readonly
+                >
+
+                <button
+                    type="button"
+                    onclick="aumentar('r10')"
+                >
+                    +
+                </button>
+
+            </div>
+
+
+            <!-- ==================================================
+                 OBSERVACIONES
+                 ================================================== -->
+
+            <label for="obs">
+                Observaciones
+            </label>
+
+            <textarea
+                id="obs"
+                placeholder="Observaciones del servicio..."
+            ></textarea>
+
+
+            <!-- ==================================================
+                 FOTOGRAFÍA
+                 ================================================== -->
+
+            <div class="bloque-foto">
+
+                <label for="fotoServicio">
+                    Fotografía
+                </label>
+
+                <p class="texto-ayuda-foto">
+                    Tome una fotografía como respaldo del servicio.
+                </p>
+
+                <input
+                    type="file"
+                    id="fotoServicio"
+                    class="input-foto"
+                    accept="image/*"
+                    capture="environment"
+                >
+
+                <!-- Vista previa -->
+                <div
+                    id="contenedorPreviewFoto"
+                    class="preview-foto-contenedor"
+                    hidden
+                >
+
+                    <img
+                        id="previewFoto"
+                        class="preview-foto"
+                        alt="Vista previa de la fotografía"
+                    >
+
+                    <button
+                        type="button"
+                        id="btnEliminarFoto"
+                        class="btn-eliminar-foto"
+                    >
+                        Eliminar Foto
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================================
+                 FIRMA
+                 ================================================== -->
+
+            <label>
+                Firma Cliente
+            </label>
+
+            <canvas id="firma"></canvas>
+
+
+            <!-- ==================================================
+                 BOTONES
+                 ================================================== -->
+
+            <button
+                type="submit"
+                id="btnEnviar"
+            >
+                Enviar Registro
+            </button>
+
+
+            <button
+                type="button"
+                id="btnLimpiar"
+            >
+                Limpiar Firma
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- SIGNATURE PAD -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"
+    ></script>
+
+
+    <!-- JS EXCLUSIVO PARA PARTICULARES -->
+    <script src="js/particular.js"></script>
+
+</body>
+
+</html>
