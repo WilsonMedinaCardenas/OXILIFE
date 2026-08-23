@@ -10,6 +10,7 @@ let coordenadasGPS = "Buscando señal GPS...";
 let pacientesDisponibles = [];
 let fotoSeleccionada = null;
 let signaturePad = null;
+let elementosDisponibles = [];
 
 
 // ==========================================================
@@ -81,9 +82,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         await cargarUltimosPacientes(servicio, selectPaciente);
     });
 
-    selectPaciente.addEventListener("change", () => {
+    selectPaciente.addEventListener("change", async () => {
         const paciente = pacientesDisponibles.find(item => String(item.id) === String(selectPaciente.value));
         inputPacienteId.value = paciente ? paciente.id : "";
+
+        const servicio = selectServicio.value.trim().toLowerCase();
+        const esImplementacion = servicio.includes("implement");
+
+        if (paciente && esImplementacion && paciente.tipo) {
+            await cargarElementos(paciente.tipo);
+        } else {
+            limpiarElementos();
+        }
     });
 });
 
@@ -163,6 +173,94 @@ async function cargarUltimosPacientes(servicio, selectPaciente) {
     });
 
     selectPaciente.disabled = false;
+}
+
+// ==========================================================
+// ELEMENTOS SEGÚN TIPO DE IMPLEMENTACIÓN
+// ==========================================================
+
+async function cargarElementos(tipo) {
+    const seccion = document.getElementById("seccionElementos");
+    const lista = document.getElementById("listaElementos");
+
+    elementosDisponibles = [];
+    lista.innerHTML = "";
+    seccion.hidden = true;
+
+    try {
+        const respuesta = await fetch(`${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`);
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || datos.ok !== true || !Array.isArray(datos.elementos)) {
+            throw new Error(datos.error || "No fue posible obtener los elementos.");
+        }
+
+        elementosDisponibles = datos.elementos;
+
+        if (!elementosDisponibles.length) {
+            lista.innerHTML = `<p>No hay elementos configurados para este tipo.</p>`;
+            seccion.hidden = false;
+            return;
+        }
+
+        elementosDisponibles.forEach((elemento, index) => {
+            const fila = document.createElement("div");
+            fila.className = "elemento-fila";
+
+            fila.innerHTML = `
+                <label class="elemento-nombre">${elemento}</label>
+                <div class="elemento-contador">
+                    <button type="button" class="btn-elemento-menos" data-index="${index}">−</button>
+                    <input id="elemento-${index}" value="0" readonly>
+                    <button type="button" class="btn-elemento-mas" data-index="${index}">+</button>
+                </div>
+            `;
+
+            lista.appendChild(fila);
+        });
+
+        lista.querySelectorAll(".btn-elemento-menos").forEach(btn => {
+            btn.addEventListener("click", () => cambiarCantidadElemento(Number(btn.dataset.index), -1));
+        });
+
+        lista.querySelectorAll(".btn-elemento-mas").forEach(btn => {
+            btn.addEventListener("click", () => cambiarCantidadElemento(Number(btn.dataset.index), 1));
+        });
+
+        seccion.hidden = false;
+
+    } catch (error) {
+        console.error("Error cargando elementos:", error);
+        limpiarElementos();
+        alert("No fue posible cargar los elementos de la implementación.");
+    }
+}
+
+function cambiarCantidadElemento(index, cambio) {
+    const input = document.getElementById(`elemento-${index}`);
+    if (!input) return;
+
+    const actual = parseInt(input.value, 10) || 0;
+    input.value = Math.max(0, Math.min(20, actual + cambio));
+}
+
+function obtenerElementosSeleccionados() {
+    return elementosDisponibles
+        .map((elemento, index) => ({
+            elemento: elemento,
+            cantidad: parseInt(document.getElementById(`elemento-${index}`)?.value || "0", 10)
+        }))
+        .filter(item => item.cantidad > 0);
+}
+
+function limpiarElementos() {
+    elementosDisponibles = [];
+
+    const seccion = document.getElementById("seccionElementos");
+    const lista = document.getElementById("listaElementos");
+
+    if (lista) lista.innerHTML = "";
+    if (seccion) seccion.hidden = true;
 }
 
 
@@ -316,6 +414,13 @@ function inicializarFormulario() {
             alert("Debe seleccionar un paciente válido.");
             return;
         }
+        const esImplementacion = servicio.toLowerCase().includes("implement");
+        const elementosSeleccionados = esImplementacion ? obtenerElementosSeleccionados() : [];
+
+        if (esImplementacion && elementosSeleccionados.length === 0) {
+            alert("Debe registrar al menos un elemento entregado en la implementación.");
+            return;
+        }
 
         if (!signaturePad || signaturePad.isEmpty()) {
             alert("Debe solicitar la firma del cliente.");
@@ -337,6 +442,7 @@ function inicializarFormulario() {
             payload.append("tipoCliente", "PARTICULAR");
             payload.append("servicio", servicio);
             payload.append("pacienteId", pacienteId);
+            payload.append("elementos", JSON.stringify(elementosSeleccionados));
             payload.append("paciente", pacienteNombre);
             payload.append("entrega07", e07);
             payload.append("entrega10", e10);
