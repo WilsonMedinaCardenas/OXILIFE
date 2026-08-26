@@ -210,7 +210,7 @@ async function cargarElementos(tipo) {
             fila.className = "elemento-fila";
 
             fila.innerHTML = `
-                <label class="elemento-nombre">${elemento}</label>
+                <label class="elemento-nombre">${elemento.elemento}</label>
                 <div class="contador elemento-contador">
                     <button type="button" class="btn-elemento-menos" data-index="${index}">−</button>
                     <input id="elemento-${index}" value="0" readonly>
@@ -248,9 +248,10 @@ function cambiarCantidadElemento(index, cambio) {
 
 function obtenerElementosSeleccionados() {
     return elementosDisponibles
-        .map((elemento, index) => ({
-            elemento: elemento,
-            cantidad: parseInt(document.getElementById(`elemento-${index}`)?.value || "0", 10)
+        .map((item, index) => ({
+            elemento: item.elemento,
+            cantidad: parseInt(document.getElementById(`elemento-${index}`)?.value || "0", 10),
+            recarga: item.recarga === true
         }))
         .filter(item => item.cantidad > 0);
 }
