@@ -263,51 +263,39 @@
                  FOTOGRAFÍA
                  ================================================== -->
 
-            <div class="bloque-foto">
+            <!-- ===================================================== -->
+            <!-- CÁMARA OXITRACK -->
+            <!-- IMPLEMENTACIÓN / RECARGA / VENTA -->
+            <!-- OCULTA EN RETIRO -->
+            <!-- ===================================================== -->
 
-                <label for="fotoServicio">
-                    Fotografía
-                </label>
+            <div id="seccionFotos" class="seccion-fotos">
 
-                <p class="texto-ayuda-foto">
-                    Tome una fotografía como respaldo del servicio.
+                <div class="titulo">EVIDENCIA FOTOGRÁFICA</div>
+
+                <p class="texto-foto">
+                    Tome al menos una fotografía del servicio realizado.
                 </p>
 
-                <input
-                    type="file"
-                    id="fotoServicio"
-                    class="input-foto"
-                    accept="image/*"
-                    capture="environment"
-                >
+                <!-- Vista en vivo de la cámara -->
+                <video id="vistaCamara" autoplay playsinline hidden></video>
 
-                <!-- Vista previa -->
-                <div
-                    id="contenedorPreviewFoto"
-                    class="preview-foto-contenedor"
-                    hidden
-                >
-
-                    <img
-                        id="previewFoto"
-                        class="preview-foto"
-                        alt="Vista previa de la fotografía"
-                    >
-
-                    <button
-                        type="button"
-                        id="btnEliminarFoto"
-                        class="btn-eliminar-foto"
-                    >
-                        Eliminar Foto
-                    </button>
-
+                <!-- Botones de cámara -->
+                <div class="botones-camara">
+                    <button type="button" id="btnAbrirCamara">Abrir Cámara</button>
+                    <button type="button" id="btnTomarFoto" hidden>Tomar Foto</button>
                 </div>
+
+                <!-- Previsualización de máximo 2 fotos -->
+                <div id="previewFotos" class="preview-fotos"></div>
+
+                <!-- Canvas interno para capturar la imagen -->
+                <canvas id="canvasFoto" hidden></canvas>
 
             </div>
 
 
-            <!-- ==================================================
+                <!-- ==================================================
                  FIRMA
                  ================================================== -->
 

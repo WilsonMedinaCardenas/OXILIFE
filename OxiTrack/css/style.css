@@ -495,3 +495,61 @@ background:#f7f7f7;
     margin-bottom: 7px;
     font-weight: 600;
 }
+
+/* ==========================================================
+   CÁMARA PARTICULAR
+   ========================================================== */
+
+.seccion-fotos {
+    margin-top: 22px;
+}
+
+.texto-foto {
+    margin: 8px 0 14px;
+    font-size: 14px;
+}
+
+#vistaCamara {
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+    border-radius: 10px;
+    background: #111;
+    margin-bottom: 12px;
+}
+
+.botones-camara {
+    display: grid;
+    gap: 10px;
+}
+
+.botones-camara button {
+    width: 100%;
+}
+
+.preview-fotos {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.foto-preview {
+    position: relative;
+}
+
+.foto-preview img {
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+}
+
+.foto-preview button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+}

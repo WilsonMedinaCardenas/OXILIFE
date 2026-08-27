@@ -8,7 +8,8 @@ const CLAVE_CACHE_PACIENTES = "oxitrack_particulares_cache";
 
 let coordenadasGPS = "Buscando señal GPS...";
 let pacientesDisponibles = [];
-let fotoSeleccionada = null;
+let streamCamara = null;
+let fotosCapturadas = [];
 let signaturePad = null;
 let elementosDisponibles = [];
 
@@ -59,6 +60,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     inicializarFirma();
     inicializarFotografia();
     inicializarFormulario();
+
+    document.getElementById("btnAbrirCamara").addEventListener("click", abrirCamara);
+    document.getElementById("btnTomarFoto").addEventListener("click", tomarFoto);   
 
     const selectServicio = document.getElementById("servicioParticular");
     const selectPaciente = document.getElementById("pacienteParticular");
@@ -270,22 +274,47 @@ function limpiarElementos() {
 // MOSTRAR / OCULTAR SECCIONES SEGÚN SERVICIO
 // ==========================================================
 
+// ==========================================================
+// MOSTRAR / OCULTAR SECCIONES SEGÚN SERVICIO
+// ==========================================================
+
 function actualizarVistaSegunServicio(servicio) {
+    const valor = String(servicio || "").trim().toLowerCase();
+
+    const esImplementacion = valor.includes("implement");
+    const esRecarga = valor.includes("recarga");
+    const esRetiro = valor.includes("retiro");
+    const esVenta = valor.includes("venta");
+
+    // IMPLEMENTACIÓN y VENTA no utilizan contadores normales.
+    const mostrarCilindros = esRecarga || esRetiro;
+
+    // RETIRO no utiliza fotografía.
+    const mostrarFotos = !esRetiro;
+
     const seccionCilindros = document.getElementById("seccionCilindros");
-    const esImplementacion = String(servicio || "").toLowerCase().includes("implement");
+    const seccionFotos = document.getElementById("seccionFotos");
 
-    if (seccionCilindros) seccionCilindros.hidden = esImplementacion;
+    if (seccionCilindros) seccionCilindros.hidden = !mostrarCilindros;
+    if (seccionFotos) seccionFotos.hidden = !mostrarFotos;
 
-    if (esImplementacion) {
+    // ELEMENTOS solamente pertenecen a IMPLEMENTACIÓN.
+    if (!esImplementacion) limpiarElementos();
+
+    // Si pasamos a Implementación o Venta, borramos cantidades
+    // antiguas que pudieran haber quedado de otro servicio.
+    if (!mostrarCilindros) {
         ["e07", "e10", "r07", "r10"].forEach(id => {
             const input = document.getElementById(id);
             if (input) input.value = "0";
         });
-    } else {
-        limpiarElementos();
     }
-}
 
+    // Al cambiar de servicio eliminamos fotografías anteriores.
+    fotosCapturadas = [];
+    pintarFotosCapturadas();
+    detenerCamara();
+}
 
 // ==========================================================
 // CONTADORES
@@ -414,6 +443,195 @@ function inicializarFormulario() {
         return;
     }
 
+    // ==========================================================
+    // CÁMARA PARTICULAR - MÁXIMO 2 FOTOS
+    // ==========================================================
+
+    async function abrirCamara() {
+        const video = document.getElementById("vistaCamara");
+        const btnTomar = document.getElementById("btnTomarFoto");
+
+        if (fotosCapturadas.length >= 2) {
+            alert("Ya se alcanzó el máximo de 2 fotografías.");
+            return;
+        }
+
+        try {
+            if (streamCamara) detenerCamara();
+
+            streamCamara = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: "environment" }
+                },
+                audio: false
+            });
+
+            video.srcObject = streamCamara;
+            video.hidden = false;
+            btnTomar.hidden = false;
+
+        } catch (error) {
+            console.error("No fue posible abrir la cámara:", error);
+            alert("No fue posible acceder a la cámara. Verifique los permisos del navegador.");
+        }
+    }
+
+
+    function detenerCamara() {
+        if (streamCamara) {
+            streamCamara.getTracks().forEach(track => track.stop());
+            streamCamara = null;
+        }
+
+        const video = document.getElementById("vistaCamara");
+        const btnTomar = document.getElementById("btnTomarFoto");
+
+        if (video) {
+            video.srcObject = null;
+            video.hidden = true;
+        }
+
+        if (btnTomar) btnTomar.hidden = true;
+    }
+
+
+    async function tomarFoto() {
+        if (!streamCamara || fotosCapturadas.length >= 2) return;
+
+        const video = document.getElementById("vistaCamara");
+        const canvas = document.getElementById("canvasFoto");
+
+        if (!video.videoWidth || !video.videoHeight) {
+            alert("La cámara todavía no está lista.");
+            return;
+        }
+
+        const anchoMaximo = 1280;
+        const escala = Math.min(1, anchoMaximo / video.videoWidth);
+
+        canvas.width = Math.round(video.videoWidth * escala);
+        canvas.height = Math.round(video.videoHeight * escala);
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.drawImage(
+            video,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const blob = await new Promise(resolve =>
+            canvas.toBlob(resolve, "image/jpeg", 0.82)
+        );
+
+        if (!blob) {
+            alert("No fue posible generar la fotografía.");
+            return;
+        }
+
+        fotosCapturadas.push(blob);
+
+        pintarFotosCapturadas();
+        detenerCamara();
+    }
+
+
+    function pintarFotosCapturadas() {
+        const contenedor = document.getElementById("previewFotos");
+
+        if (!contenedor) return;
+
+        contenedor.innerHTML = "";
+
+        fotosCapturadas.forEach((blob, index) => {
+            const url = URL.createObjectURL(blob);
+            const item = document.createElement("div");
+
+            item.className = "foto-preview";
+
+            item.innerHTML = `
+                <img src="${url}" alt="Foto ${index + 1}">
+                <button type="button" data-index="${index}">×</button>
+            `;
+
+            item.querySelector("button").addEventListener("click", () => {
+                URL.revokeObjectURL(url);
+
+                fotosCapturadas.splice(index, 1);
+
+                pintarFotosCapturadas();
+            });
+
+            contenedor.appendChild(item);
+        });
+
+        const btnAbrir = document.getElementById("btnAbrirCamara");
+
+        if (!btnAbrir) return;
+
+        if (fotosCapturadas.length === 0) {
+            btnAbrir.disabled = false;
+            btnAbrir.textContent = "Abrir Cámara";
+        }
+
+        if (fotosCapturadas.length === 1) {
+            btnAbrir.disabled = false;
+            btnAbrir.textContent = "Tomar Segunda Foto";
+        }
+
+        if (fotosCapturadas.length >= 2) {
+            btnAbrir.disabled = true;
+            btnAbrir.textContent = "Máximo 2 Fotos";
+        }
+    }
+
+    // ==========================================================
+    // CONFIRMACIÓN FINAL ANTES DEL ENVÍO
+    // ==========================================================
+
+    function confirmarEnvioParticular(datos) {
+        const servicio = String(datos.servicio || "").toUpperCase();
+
+        const esImplementacion = servicio.includes("IMPLEMENT");
+        const esVenta = servicio.includes("VENTA");
+
+        let resumen = "CONFIRMAR SERVICIO\n\n";
+
+        resumen += `Paciente: ${datos.paciente}\n`;
+        resumen += `Servicio: ${servicio}\n`;
+
+        if (esImplementacion && Array.isArray(datos.elementos)) {
+            resumen += "\nELEMENTOS ENTREGADOS:\n";
+
+            datos.elementos.forEach(item => {
+                resumen += `${item.cantidad} × ${item.elemento}\n`;
+            });
+        }
+
+        if (!esImplementacion && !esVenta) {
+            resumen += "\n";
+
+            resumen += `Entregados 0.7 m³: ${datos.e07}\n`;
+            resumen += `Entregados 10 m³: ${datos.e10}\n`;
+            resumen += `Retirados 0.7 m³: ${datos.r07}\n`;
+            resumen += `Retirados 10 m³: ${datos.r10}\n`;
+        }
+
+        if (!servicio.includes("RETIRO")) {
+            resumen += `\nFotografías: ${datos.fotos}\n`;
+        }
+
+        if (datos.observaciones) {
+            resumen += `\nObservaciones:\n${datos.observaciones}\n`;
+        }
+
+        resumen += "\n¿Confirma que la información es correcta?";
+
+        return window.confirm(resumen);
+    }
+
     formulario.addEventListener("submit", async event => {
         event.preventDefault();
 
@@ -427,6 +645,21 @@ function inicializarFormulario() {
         const r07 = document.getElementById("r07").value;
         const r10 = document.getElementById("r10").value;
         const observaciones = document.getElementById("obs").value.trim().toUpperCase();
+        const servicioNormalizado = servicio.toLowerCase();
+        const requiereFoto =
+            servicioNormalizado.includes("implement") ||
+            servicioNormalizado.includes("recarga") ||
+            servicioNormalizado.includes("venta");
+
+        if (requiereFoto && fotosCapturadas.length === 0) {
+            alert("Debe tomar al menos una fotografía antes de enviar el registro.");
+            return;
+        }
+
+        if (fotosCapturadas.length > 2) {
+            alert("Solo se permite un máximo de 2 fotografías.");
+            return;
+        }
 
         if (!servicio) {
             alert("Debe seleccionar un servicio.");
@@ -476,7 +709,39 @@ function inicializarFormulario() {
             payload.append("dispositivo", navigator.userAgent);
             payload.append("firma", blobFirma, "firma.png");
 
-            if (fotoSeleccionada) payload.append("foto", fotoSeleccionada, fotoSeleccionada.name || "foto-servicio.jpg");
+            if (fotosCapturadas[0]) {
+                payload.append(
+                    "foto",
+                    fotosCapturadas[0],
+                    "foto-servicio-1.jpg"
+                );
+            }
+
+            if (fotosCapturadas[1]) {
+                payload.append(
+                    "foto2",
+                    fotosCapturadas[1],
+                    "foto-servicio-2.jpg"
+                );
+            }
+
+            const confirmado = confirmarEnvioParticular({
+                servicio: servicio,
+                paciente: pacienteNombre,
+                elementos: elementosSeleccionados,
+                e07: e07,
+                e10: e10,
+                r07: r07,
+                r10: r10,
+                observaciones: observaciones,
+                fotos: fotosCapturadas.length
+            });
+
+            if (!confirmado) {
+                btn.disabled = false;
+                btn.textContent = "Enviar Registro";
+                return;
+            }
 
             const respuesta = await fetch(WORKER_URL, { method: "POST", body: payload });
             const resultado = await respuesta.json();
