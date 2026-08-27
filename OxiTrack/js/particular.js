@@ -58,11 +58,8 @@ function obtenerPacientesOffline(servicio) {
 document.addEventListener("DOMContentLoaded", async () => {
     capturarUbicacionGps();
     inicializarFirma();
-    inicializarFotografia();
+    inicializarCamara();
     inicializarFormulario();
-
-    document.getElementById("btnAbrirCamara").addEventListener("click", abrirCamara);
-    document.getElementById("btnTomarFoto").addEventListener("click", tomarFoto);   
 
     const selectServicio = document.getElementById("servicioParticular");
     const selectPaciente = document.getElementById("pacienteParticular");
@@ -89,7 +86,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     selectPaciente.addEventListener("change", async () => {
-        const paciente = pacientesDisponibles.find(item => String(item.id) === String(selectPaciente.value));
+        const paciente = pacientesDisponibles.find(
+            item => String(item.id) === String(selectPaciente.value)
+        );
+
         inputPacienteId.value = paciente ? paciente.id : "";
 
         const servicio = selectServicio.value.trim().toLowerCase();
@@ -181,6 +181,7 @@ async function cargarUltimosPacientes(servicio, selectPaciente) {
     selectPaciente.disabled = false;
 }
 
+
 // ==========================================================
 // ELEMENTOS SEGÚN TIPO DE IMPLEMENTACIÓN
 // ==========================================================
@@ -194,7 +195,10 @@ async function cargarElementos(tipo) {
     seccion.hidden = true;
 
     try {
-        const respuesta = await fetch(`${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`);
+        const respuesta = await fetch(
+            `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`
+        );
+
         const datos = await respuesta.json();
 
         if (!respuesta.ok || datos.ok !== true || !Array.isArray(datos.elementos)) {
@@ -215,6 +219,7 @@ async function cargarElementos(tipo) {
 
             fila.innerHTML = `
                 <label class="elemento-nombre">${elemento.elemento}</label>
+
                 <div class="contador elemento-contador">
                     <button type="button" class="btn-elemento-menos" data-index="${index}">−</button>
                     <input id="elemento-${index}" value="0" readonly>
@@ -226,11 +231,17 @@ async function cargarElementos(tipo) {
         });
 
         lista.querySelectorAll(".btn-elemento-menos").forEach(btn => {
-            btn.addEventListener("click", () => cambiarCantidadElemento(Number(btn.dataset.index), -1));
+            btn.addEventListener(
+                "click",
+                () => cambiarCantidadElemento(Number(btn.dataset.index), -1)
+            );
         });
 
         lista.querySelectorAll(".btn-elemento-mas").forEach(btn => {
-            btn.addEventListener("click", () => cambiarCantidadElemento(Number(btn.dataset.index), 1));
+            btn.addEventListener(
+                "click",
+                () => cambiarCantidadElemento(Number(btn.dataset.index), 1)
+            );
         });
 
         seccion.hidden = false;
@@ -254,7 +265,10 @@ function obtenerElementosSeleccionados() {
     return elementosDisponibles
         .map((item, index) => ({
             elemento: item.elemento,
-            cantidad: parseInt(document.getElementById(`elemento-${index}`)?.value || "0", 10),
+            cantidad: parseInt(
+                document.getElementById(`elemento-${index}`)?.value || "0",
+                10
+            ),
             recarga: item.recarga === true
         }))
         .filter(item => item.cantidad > 0);
@@ -270,9 +284,6 @@ function limpiarElementos() {
     if (seccion) seccion.hidden = true;
 }
 
-// ==========================================================
-// MOSTRAR / OCULTAR SECCIONES SEGÚN SERVICIO
-// ==========================================================
 
 // ==========================================================
 // MOSTRAR / OCULTAR SECCIONES SEGÚN SERVICIO
@@ -284,12 +295,7 @@ function actualizarVistaSegunServicio(servicio) {
     const esImplementacion = valor.includes("implement");
     const esRecarga = valor.includes("recarga");
     const esRetiro = valor.includes("retiro");
-    const esVenta = valor.includes("venta");
-
-    // IMPLEMENTACIÓN y VENTA no utilizan contadores normales.
     const mostrarCilindros = esRecarga || esRetiro;
-
-    // RETIRO no utiliza fotografía.
     const mostrarFotos = !esRetiro;
 
     const seccionCilindros = document.getElementById("seccionCilindros");
@@ -298,11 +304,8 @@ function actualizarVistaSegunServicio(servicio) {
     if (seccionCilindros) seccionCilindros.hidden = !mostrarCilindros;
     if (seccionFotos) seccionFotos.hidden = !mostrarFotos;
 
-    // ELEMENTOS solamente pertenecen a IMPLEMENTACIÓN.
     if (!esImplementacion) limpiarElementos();
 
-    // Si pasamos a Implementación o Venta, borramos cantidades
-    // antiguas que pudieran haber quedado de otro servicio.
     if (!mostrarCilindros) {
         ["e07", "e10", "r07", "r10"].forEach(id => {
             const input = document.getElementById(id);
@@ -310,11 +313,11 @@ function actualizarVistaSegunServicio(servicio) {
         });
     }
 
-    // Al cambiar de servicio eliminamos fotografías anteriores.
     fotosCapturadas = [];
     pintarFotosCapturadas();
     detenerCamara();
 }
+
 
 // ==========================================================
 // CONTADORES
@@ -349,56 +352,155 @@ function inicializarFirma() {
     canvas.height = 220;
     signaturePad = new SignaturePad(canvas);
 
-    if (btnLimpiar) btnLimpiar.addEventListener("click", () => signaturePad.clear());
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener("click", () => signaturePad.clear());
+    }
 }
 
 
 // ==========================================================
-// FOTOGRAFÍA
+// CÁMARA PARTICULAR - MÁXIMO 2 FOTOS
 // ==========================================================
 
-function inicializarFotografia() {
-    const inputFoto = document.getElementById("fotoServicio");
-    const preview = document.getElementById("previewFoto");
-    const contenedorPreview = document.getElementById("contenedorPreviewFoto");
-    const btnEliminar = document.getElementById("btnEliminarFoto");
+function inicializarCamara() {
+    const btnAbrir = document.getElementById("btnAbrirCamara");
+    const btnTomar = document.getElementById("btnTomarFoto");
 
-    if (!inputFoto || !preview || !contenedorPreview || !btnEliminar) return;
+    if (btnAbrir) btnAbrir.addEventListener("click", abrirCamara);
+    if (btnTomar) btnTomar.addEventListener("click", tomarFoto);
 
-    inputFoto.addEventListener("change", () => {
-        const archivo = inputFoto.files?.[0];
+    pintarFotosCapturadas();
+}
 
-        if (!archivo) {
-            fotoSeleccionada = null;
-            contenedorPreview.hidden = true;
-            return;
-        }
+async function abrirCamara() {
+    const video = document.getElementById("vistaCamara");
+    const btnTomar = document.getElementById("btnTomarFoto");
 
-        if (!archivo.type.startsWith("image/")) {
-            alert("Debe seleccionar una fotografía válida.");
-            inputFoto.value = "";
-            fotoSeleccionada = null;
-            return;
-        }
+    if (!video || !btnTomar) {
+        console.error("No se encontraron los controles de cámara.");
+        return;
+    }
 
-        if (archivo.size > 10 * 1024 * 1024) {
-            alert("La fotografía supera el máximo permitido de 10 MB.");
-            inputFoto.value = "";
-            fotoSeleccionada = null;
-            return;
-        }
+    if (fotosCapturadas.length >= 2) {
+        alert("Ya se alcanzó el máximo de 2 fotografías.");
+        return;
+    }
 
-        fotoSeleccionada = archivo;
-        preview.src = URL.createObjectURL(archivo);
-        contenedorPreview.hidden = false;
-    });
+    try {
+        if (streamCamara) detenerCamara();
 
-    btnEliminar.addEventListener("click", () => {
-        fotoSeleccionada = null;
-        inputFoto.value = "";
-        preview.removeAttribute("src");
-        contenedorPreview.hidden = true;
-    });
+        streamCamara = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+        });
+
+        video.srcObject = streamCamara;
+        video.hidden = false;
+        btnTomar.hidden = false;
+
+    } catch (error) {
+        console.error("No fue posible abrir la cámara:", error);
+        alert("No fue posible acceder a la cámara. Verifique los permisos del navegador.");
+    }
+}
+
+function detenerCamara() {
+    if (streamCamara) {
+        streamCamara.getTracks().forEach(track => track.stop());
+        streamCamara = null;
+    }
+
+    const video = document.getElementById("vistaCamara");
+    const btnTomar = document.getElementById("btnTomarFoto");
+
+    if (video) {
+        video.srcObject = null;
+        video.hidden = true;
+    }
+
+    if (btnTomar) btnTomar.hidden = true;
+}
+
+async function tomarFoto() {
+    if (!streamCamara || fotosCapturadas.length >= 2) return;
+
+    const video = document.getElementById("vistaCamara");
+    const canvas = document.getElementById("canvasFoto");
+
+    if (!video || !canvas) {
+        console.error("No se encontraron video o canvas de fotografía.");
+        return;
+    }
+
+    if (!video.videoWidth || !video.videoHeight) {
+        alert("La cámara todavía no está lista.");
+        return;
+    }
+
+    const anchoMaximo = 1280;
+    const escala = Math.min(1, anchoMaximo / video.videoWidth);
+
+    canvas.width = Math.round(video.videoWidth * escala);
+    canvas.height = Math.round(video.videoHeight * escala);
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise(resolve =>
+        canvas.toBlob(resolve, "image/jpeg", 0.82)
+    );
+
+    if (!blob) {
+        alert("No fue posible generar la fotografía.");
+        return;
+    }
+
+    fotosCapturadas.push(blob);
+
+    pintarFotosCapturadas();
+    detenerCamara();
+}
+
+function pintarFotosCapturadas() {
+    const contenedor = document.getElementById("previewFotos");
+    const btnAbrir = document.getElementById("btnAbrirCamara");
+
+    if (contenedor) {
+        contenedor.innerHTML = "";
+
+        fotosCapturadas.forEach((blob, index) => {
+            const url = URL.createObjectURL(blob);
+            const item = document.createElement("div");
+
+            item.className = "foto-preview";
+
+            item.innerHTML = `
+                <img src="${url}" alt="Foto ${index + 1}">
+                <button type="button" data-index="${index}">×</button>
+            `;
+
+            item.querySelector("button").addEventListener("click", () => {
+                URL.revokeObjectURL(url);
+                fotosCapturadas.splice(index, 1);
+                pintarFotosCapturadas();
+            });
+
+            contenedor.appendChild(item);
+        });
+    }
+
+    if (!btnAbrir) return;
+
+    if (fotosCapturadas.length === 0) {
+        btnAbrir.disabled = false;
+        btnAbrir.textContent = "Abrir Cámara";
+    } else if (fotosCapturadas.length === 1) {
+        btnAbrir.disabled = false;
+        btnAbrir.textContent = "Tomar Segunda Foto";
+    } else {
+        btnAbrir.disabled = true;
+        btnAbrir.textContent = "Máximo 2 Fotos";
+    }
 }
 
 
@@ -418,16 +520,71 @@ function capturarUbicacionGps() {
             console.log("GPS particular actualizado:", coordenadasGPS);
         },
         error => {
-            const gpsValido = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(coordenadasGPS);
+            const gpsValido =
+                /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(coordenadasGPS);
+
             if (gpsValido) return;
 
-            if (error.code === error.PERMISSION_DENIED) coordenadasGPS = "Permiso GPS denegado";
-            else if (error.code === error.POSITION_UNAVAILABLE) coordenadasGPS = "Señal GPS no disponible";
-            else if (error.code === error.TIMEOUT) coordenadasGPS = "Tiempo de espera GPS agotado";
-            else coordenadasGPS = "Ubicación no disponible";
+            if (error.code === error.PERMISSION_DENIED) {
+                coordenadasGPS = "Permiso GPS denegado";
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                coordenadasGPS = "Señal GPS no disponible";
+            } else if (error.code === error.TIMEOUT) {
+                coordenadasGPS = "Tiempo de espera GPS agotado";
+            } else {
+                coordenadasGPS = "Ubicación no disponible";
+            }
         },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }
+        {
+            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 30000
+        }
     );
+}
+
+
+// ==========================================================
+// CONFIRMACIÓN FINAL ANTES DEL ENVÍO
+// ==========================================================
+
+function confirmarEnvioParticular(datos) {
+    const servicio = String(datos.servicio || "").toUpperCase();
+    const esImplementacion = servicio.includes("IMPLEMENT");
+    const esVenta = servicio.includes("VENTA");
+
+    let resumen = "CONFIRMAR SERVICIO\n\n";
+
+    resumen += `Paciente: ${datos.paciente}\n`;
+    resumen += `Servicio: ${servicio}\n`;
+
+    if (esImplementacion && Array.isArray(datos.elementos)) {
+        resumen += "\nELEMENTOS ENTREGADOS:\n";
+
+        datos.elementos.forEach(item => {
+            resumen += `${item.cantidad} × ${item.elemento}\n`;
+        });
+    }
+
+    if (!esImplementacion && !esVenta) {
+        resumen += "\n";
+        resumen += `Entregados 0.7 m³: ${datos.e07}\n`;
+        resumen += `Entregados 10 m³: ${datos.e10}\n`;
+        resumen += `Retirados 0.7 m³: ${datos.r07}\n`;
+        resumen += `Retirados 10 m³: ${datos.r10}\n`;
+    }
+
+    if (!servicio.includes("RETIRO")) {
+        resumen += `\nFotografías: ${datos.fotos}\n`;
+    }
+
+    if (datos.observaciones) {
+        resumen += `\nObservaciones:\n${datos.observaciones}\n`;
+    }
+
+    resumen += "\n¿Confirma que la información es correcta?";
+
+    return window.confirm(resumen);
 }
 
 
@@ -443,195 +600,6 @@ function inicializarFormulario() {
         return;
     }
 
-    // ==========================================================
-    // CÁMARA PARTICULAR - MÁXIMO 2 FOTOS
-    // ==========================================================
-
-    async function abrirCamara() {
-        const video = document.getElementById("vistaCamara");
-        const btnTomar = document.getElementById("btnTomarFoto");
-
-        if (fotosCapturadas.length >= 2) {
-            alert("Ya se alcanzó el máximo de 2 fotografías.");
-            return;
-        }
-
-        try {
-            if (streamCamara) detenerCamara();
-
-            streamCamara = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: "environment" }
-                },
-                audio: false
-            });
-
-            video.srcObject = streamCamara;
-            video.hidden = false;
-            btnTomar.hidden = false;
-
-        } catch (error) {
-            console.error("No fue posible abrir la cámara:", error);
-            alert("No fue posible acceder a la cámara. Verifique los permisos del navegador.");
-        }
-    }
-
-
-    function detenerCamara() {
-        if (streamCamara) {
-            streamCamara.getTracks().forEach(track => track.stop());
-            streamCamara = null;
-        }
-
-        const video = document.getElementById("vistaCamara");
-        const btnTomar = document.getElementById("btnTomarFoto");
-
-        if (video) {
-            video.srcObject = null;
-            video.hidden = true;
-        }
-
-        if (btnTomar) btnTomar.hidden = true;
-    }
-
-
-    async function tomarFoto() {
-        if (!streamCamara || fotosCapturadas.length >= 2) return;
-
-        const video = document.getElementById("vistaCamara");
-        const canvas = document.getElementById("canvasFoto");
-
-        if (!video.videoWidth || !video.videoHeight) {
-            alert("La cámara todavía no está lista.");
-            return;
-        }
-
-        const anchoMaximo = 1280;
-        const escala = Math.min(1, anchoMaximo / video.videoWidth);
-
-        canvas.width = Math.round(video.videoWidth * escala);
-        canvas.height = Math.round(video.videoHeight * escala);
-
-        const ctx = canvas.getContext("2d");
-
-        ctx.drawImage(
-            video,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-        const blob = await new Promise(resolve =>
-            canvas.toBlob(resolve, "image/jpeg", 0.82)
-        );
-
-        if (!blob) {
-            alert("No fue posible generar la fotografía.");
-            return;
-        }
-
-        fotosCapturadas.push(blob);
-
-        pintarFotosCapturadas();
-        detenerCamara();
-    }
-
-
-    function pintarFotosCapturadas() {
-        const contenedor = document.getElementById("previewFotos");
-
-        if (!contenedor) return;
-
-        contenedor.innerHTML = "";
-
-        fotosCapturadas.forEach((blob, index) => {
-            const url = URL.createObjectURL(blob);
-            const item = document.createElement("div");
-
-            item.className = "foto-preview";
-
-            item.innerHTML = `
-                <img src="${url}" alt="Foto ${index + 1}">
-                <button type="button" data-index="${index}">×</button>
-            `;
-
-            item.querySelector("button").addEventListener("click", () => {
-                URL.revokeObjectURL(url);
-
-                fotosCapturadas.splice(index, 1);
-
-                pintarFotosCapturadas();
-            });
-
-            contenedor.appendChild(item);
-        });
-
-        const btnAbrir = document.getElementById("btnAbrirCamara");
-
-        if (!btnAbrir) return;
-
-        if (fotosCapturadas.length === 0) {
-            btnAbrir.disabled = false;
-            btnAbrir.textContent = "Abrir Cámara";
-        }
-
-        if (fotosCapturadas.length === 1) {
-            btnAbrir.disabled = false;
-            btnAbrir.textContent = "Tomar Segunda Foto";
-        }
-
-        if (fotosCapturadas.length >= 2) {
-            btnAbrir.disabled = true;
-            btnAbrir.textContent = "Máximo 2 Fotos";
-        }
-    }
-
-    // ==========================================================
-    // CONFIRMACIÓN FINAL ANTES DEL ENVÍO
-    // ==========================================================
-
-    function confirmarEnvioParticular(datos) {
-        const servicio = String(datos.servicio || "").toUpperCase();
-
-        const esImplementacion = servicio.includes("IMPLEMENT");
-        const esVenta = servicio.includes("VENTA");
-
-        let resumen = "CONFIRMAR SERVICIO\n\n";
-
-        resumen += `Paciente: ${datos.paciente}\n`;
-        resumen += `Servicio: ${servicio}\n`;
-
-        if (esImplementacion && Array.isArray(datos.elementos)) {
-            resumen += "\nELEMENTOS ENTREGADOS:\n";
-
-            datos.elementos.forEach(item => {
-                resumen += `${item.cantidad} × ${item.elemento}\n`;
-            });
-        }
-
-        if (!esImplementacion && !esVenta) {
-            resumen += "\n";
-
-            resumen += `Entregados 0.7 m³: ${datos.e07}\n`;
-            resumen += `Entregados 10 m³: ${datos.e10}\n`;
-            resumen += `Retirados 0.7 m³: ${datos.r07}\n`;
-            resumen += `Retirados 10 m³: ${datos.r10}\n`;
-        }
-
-        if (!servicio.includes("RETIRO")) {
-            resumen += `\nFotografías: ${datos.fotos}\n`;
-        }
-
-        if (datos.observaciones) {
-            resumen += `\nObservaciones:\n${datos.observaciones}\n`;
-        }
-
-        resumen += "\n¿Confirma que la información es correcta?";
-
-        return window.confirm(resumen);
-    }
-
     formulario.addEventListener("submit", async event => {
         event.preventDefault();
 
@@ -639,15 +607,32 @@ function inicializarFormulario() {
         const servicio = document.getElementById("servicioParticular").value.trim();
         const pacienteId = document.getElementById("pacienteId").value.trim();
         const pacienteSelect = document.getElementById("pacienteParticular");
-        const pacienteNombre = pacienteSelect.options[pacienteSelect.selectedIndex]?.textContent?.trim() || "";
+        const pacienteNombre =
+            pacienteSelect.options[pacienteSelect.selectedIndex]?.textContent?.trim() || "";
+
         const e07 = document.getElementById("e07").value;
         const e10 = document.getElementById("e10").value;
         const r07 = document.getElementById("r07").value;
         const r10 = document.getElementById("r10").value;
-        const observaciones = document.getElementById("obs").value.trim().toUpperCase();
+        const observaciones =
+            document.getElementById("obs").value.trim().toUpperCase();
+
+        if (!servicio) {
+            alert("Debe seleccionar un servicio.");
+            return;
+        }
+
+        if (!pacienteId) {
+            alert("Debe seleccionar un paciente válido.");
+            return;
+        }
+
         const servicioNormalizado = servicio.toLowerCase();
+
+        const esImplementacion = servicioNormalizado.includes("implement");
+
         const requiereFoto =
-            servicioNormalizado.includes("implement") ||
+            esImplementacion ||
             servicioNormalizado.includes("recarga") ||
             servicioNormalizado.includes("venta");
 
@@ -661,17 +646,10 @@ function inicializarFormulario() {
             return;
         }
 
-        if (!servicio) {
-            alert("Debe seleccionar un servicio.");
-            return;
-        }
-
-        if (!pacienteId) {
-            alert("Debe seleccionar un paciente válido.");
-            return;
-        }
-        const esImplementacion = servicio.toLowerCase().includes("implement");
-        const elementosSeleccionados = esImplementacion ? obtenerElementosSeleccionados() : [];
+        const elementosSeleccionados =
+            esImplementacion
+                ? obtenerElementosSeleccionados()
+                : [];
 
         if (esImplementacion && elementosSeleccionados.length === 0) {
             alert("Debe registrar al menos un elemento entregado en la implementación.");
@@ -683,8 +661,19 @@ function inicializarFormulario() {
             return;
         }
 
-        const confirmar = confirm(`¿Confirma el envío del registro?\n\nPaciente: ${pacienteNombre}`);
-        if (!confirmar) return;
+        const confirmado = confirmarEnvioParticular({
+            servicio,
+            paciente: pacienteNombre,
+            elementos: elementosSeleccionados,
+            e07,
+            e10,
+            r07,
+            r10,
+            observaciones,
+            fotos: fotosCapturadas.length
+        });
+
+        if (!confirmado) return;
 
         btnEnviar.disabled = true;
         btnEnviar.textContent = "Enviando...";
@@ -695,6 +684,7 @@ function inicializarFormulario() {
             const blobFirma = await respuestaFirma.blob();
 
             const payload = new FormData();
+
             payload.append("tipoCliente", "PARTICULAR");
             payload.append("servicio", servicio);
             payload.append("pacienteId", pacienteId);
@@ -725,29 +715,21 @@ function inicializarFormulario() {
                 );
             }
 
-            const confirmado = confirmarEnvioParticular({
-                servicio: servicio,
-                paciente: pacienteNombre,
-                elementos: elementosSeleccionados,
-                e07: e07,
-                e10: e10,
-                r07: r07,
-                r10: r10,
-                observaciones: observaciones,
-                fotos: fotosCapturadas.length
-            });
+            const respuesta = await fetch(
+                WORKER_URL,
+                {
+                    method: "POST",
+                    body: payload
+                }
+            );
 
-            if (!confirmado) {
-                btn.disabled = false;
-                btn.textContent = "Enviar Registro";
-                return;
-            }
-
-            const respuesta = await fetch(WORKER_URL, { method: "POST", body: payload });
             const resultado = await respuesta.json();
 
             if (!respuesta.ok || resultado.ok !== true) {
-                throw new Error(resultado.error || "El servidor rechazó el registro.");
+                throw new Error(
+                    resultado.error ||
+                    "El servidor rechazó el registro."
+                );
             }
 
             alert("Registro particular enviado correctamente.");
@@ -755,7 +737,10 @@ function inicializarFormulario() {
 
         } catch (error) {
             console.error("Error al enviar registro particular:", error);
-            alert(`No fue posible enviar el registro.\n\n${error.message}`);
+
+            alert(
+                `No fue posible enviar el registro.\n\n${error.message}`
+            );
 
         } finally {
             btnEnviar.disabled = false;
