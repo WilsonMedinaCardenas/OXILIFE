@@ -94,11 +94,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const servicio = selectServicio.value.trim().toLowerCase();
         const esImplementacion = servicio.includes("implement");
+        const esRetiro = servicio.includes("retiro");
+        const seccionCilindros = document.getElementById("seccionCilindros");
 
         if (paciente && esImplementacion && paciente.tipo) {
             await cargarElementos(paciente.tipo);
+
+        } else if (paciente && esRetiro && paciente.elementosOrigen) {
+            if (seccionCilindros) seccionCilindros.hidden = true;
+            cargarElementosRetiro(paciente.elementosOrigen);
+
         } else {
             limpiarElementos();
+
+            // Respaldo para retiros antiguos que todavía no tengan ID ORIGEN.
+            if (esRetiro && seccionCilindros) seccionCilindros.hidden = false;
         }
     });
 });
@@ -174,7 +184,7 @@ async function cargarUltimosPacientes(servicio, selectPaciente) {
     resultados.forEach(item => {
         const opcion = document.createElement("option");
         opcion.value = item.id;
-        opcion.textContent = item.nombre;
+        opcion.textContent = item.nombreMostrar || item.nombre;
         selectPaciente.appendChild(opcion);
     });
 
@@ -253,12 +263,73 @@ async function cargarElementos(tipo) {
     }
 }
 
+function cargarElementosRetiro(elementosOrigen) {
+    const seccion = document.getElementById("seccionElementos");
+    const lista = document.getElementById("listaElementos");
+
+    elementosDisponibles = [];
+    lista.innerHTML = "";
+    seccion.hidden = true;
+
+    try {
+        const elementos = typeof elementosOrigen === "string"
+            ? JSON.parse(elementosOrigen)
+            : elementosOrigen;
+
+        if (!Array.isArray(elementos) || elementos.length === 0) {
+            throw new Error("El retiro no contiene elementos de origen.");
+        }
+
+        elementosDisponibles = elementos.map(item => ({
+            elemento: String(item.elemento || "").trim(),
+            cantidad: Number(item.cantidad) || 0,
+            cantidadOriginal: Number(item.cantidad) || 0,
+            recarga: item.recarga === true
+        }));
+
+        elementosDisponibles.forEach((elemento, index) => {
+            const fila = document.createElement("div");
+            fila.className = "elemento-fila";
+
+            fila.innerHTML = `
+                <label class="elemento-nombre">${elemento.elemento}</label>
+
+                <div class="contador elemento-contador">
+                    <button type="button" class="btn-elemento-retiro-menos" data-index="${index}">−</button>
+                    <input id="elemento-${index}" value="${elemento.cantidadOriginal}" readonly>
+                </div>
+            `;
+
+            lista.appendChild(fila);
+        });
+
+        lista.querySelectorAll(".btn-elemento-retiro-menos").forEach(btn => {
+            btn.addEventListener("click", () => disminuirCantidadRetiro(Number(btn.dataset.index)));
+        });
+
+        seccion.hidden = false;
+
+    } catch (error) {
+        console.error("Error cargando elementos del retiro:", error);
+        limpiarElementos();
+        alert("No fue posible cargar los elementos originalmente entregados.");
+    }
+}
+
 function cambiarCantidadElemento(index, cambio) {
     const input = document.getElementById(`elemento-${index}`);
     if (!input) return;
 
     const actual = parseInt(input.value, 10) || 0;
     input.value = Math.max(0, Math.min(20, actual + cambio));
+}
+
+function disminuirCantidadRetiro(index) {
+    const input = document.getElementById(`elemento-${index}`);
+    if (!input) return;
+
+    const actual = parseInt(input.value, 10) || 0;
+    input.value = actual > 0 ? actual - 1 : 0;
 }
 
 function obtenerElementosSeleccionados() {
@@ -272,6 +343,18 @@ function obtenerElementosSeleccionados() {
             recarga: item.recarga === true
         }))
         .filter(item => item.cantidad > 0);
+}
+
+function obtenerElementosRetiro() {
+    return elementosDisponibles.map((item, index) => ({
+        elemento: item.elemento,
+        cantidad: parseInt(
+            document.getElementById(`elemento-${index}`)?.value || "0",
+            10
+        ),
+        cantidadOriginal: Number(item.cantidadOriginal) || 0,
+        recarga: item.recarga === true
+    }));
 }
 
 function limpiarElementos() {
@@ -552,6 +635,7 @@ function confirmarEnvioParticular(datos) {
     const servicio = String(datos.servicio || "").toUpperCase();
     const esImplementacion = servicio.includes("IMPLEMENT");
     const esVenta = servicio.includes("VENTA");
+    const esRetiro = servicio.includes("RETIRO");
 
     let resumen = "CONFIRMAR SERVICIO\n\n";
 
@@ -566,7 +650,14 @@ function confirmarEnvioParticular(datos) {
         });
     }
 
-    if (!esImplementacion && !esVenta) {
+    if (esRetiro && Array.isArray(datos.elementos) && datos.elementos.length > 0) {
+        resumen += "\nELEMENTOS A RETIRAR:\n";
+
+        datos.elementos.forEach(item => {
+            resumen += `${item.cantidad} de ${item.cantidadOriginal} × ${item.elemento}\n`;
+        });
+
+    } else if (!esImplementacion && !esVenta) {
         resumen += "\n";
         resumen += `Entregados 0.7 m³: ${datos.e07}\n`;
         resumen += `Entregados 10 m³: ${datos.e10}\n`;
@@ -608,8 +699,10 @@ function inicializarFormulario() {
         const pacienteId = document.getElementById("pacienteId").value.trim();
         const pacienteSelect = document.getElementById("pacienteParticular");
         const pacienteNombre =
-            pacienteSelect.options[pacienteSelect.selectedIndex]?.textContent?.trim() || "";
-
+            pacienteSelect.options[pacienteSelect.selectedIndex]?.textContent?.trim() || "";      
+        const pacienteActual = pacientesDisponibles.find(
+            item => String(item.id) === String(pacienteId)
+        );
         const e07 = document.getElementById("e07").value;
         const e10 = document.getElementById("e10").value;
         const r07 = document.getElementById("r07").value;
@@ -628,9 +721,13 @@ function inicializarFormulario() {
         }
 
         const servicioNormalizado = servicio.toLowerCase();
-
         const esImplementacion = servicioNormalizado.includes("implement");
-
+        const esRetiro = servicioNormalizado.includes("retiro");
+        const retiroConOrigen =
+            esRetiro &&
+            pacienteActual &&
+            pacienteActual.idOrigen &&
+            pacienteActual.elementosOrigen;
         const requiereFoto =
             esImplementacion ||
             servicioNormalizado.includes("recarga") ||
@@ -649,7 +746,9 @@ function inicializarFormulario() {
         const elementosSeleccionados =
             esImplementacion
                 ? obtenerElementosSeleccionados()
-                : [];
+                : retiroConOrigen
+                    ? obtenerElementosRetiro()
+                    : [];
 
         if (esImplementacion && elementosSeleccionados.length === 0) {
             alert("Debe registrar al menos un elemento entregado en la implementación.");
