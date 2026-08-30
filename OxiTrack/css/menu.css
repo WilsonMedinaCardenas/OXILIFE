@@ -1,0 +1,114 @@
+/* ==========================================================
+   OXITRACK - MENÚ PRINCIPAL
+   ========================================================== */
+
+
+.menu-oxitrack {
+    width: 100%;
+
+    max-width: 420px;
+
+    padding: 30px 25px;
+
+    text-align: center;
+}
+
+
+.menu-logo {
+    width: 190px;
+
+    max-width: 70%;
+
+    height: auto;
+
+    margin-bottom: 45px;
+}
+
+
+.menu-botones {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+
+.menu-boton {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 100%;
+
+    min-height: 64px;
+
+    border-radius: 12px;
+
+    text-decoration: none;
+
+    font-size: 17px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+
+.menu-boton:active {
+    transform: scale(0.98);
+}
+
+
+/* ==========================================================
+   BOTÓN PARTICULAR
+   ========================================================== */
+
+.menu-particular {
+    background: #611e63;
+
+    color: white;
+}
+
+
+/* ==========================================================
+   BOTÓN EMPRESA
+   ========================================================== */
+
+.menu-empresa {
+    background: #333333;
+
+    color: white;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 480px) {
+
+    .menu-oxitrack {
+        padding: 25px 20px;
+    }
+
+
+    .menu-logo {
+        width: 165px;
+
+        margin-bottom: 35px;
+    }
+
+
+    .menu-boton {
+        min-height: 60px;
+
+        font-size: 16px;
+    }
+}

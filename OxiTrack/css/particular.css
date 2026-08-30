@@ -1,0 +1,302 @@
+/* ==========================================================
+   OXITRACK - FORMULARIO PARTICULAR
+   ========================================================== */
+
+
+/* ==========================================================
+   CONTENEDOR
+   ========================================================== */
+
+.particular-contenedor {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   SELECTS SERVICIO / PACIENTE
+   ========================================================== */
+
+.select-particular {
+    width: 100%;
+
+    min-height: 48px;
+
+    padding: 10px 12px;
+
+    margin-top: 6px;
+    margin-bottom: 18px;
+
+    border: 1px solid #cccccc;
+
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    font-size: 16px;
+
+    font-family: inherit;
+
+    cursor: pointer;
+}
+
+
+/* ==========================================================
+   SELECT DESHABILITADO
+   ========================================================== */
+
+.select-particular:disabled {
+    background: #eeeeee;
+
+    color: #777777;
+
+    cursor: not-allowed;
+}
+
+
+/* ==========================================================
+   SELECT FOCUS
+   ========================================================== */
+
+.select-particular:focus {
+    outline: none;
+
+    border-width: 2px;
+}
+
+
+/* ==========================================================
+   BLOQUE FOTOGRAFÍA
+   ========================================================== */
+
+.bloque-foto {
+    width: 100%;
+
+    margin-top: 20px;
+    margin-bottom: 25px;
+}
+
+
+.texto-ayuda-foto {
+    margin: 5px 0 10px 0;
+
+    font-size: 13px;
+
+    line-height: 1.4;
+
+    color: #666666;
+}
+
+
+.input-foto {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #cccccc;
+
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    font-size: 14px;
+}
+
+
+/* ==========================================================
+   VISTA PREVIA FOTOGRAFÍA
+   ========================================================== */
+
+.preview-foto-contenedor {
+    width: 100%;
+
+    margin-top: 15px;
+
+    text-align: center;
+}
+
+
+.preview-foto {
+    display: block;
+
+    width: 100%;
+
+    max-height: 320px;
+
+    margin: 0 auto 12px auto;
+
+    object-fit: contain;
+
+    border-radius: 10px;
+
+    border: 1px solid #dddddd;
+
+    background: #f5f5f5;
+}
+
+
+/* ==========================================================
+   ELIMINAR FOTOGRAFÍA
+   ========================================================== */
+
+.btn-eliminar-foto {
+    width: 100%;
+
+    min-height: 44px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    background: #e8e8e8;
+
+    color: #333333;
+}
+
+
+.btn-eliminar-foto:active {
+    transform: scale(0.99);
+}
+
+
+/* ==========================================================
+   ELEMENTOS PARTICULAR
+   ========================================================== */
+
+.seccion-elementos {
+    margin-top: 20px;
+}
+
+
+.elemento-fila {
+    margin-bottom: 16px;
+}
+
+
+.elemento-nombre {
+    display: block;
+
+    margin-bottom: 7px;
+
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   CÁMARA PARTICULAR
+   ========================================================== */
+
+.seccion-fotos {
+    margin-top: 22px;
+}
+
+
+.texto-foto {
+    margin: 8px 0 14px;
+
+    font-size: 14px;
+}
+
+
+#vistaCamara {
+    width: 100%;
+
+    max-height: 420px;
+
+    object-fit: cover;
+
+    border-radius: 10px;
+
+    background: #111;
+
+    margin-bottom: 12px;
+}
+
+
+/* ==========================================================
+   BOTONES CÁMARA
+   ========================================================== */
+
+.botones-camara {
+    display: grid;
+
+    gap: 10px;
+}
+
+
+.botones-camara button {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   PREVIEW FOTOS
+   ========================================================== */
+
+.preview-fotos {
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 10px;
+
+    margin-top: 14px;
+}
+
+
+.foto-preview {
+    position: relative;
+}
+
+
+.foto-preview img {
+    display: block;
+
+    width: 100%;
+
+    border-radius: 8px;
+}
+
+
+.foto-preview button {
+    position: absolute;
+
+    top: 6px;
+    right: 6px;
+
+    width: 32px;
+    height: 32px;
+
+    padding: 0;
+
+    border-radius: 50%;
+}
+
+
+/* ==========================================================
+   RESPONSIVE PARTICULAR
+   ========================================================== */
+
+@media (max-width: 480px) {
+
+    .select-particular {
+        min-height: 52px;
+
+        font-size: 16px;
+    }
+
+
+    .input-foto {
+        min-height: 52px;
+    }
+
+
+    .preview-foto {
+        max-height: 280px;
+    }
+}

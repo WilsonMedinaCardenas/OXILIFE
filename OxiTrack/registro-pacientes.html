@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta
+        name="description"
+        content="Registro de pacientes OxiTrack by Oxilife"
+    >
+
+    <title>Registro de Pacientes | OxiTrack by Oxilife</title>
+
+    <link rel="stylesheet" href="./css/oxitrack-base.css">
+    <link rel="stylesheet" href="./css/registro-pacientes.css">
+    
+</head>
+
+<body>
+
+    <main class="app-registro">
+
+        <!-- =====================================================
+             ENCABEZADO
+        ====================================================== -->
+
+        <header class="registro-header">
+
+            <img
+                src="../assets/img/logo.png"
+                alt="Oxilife"
+                class="registro-logo"
+            >
+
+            <h1>Registro de Pacientes</h1>
+
+            <p class="registro-subtitulo">
+                OxiTrack by Oxilife
+            </p>
+
+        </header>
+
+
+        <!-- =====================================================
+             CONTENEDOR PRINCIPAL
+        ====================================================== -->
+
+        <section class="registro-card">
+
+            <form
+                id="formRegistroPaciente"
+                autocomplete="off"
+                novalidate
+            >
+
+
+                <!-- =================================================
+                     SERVICIO
+                ================================================== -->
+
+                <section class="form-seccion">
+
+                    <h2>Servicio</h2>
+
+                    <div class="campo">
+
+                        <label for="selectServicioRegistro">
+                            Tipo de servicio
+                        </label>
+
+                        <select
+                            id="selectServicioRegistro"
+                            name="servicio"
+                            required
+                        >
+                            <option value="">
+                                Seleccione un servicio
+                            </option>
+
+                            <option value="IMPLEMENTACIÓN">
+                                Implementación
+                            </option>
+
+                            <option value="RECARGA">
+                                Recarga
+                            </option>
+
+                            <option value="RETIRO">
+                                Retiro
+                            </option>
+
+                            <option value="VENTA">
+                                Venta
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     NUEVO / REGISTRADO
+                     RECARGA Y VENTA
+                ================================================== -->
+
+                <section
+                    id="seccionTipoPaciente"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Paciente</h2>
+
+                    <div class="selector-tipo-paciente">
+
+                        <button
+                            type="button"
+                            id="btnPacienteRegistrado"
+                            class="btn-selector"
+                        >
+                            Paciente registrado
+                        </button>
+
+                        <button
+                            type="button"
+                            id="btnPacienteNuevo"
+                            class="btn-selector"
+                        >
+                            Paciente nuevo
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     BÚSQUEDA PACIENTE REGISTRADO
+                ================================================== -->
+
+                <section
+                    id="seccionBusquedaPaciente"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Buscar Paciente</h2>
+
+                    <div class="campo">
+
+                        <label for="inputBuscarPaciente">
+                            Teléfono o RUT
+                        </label>
+
+                        <input
+                            type="text"
+                            id="inputBuscarPaciente"
+                            name="buscarPaciente"
+                            placeholder="Ej: 987654321 o 19.380.123-4"
+                            inputmode="text"
+                            autocomplete="off"
+                        >
+
+                        <small class="campo-ayuda">
+                            Ingrese teléfono o RUT para buscar un paciente registrado.
+                        </small>
+
+                    </div>
+
+
+                    <!-- RESULTADOS BÚSQUEDA -->
+
+                    <div
+                        id="resultadosBusquedaPaciente"
+                        class="resultados-busqueda"
+                        hidden
+                    ></div>
+
+
+                    <!-- PACIENTE SELECCIONADO -->
+
+                    <div
+                        id="pacienteSeleccionadoCard"
+                        class="paciente-card"
+                        hidden
+                    >
+
+                        <h3>Paciente seleccionado</h3>
+
+                        <div class="dato-resumen">
+
+                            <span>Paciente</span>
+
+                            <strong id="pacienteSeleccionadoNombre">
+                                -
+                            </strong>
+
+                        </div>
+
+                        <div class="dato-resumen">
+
+                            <span>Dirección</span>
+
+                            <strong id="pacienteSeleccionadoDireccion">
+                                -
+                            </strong>
+
+                        </div>
+
+                        <div class="dato-resumen">
+
+                            <span>Comuna</span>
+
+                            <strong id="pacienteSeleccionadoComuna">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     DATOS DEL PACIENTE NUEVO
+                     IMPLEMENTACIÓN / RECARGA NUEVO / VENTA NUEVO
+                ================================================== -->
+
+                <section
+                    id="seccionDatosPaciente"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Datos del Paciente</h2>
+
+
+                    <!-- NOMBRE -->
+
+                    <div class="campo">
+
+                        <label for="inputNombrePaciente">
+                            Nombre completo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="inputNombrePaciente"
+                            name="nombre"
+                            placeholder="Nombre y apellido"
+                            maxlength="100"
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- RUT -->
+
+                    <div class="campo">
+
+                        <label for="inputRutPaciente">
+                            RUT
+                        </label>
+
+                        <input
+                            type="text"
+                            id="inputRutPaciente"
+                            name="rut"
+                            placeholder="12.345.678-9"
+                            maxlength="12"
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- TELÉFONO -->
+
+                    <div class="campo">
+
+                        <label for="inputTelefonoPaciente">
+                            Teléfono
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="inputTelefonoPaciente"
+                            name="telefono"
+                            placeholder="+56 9 1234 5678"
+                            maxlength="20"
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- EMAIL -->
+
+                    <div class="campo">
+
+                        <label for="inputEmailPaciente">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="inputEmailPaciente"
+                            name="email"
+                            placeholder="correo@ejemplo.cl"
+                            maxlength="120"
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- DIRECCIÓN -->
+
+                    <div class="campo">
+
+                        <label for="inputDireccionPaciente">
+                            Dirección
+                        </label>
+
+                        <input
+                            type="text"
+                            id="inputDireccionPaciente"
+                            name="direccion"
+                            placeholder="Calle, avenida y número"
+                            maxlength="150"
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- COMUNA -->
+
+                    <div class="campo campo-autocomplete">
+
+                        <label for="inputComunaPaciente">
+                            Comuna
+                        </label>
+
+                        <input
+                            type="text"
+                            id="inputComunaPaciente"
+                            name="comunaBusqueda"
+                            placeholder="Escriba al menos 2 letras"
+                            maxlength="50"
+                            autocomplete="off"
+                        >
+
+                        <!--
+                            Aquí JS mostrará las coincidencias
+                            obtenidas desde la base de datos.
+                        -->
+
+                        <div
+                            id="resultadosComunas"
+                            class="resultados-busqueda"
+                            hidden
+                        ></div>
+
+                        <!--
+                            Valor real seleccionado.
+                            No confiamos solamente en el texto escrito.
+                        -->
+
+                        <input
+                            type="hidden"
+                            id="comunaSeleccionada"
+                            name="comuna"
+                        >
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     IMPLEMENTACIÓN
+                ================================================== -->
+
+                <section
+                    id="seccionImplementacion"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Implementación</h2>
+
+
+                    <!-- TIPO IMPLEMENTACIÓN -->
+
+                    <div class="campo">
+
+                        <label for="selectTipoImplementacion">
+                            Tipo de implementación
+                        </label>
+
+                        <select
+                            id="selectTipoImplementacion"
+                            name="tipoImplementacion"
+                        >
+
+                            <option value="">
+                                Seleccione un tipo
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- CICLO -->
+
+                    <div class="campo">
+
+                        <label for="selectCicloImplementacion">
+                            Ciclo de arriendo
+                        </label>
+
+                        <select
+                            id="selectCicloImplementacion"
+                            name="ciclo"
+                        >
+
+                            <option value="">
+                                Seleccione un ciclo
+                            </option>
+
+                            <option value="7">
+                                7 días
+                            </option>
+
+                            <option value="15">
+                                15 días
+                            </option>
+
+                            <option value="30">
+                                30 días
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- RESUMEN TARIFAS -->
+
+                    <div
+                        id="resumenTarifasImplementacion"
+                        class="resumen-tarifas"
+                        hidden
+                    >
+
+                        <h3>Resumen del servicio</h3>
+
+                        <div class="dato-resumen">
+
+                            <span>Valor arriendo</span>
+
+                            <strong id="valorArriendo">
+                                -
+                            </strong>
+
+                        </div>
+
+                        <div class="dato-resumen">
+
+                            <span>Valor insumos</span>
+
+                            <strong id="valorInsumos">
+                                -
+                            </strong>
+
+                        </div>
+
+                        <div class="dato-resumen">
+
+                            <span>Flete diurno</span>
+
+                            <strong id="valorFleteDiurno">
+                                -
+                            </strong>
+
+                        </div>
+
+                        <div class="dato-resumen">
+
+                            <span>Flete nocturno</span>
+
+                            <strong id="valorFleteNocturno">
+                                -
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     RECARGA
+                     PACIENTE REGISTRADO
+                ================================================== -->
+
+                <section
+                    id="seccionRecargaRegistrado"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Cilindros para Recarga</h2>
+
+                    <p class="seccion-descripcion">
+                        Seleccione el cilindro correspondiente al paciente.
+                    </p>
+
+                    <div
+                        id="listaCilindrosPaciente"
+                        class="lista-opciones"
+                    ></div>
+
+                </section>
+
+
+                <!-- =================================================
+                     RECARGA
+                     PACIENTE NUEVO
+                ================================================== -->
+
+                <section
+                    id="seccionRecargaNuevo"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Cilindro para Recarga</h2>
+
+                    <div class="campo">
+
+                        <label for="selectCilindroRecargaNuevo">
+                            Tipo de cilindro
+                        </label>
+
+                        <select
+                            id="selectCilindroRecargaNuevo"
+                            name="cilindroRecarga"
+                        >
+
+                            <option value="">
+                                Seleccione un cilindro
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     RETIRO
+                ================================================== -->
+
+                <section
+                    id="seccionRetiro"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Retiro</h2>
+
+
+                    <!-- IMPLEMENTACIÓN DE ORIGEN -->
+
+                    <div
+                        id="retiroOrigenCard"
+                        class="paciente-card"
+                        hidden
+                    >
+
+                        <h3>Implementación a retirar</h3>
+
+                        <div class="dato-resumen">
+
+                            <span>ID implementación</span>
+
+                            <strong id="retiroIdOrigen">
+                                -
+                            </strong>
+
+                        </div>
+
+                        <div class="dato-resumen">
+
+                            <span>Tipo</span>
+
+                            <strong id="retiroTipoOrigen">
+                                -
+                            </strong>
+
+                        </div>
+
+
+                        <div class="elementos-origen">
+
+                            <h4>Elementos entregados</h4>
+
+                            <div id="retiroElementosOrigen"></div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     VENTA
+                ================================================== -->
+
+                <section
+                    id="seccionVenta"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Venta</h2>
+
+                    <p class="seccion-descripcion">
+                        Registre al paciente o seleccione uno existente para generar la orden de venta.
+                    </p>
+
+                </section>
+
+
+                <!-- =================================================
+                     OBSERVACIONES OFICINA
+                ================================================== -->
+
+                <section
+                    id="seccionObservacionesRegistro"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Observaciones</h2>
+
+                    <div class="campo">
+
+                        <label for="inputObservacionesRegistro">
+                            Observaciones internas
+                        </label>
+
+                        <textarea
+                            id="inputObservacionesRegistro"
+                            name="observaciones"
+                            rows="4"
+                            maxlength="500"
+                            placeholder="Información adicional del servicio..."
+                        ></textarea>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     RESUMEN ANTES DE REGISTRAR
+                ================================================== -->
+
+                <section
+                    id="seccionResumenRegistro"
+                    class="form-seccion resumen-registro"
+                    hidden
+                >
+
+                    <h2>Resumen</h2>
+
+                    <div id="contenidoResumenRegistro"></div>
+
+                </section>
+
+
+                <!-- =================================================
+                     BOTÓN REGISTRAR
+                ================================================== -->
+
+                <section
+                    id="seccionBotonRegistro"
+                    class="acciones-formulario"
+                    hidden
+                >
+
+                    <button
+                        type="submit"
+                        id="btnRegistrarPaciente"
+                        class="btn-principal"
+                    >
+                        Registrar servicio
+                    </button>
+
+                </section>
+
+
+                <!-- =================================================
+                     ESTADO / MENSAJES
+                ================================================== -->
+
+                <div
+                    id="mensajeRegistro"
+                    class="mensaje-registro"
+                    role="status"
+                    aria-live="polite"
+                    hidden
+                ></div>
+
+
+            </form>
+
+        </section>
+
+
+        <!-- =====================================================
+             MODAL CONFIRMACIÓN
+        ====================================================== -->
+
+        <div
+            id="modalConfirmacionRegistro"
+            class="modal"
+            hidden
+        >
+
+            <div class="modal-contenido">
+
+                <h2>Confirmar Registro</h2>
+
+                <div id="modalResumenRegistro"></div>
+
+                <div class="modal-acciones">
+
+                    <button
+                        type="button"
+                        id="btnCancelarRegistro"
+                        class="btn-secundario"
+                    >
+                        Volver
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnConfirmarRegistro"
+                        class="btn-principal"
+                    >
+                        Confirmar
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             MODAL REGISTRO EXITOSO
+        ====================================================== -->
+
+        <div
+            id="modalRegistroExitoso"
+            class="modal"
+            hidden
+        >
+
+            <div class="modal-contenido modal-exito">
+
+                <h2>Registro Exitoso</h2>
+
+                <p>
+                    El servicio fue registrado correctamente.
+                </p>
+
+                <div class="dato-resumen">
+
+                    <span>ID</span>
+
+                    <strong id="idRegistroCreado">
+                        -
+                    </strong>
+
+                </div>
+
+                <button
+                    type="button"
+                    id="btnNuevoRegistro"
+                    class="btn-principal"
+                >
+                    Nuevo registro
+                </button>
+
+            </div>
+
+        </div>
+
+
+    </main>
+
+
+    <!-- =========================================================
+         JAVASCRIPT
+    ========================================================== -->
+
+    <script
+        src="./js/registro-pacientes.js"
+        defer
+    ></script>
+
+</body>
+
+</html>
