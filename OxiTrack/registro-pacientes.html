@@ -1,7 +1,9 @@
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -18,12 +20,14 @@
 
     <link rel="stylesheet" href="./css/oxitrack-base.css">
     <link rel="stylesheet" href="./css/registro-pacientes.css">
-    
+
 </head>
+
 
 <body>
 
     <main class="app-registro">
+
 
         <!-- =====================================================
              ENCABEZADO
@@ -32,7 +36,7 @@
         <header class="registro-header">
 
             <img
-                src="../assets/img/logo.png"
+                src="../assets/img/favicon.png"
                 alt="Oxilife"
                 class="registro-logo"
             >
@@ -51,6 +55,7 @@
         ====================================================== -->
 
         <section class="registro-card">
+
 
             <form
                 id="formRegistroPaciente"
@@ -78,6 +83,7 @@
                             name="servicio"
                             required
                         >
+
                             <option value="">
                                 Seleccione un servicio
                             </option>
@@ -106,8 +112,13 @@
 
 
                 <!-- =================================================
-                     NUEVO / REGISTRADO
-                     RECARGA Y VENTA
+                     PACIENTE NUEVO / REGISTRADO
+
+                     IMPLEMENTACIÓN
+                     RECARGA
+                     VENTA
+
+                     RETIRO SIEMPRE ES REGISTRADO
                 ================================================== -->
 
                 <section
@@ -153,6 +164,7 @@
 
                     <h2>Buscar Paciente</h2>
 
+
                     <div class="campo">
 
                         <label for="inputBuscarPaciente">
@@ -184,6 +196,15 @@
                     ></div>
 
 
+                    <!-- ID INTERNO REAL DEL PACIENTE -->
+
+                    <input
+                        type="hidden"
+                        id="pacienteSeleccionadoId"
+                        name="pacienteId"
+                    >
+
+
                     <!-- PACIENTE SELECCIONADO -->
 
                     <div
@@ -193,6 +214,7 @@
                     >
 
                         <h3>Paciente seleccionado</h3>
+
 
                         <div class="dato-resumen">
 
@@ -204,6 +226,7 @@
 
                         </div>
 
+
                         <div class="dato-resumen">
 
                             <span>Dirección</span>
@@ -213,6 +236,7 @@
                             </strong>
 
                         </div>
+
 
                         <div class="dato-resumen">
 
@@ -231,7 +255,10 @@
 
                 <!-- =================================================
                      DATOS DEL PACIENTE NUEVO
-                     IMPLEMENTACIÓN / RECARGA NUEVO / VENTA NUEVO
+
+                     IMPLEMENTACIÓN
+                     RECARGA
+                     VENTA
                 ================================================== -->
 
                 <section
@@ -343,7 +370,9 @@
                     </div>
 
 
-                    <!-- COMUNA -->
+                    <!-- =================================================
+                         COMUNA CON AUTOCOMPLETE
+                    ================================================== -->
 
                     <div class="campo campo-autocomplete">
 
@@ -360,10 +389,6 @@
                             autocomplete="off"
                         >
 
-                        <!--
-                            Aquí JS mostrará las coincidencias
-                            obtenidas desde la base de datos.
-                        -->
 
                         <div
                             id="resultadosComunas"
@@ -371,9 +396,10 @@
                             hidden
                         ></div>
 
+
                         <!--
-                            Valor real seleccionado.
-                            No confiamos solamente en el texto escrito.
+                            VALOR REAL SELECCIONADO.
+                            EL JS NO DEBE CONFIAR SOLO EN EL TEXTO ESCRITO.
                         -->
 
                         <input
@@ -466,6 +492,7 @@
 
                         <h3>Resumen del servicio</h3>
 
+
                         <div class="dato-resumen">
 
                             <span>Valor arriendo</span>
@@ -475,6 +502,7 @@
                             </strong>
 
                         </div>
+
 
                         <div class="dato-resumen">
 
@@ -486,6 +514,7 @@
 
                         </div>
 
+
                         <div class="dato-resumen">
 
                             <span>Flete diurno</span>
@@ -495,6 +524,7 @@
                             </strong>
 
                         </div>
+
 
                         <div class="dato-resumen">
 
@@ -549,6 +579,7 @@
 
                     <h2>Cilindro para Recarga</h2>
 
+
                     <div class="campo">
 
                         <label for="selectCilindroRecargaNuevo">
@@ -594,6 +625,7 @@
 
                         <h3>Implementación a retirar</h3>
 
+
                         <div class="dato-resumen">
 
                             <span>ID implementación</span>
@@ -603,6 +635,7 @@
                             </strong>
 
                         </div>
+
 
                         <div class="dato-resumen">
 
@@ -625,6 +658,15 @@
 
                     </div>
 
+
+                    <!-- ID ORIGEN REAL -->
+
+                    <input
+                        type="hidden"
+                        id="inputRetiroIdOrigen"
+                        name="idOrigen"
+                    >
+
                 </section>
 
 
@@ -641,8 +683,171 @@
                     <h2>Venta</h2>
 
                     <p class="seccion-descripcion">
-                        Registre al paciente o seleccione uno existente para generar la orden de venta.
+                        Registre al paciente o seleccione uno existente
+                        para generar la orden de venta.
                     </p>
+
+                </section>
+
+
+                <!-- =================================================
+                     FLETE
+
+                     SOLO:
+                     IMPLEMENTACIÓN
+                     RECARGA
+                     VENTA
+
+                     RETIRO NO CONTABILIZA
+                ================================================== -->
+
+                <section
+                    id="seccionFlete"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Flete</h2>
+
+
+                    <!-- =================================================
+                         ¿LLEVA FLETE?
+                    ================================================== -->
+
+                    <div class="campo">
+
+                        <label>
+                            ¿Este servicio lleva flete?
+                        </label>
+
+
+                        <div class="selector-tipo-paciente">
+
+                            <button
+                                type="button"
+                                id="btnFleteSi"
+                                class="btn-selector"
+                            >
+                                Sí
+                            </button>
+
+
+                            <button
+                                type="button"
+                                id="btnFleteNo"
+                                class="btn-selector"
+                            >
+                                No
+                            </button>
+
+                        </div>
+
+
+                        <input
+                            type="hidden"
+                            id="inputLlevaFlete"
+                            name="llevaFlete"
+                        >
+
+                    </div>
+
+
+                    <!-- =================================================
+                         DETALLE DEL FLETE
+
+                         SOLO APARECE SI FLETE = SÍ
+                    ================================================== -->
+
+                    <div
+                        id="seccionDetalleFlete"
+                        hidden
+                    >
+
+
+                        <!-- =============================================
+                             DIURNO / NOCTURNO
+                        ============================================== -->
+
+                        <div class="campo">
+
+                            <label>
+                                Horario del flete
+                            </label>
+
+
+                            <div class="selector-tipo-paciente">
+
+                                <button
+                                    type="button"
+                                    id="btnFleteDiurno"
+                                    class="btn-selector"
+                                >
+                                    Diurno
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    id="btnFleteNocturno"
+                                    class="btn-selector"
+                                >
+                                    Nocturno
+                                </button>
+
+                            </div>
+
+
+                            <input
+                                type="hidden"
+                                id="inputHorarioFlete"
+                                name="horarioFlete"
+                            >
+
+                        </div>
+
+
+                        <!-- =============================================
+                             CONVENIO
+                        ============================================== -->
+
+                        <div class="campo">
+
+                            <label>
+                                ¿Corresponde a convenio?
+                            </label>
+
+
+                            <div class="selector-tipo-paciente">
+
+                                <button
+                                    type="button"
+                                    id="btnConvenioSi"
+                                    class="btn-selector"
+                                >
+                                    Sí
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    id="btnConvenioNo"
+                                    class="btn-selector"
+                                >
+                                    No
+                                </button>
+
+                            </div>
+
+
+                            <input
+                                type="hidden"
+                                id="inputConvenio"
+                                name="convenio"
+                            >
+
+                        </div>
+
+                    </div>
 
                 </section>
 
@@ -658,6 +863,7 @@
                 >
 
                     <h2>Observaciones</h2>
+
 
                     <div class="campo">
 
@@ -750,6 +956,7 @@
 
                 <div id="modalResumenRegistro"></div>
 
+
                 <div class="modal-acciones">
 
                     <button
@@ -759,6 +966,7 @@
                     >
                         Volver
                     </button>
+
 
                     <button
                         type="button"
@@ -789,9 +997,11 @@
 
                 <h2>Registro Exitoso</h2>
 
+
                 <p>
                     El servicio fue registrado correctamente.
                 </p>
+
 
                 <div class="dato-resumen">
 
@@ -802,6 +1012,7 @@
                     </strong>
 
                 </div>
+
 
                 <button
                     type="button"
@@ -827,6 +1038,7 @@
         src="./js/registro-pacientes.js"
         defer
     ></script>
+
 
 </body>
 
