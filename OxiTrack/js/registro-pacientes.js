@@ -34,11 +34,6 @@ const inputFechaServicio = document.getElementById("inputFechaServicio");
 const selectVentanaServicio = document.getElementById("selectVentanaServicio");
 const selectOperarioAsignado = document.getElementById("selectOperarioAsignado");
 
-// FECHA DEL SERVICIO
-
-const seccionFechaServicio = document.getElementById("seccionFechaServicio");
-const inputFechaServicio = document.getElementById("inputFechaServicio");
-
 // PACIENTE NUEVO / REGISTRADO
 
 const seccionTipoPaciente = document.getElementById("seccionTipoPaciente");
@@ -66,7 +61,7 @@ const inputTelefonoPaciente = document.getElementById("inputTelefonoPaciente");
 const inputEmailPaciente = document.getElementById("inputEmailPaciente");
 const inputDireccionPaciente = document.getElementById("inputDireccionPaciente");
 const inputComunaPaciente = document.getElementById("inputComunaPaciente");
-const resultadosComunas = document.getElementById();
+const resultadosComunas = document.getElementById("resultadosComunas");
 const comunaSeleccionada = document.getElementById("comunaSeleccionada");
 
 // IMPLEMENTACIÓN
@@ -839,7 +834,8 @@ function validarFormulario() {
 
     }
 
-        if (!inputFechaServicio.value) {
+
+    if (!inputFechaServicio.value) {
 
         throw new Error(
             "Debe seleccionar la fecha del servicio."
@@ -872,25 +868,6 @@ function validarFormulario() {
 
         throw new Error(
             "Debe seleccionar el operario asignado."
-        );
-
-    }
-
-        if (!inputFechaServicio.value) {
-
-        throw new Error(
-            "Debe seleccionar la fecha del servicio."
-        );
-
-    }
-
-
-    const hoy = obtenerFechaLocal();
-
-    if (inputFechaServicio.value < hoy) {
-
-        throw new Error(
-            "La fecha del servicio no puede ser anterior a hoy."
         );
 
     }
