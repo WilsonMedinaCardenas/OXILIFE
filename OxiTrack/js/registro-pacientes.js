@@ -25,14 +25,23 @@ let convenioActual = "";
 // ==========================================================
 
 const formRegistroPaciente = document.getElementById("formRegistroPaciente");
-
 const selectServicioRegistro = document.getElementById("selectServicioRegistro");
 
+// PROGRAMACIÓN DEL SERVICIO
+
+const seccionFechaServicio = document.getElementById("seccionFechaServicio");
+const inputFechaServicio = document.getElementById("inputFechaServicio");
+const selectVentanaServicio = document.getElementById("selectVentanaServicio");
+const selectOperarioAsignado = document.getElementById("selectOperarioAsignado");
+
+// FECHA DEL SERVICIO
+
+const seccionFechaServicio = document.getElementById("seccionFechaServicio");
+const inputFechaServicio = document.getElementById("inputFechaServicio");
 
 // PACIENTE NUEVO / REGISTRADO
 
 const seccionTipoPaciente = document.getElementById("seccionTipoPaciente");
-
 const btnPacienteNuevo = document.getElementById("btnPacienteNuevo");
 const btnPacienteRegistrado = document.getElementById("btnPacienteRegistrado");
 
@@ -40,72 +49,25 @@ const btnPacienteRegistrado = document.getElementById("btnPacienteRegistrado");
 // BÚSQUEDA
 
 const seccionBusquedaPaciente = document.getElementById("seccionBusquedaPaciente");
-
 const inputBuscarPaciente = document.getElementById("inputBuscarPaciente");
-
-const resultadosBusquedaPaciente = document.getElementById(
-    "resultadosBusquedaPaciente"
-);
-
-const pacienteSeleccionadoId = document.getElementById(
-    "pacienteSeleccionadoId"
-);
-
-const pacienteSeleccionadoCard = document.getElementById(
-    "pacienteSeleccionadoCard"
-);
-
-const pacienteSeleccionadoNombre = document.getElementById(
-    "pacienteSeleccionadoNombre"
-);
-
-const pacienteSeleccionadoDireccion = document.getElementById(
-    "pacienteSeleccionadoDireccion"
-);
-
-const pacienteSeleccionadoComuna = document.getElementById(
-    "pacienteSeleccionadoComuna"
-);
-
+const resultadosBusquedaPaciente = document.getElementById("resultadosBusquedaPaciente");
+const pacienteSeleccionadoId = document.getElementById("pacienteSeleccionadoId");
+const pacienteSeleccionadoCard = document.getElementById("pacienteSeleccionadoCard");
+const pacienteSeleccionadoNombre = document.getElementById("pacienteSeleccionadoNombre");
+const pacienteSeleccionadoDireccion = document.getElementById("pacienteSeleccionadoDireccion");
+const pacienteSeleccionadoComuna = document.getElementById("pacienteSeleccionadoComuna");
 
 // DATOS PACIENTE NUEVO
 
-const seccionDatosPaciente = document.getElementById(
-    "seccionDatosPaciente"
-);
-
-const inputNombrePaciente = document.getElementById(
-    "inputNombrePaciente"
-);
-
-const inputRutPaciente = document.getElementById(
-    "inputRutPaciente"
-);
-
-const inputTelefonoPaciente = document.getElementById(
-    "inputTelefonoPaciente"
-);
-
-const inputEmailPaciente = document.getElementById(
-    "inputEmailPaciente"
-);
-
-const inputDireccionPaciente = document.getElementById(
-    "inputDireccionPaciente"
-);
-
-const inputComunaPaciente = document.getElementById(
-    "inputComunaPaciente"
-);
-
-const resultadosComunas = document.getElementById(
-    "resultadosComunas"
-);
-
-const comunaSeleccionada = document.getElementById(
-    "comunaSeleccionada"
-);
-
+const seccionDatosPaciente = document.getElementById("seccionDatosPaciente");
+const inputNombrePaciente = document.getElementById("inputNombrePaciente");
+const inputRutPaciente = document.getElementById("inputRutPaciente");
+const inputTelefonoPaciente = document.getElementById("inputTelefonoPaciente");
+const inputEmailPaciente = document.getElementById("inputEmailPaciente");
+const inputDireccionPaciente = document.getElementById("inputDireccionPaciente");
+const inputComunaPaciente = document.getElementById("inputComunaPaciente");
+const resultadosComunas = document.getElementById();
+const comunaSeleccionada = document.getElementById("comunaSeleccionada");
 
 // IMPLEMENTACIÓN
 
@@ -301,8 +263,94 @@ const btnNuevoRegistro = document.getElementById(
 document.addEventListener("DOMContentLoaded", function () {
 
     reiniciarFormularioCompleto();
+    configurarFechaServicio();
+    cargarVentanasHorarias();
 
 });
+
+// ==========================================================
+// FECHA DEL SERVICIO
+// ==========================================================
+
+function configurarFechaServicio() {
+
+    const hoy = obtenerFechaLocal();
+
+    inputFechaServicio.value = hoy;
+    inputFechaServicio.min = hoy;
+
+}
+
+
+function obtenerFechaLocal() {
+
+    const ahora = new Date();
+
+    const anio = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+    const dia = String(ahora.getDate()).padStart(2, "0");
+
+    return `${anio}-${mes}-${dia}`;
+
+}
+
+// ==========================================================
+// VENTANAS HORARIAS
+// 1 HORA DE DURACIÓN
+// INICIO CADA 30 MINUTOS
+// ==========================================================
+
+function cargarVentanasHorarias() {
+
+    selectVentanaServicio.innerHTML = `
+        <option value="">
+            Seleccione un horario
+        </option>
+    `;
+
+
+    const inicioMinutos = 8 * 60;
+    const ultimoInicioMinutos = 22 * 60;
+
+
+    for (
+        let minutos = inicioMinutos;
+        minutos <= ultimoInicioMinutos;
+        minutos += 30
+    ) {
+
+        const inicio = convertirMinutosAHora(minutos);
+
+        const fin = convertirMinutosAHora(
+            minutos + 60
+        );
+
+        const ventana = `${inicio} - ${fin}`;
+
+        const option = document.createElement("option");
+
+        option.value = ventana;
+        option.textContent = ventana;
+
+        selectVentanaServicio.appendChild(option);
+
+    }
+
+}
+
+
+function convertirMinutosAHora(totalMinutos) {
+
+    const horas = Math.floor(totalMinutos / 60);
+    const minutos = totalMinutos % 60;
+
+    return (
+        String(horas).padStart(2, "0") +
+        ":" +
+        String(minutos).padStart(2, "0")
+    );
+
+}
 
 
 // ==========================================================
@@ -318,6 +366,7 @@ selectServicioRegistro.addEventListener("change", function () {
     reiniciarFlujoServicio();
 
     if (!servicioActual) return;
+    mostrar(seccionFechaServicio);
 
 
     // ------------------------------------------------------
@@ -790,6 +839,62 @@ function validarFormulario() {
 
     }
 
+        if (!inputFechaServicio.value) {
+
+        throw new Error(
+            "Debe seleccionar la fecha del servicio."
+        );
+
+    }
+
+
+    const hoy = obtenerFechaLocal();
+
+    if (inputFechaServicio.value < hoy) {
+
+        throw new Error(
+            "La fecha del servicio no puede ser anterior a hoy."
+        );
+
+    }
+
+
+    if (!selectVentanaServicio.value) {
+
+        throw new Error(
+            "Debe seleccionar la ventana horaria del servicio."
+        );
+
+    }
+
+
+    if (!selectOperarioAsignado.value) {
+
+        throw new Error(
+            "Debe seleccionar el operario asignado."
+        );
+
+    }
+
+        if (!inputFechaServicio.value) {
+
+        throw new Error(
+            "Debe seleccionar la fecha del servicio."
+        );
+
+    }
+
+
+    const hoy = obtenerFechaLocal();
+
+    if (inputFechaServicio.value < hoy) {
+
+        throw new Error(
+            "La fecha del servicio no puede ser anterior a hoy."
+        );
+
+    }
+
 
     // ------------------------------------------------------
     // RETIRO
@@ -1105,6 +1210,22 @@ function construirResumen() {
         servicioActual
     );
 
+        html += crearFilaResumen(
+        "Fecha del servicio",
+        formatearFechaVisual(inputFechaServicio.value)
+    );
+
+
+    html += crearFilaResumen(
+        "Ventana horaria",
+        selectVentanaServicio.value
+    );
+
+
+    html += crearFilaResumen(
+        "Operario asignado",
+        textoOpcionSeleccionada(selectOperarioAsignado)
+    );
 
     // ------------------------------------------------------
     // PACIENTE
@@ -1331,60 +1452,36 @@ function reiniciarFormularioCompleto() {
 
     formRegistroPaciente.reset();
 
+    configurarFechaServicio();
+
     servicioActual = "";
-
     tipoPacienteActual = "";
-
     pacienteSeleccionado = null;
-
     llevaFleteActual = "";
-
     horarioFleteActual = "";
-
     convenioActual = "";
 
-
+    ocultar(seccionFechaServicio);
     ocultar(seccionTipoPaciente);
-
     ocultar(seccionBusquedaPaciente);
-
     ocultar(seccionDatosPaciente);
-
     ocultar(seccionImplementacion);
-
     ocultar(seccionRecargaRegistrado);
-
     ocultar(seccionRecargaNuevo);
-
     ocultar(seccionRetiro);
-
     ocultar(seccionVenta);
-
     ocultar(seccionFlete);
-
     ocultar(seccionDetalleFlete);
-
     ocultar(seccionObservacionesRegistro);
-
     ocultar(seccionResumenRegistro);
-
     ocultar(seccionBotonRegistro);
-
     ocultar(pacienteSeleccionadoCard);
-
     ocultar(retiroOrigenCard);
-
     ocultar(resultadosBusquedaPaciente);
-
     ocultar(resultadosComunas);
-
     ocultar(resumenTarifasImplementacion);
-
     ocultarMensaje();
-
-
     limpiarBotones();
-
     limpiarValoresInternos();
 
 }
@@ -1406,47 +1503,27 @@ function reiniciarFlujoServicio() {
 
     convenioActual = "";
 
-
+    ocultar(seccionFechaServicio);
     ocultar(seccionTipoPaciente);
-
     ocultar(seccionBusquedaPaciente);
-
     ocultar(seccionDatosPaciente);
-
     ocultar(seccionImplementacion);
-
     ocultar(seccionRecargaRegistrado);
-
     ocultar(seccionRecargaNuevo);
-
     ocultar(seccionRetiro);
-
     ocultar(seccionVenta);
-
     ocultar(seccionFlete);
-
     ocultar(seccionDetalleFlete);
-
     ocultar(seccionObservacionesRegistro);
-
     ocultar(seccionResumenRegistro);
-
     ocultar(seccionBotonRegistro);
-
     ocultar(pacienteSeleccionadoCard);
-
     ocultar(retiroOrigenCard);
-
     ocultar(resultadosBusquedaPaciente);
-
     ocultar(resultadosComunas);
-
     limpiarPacienteNuevo();
-
     limpiarPacienteRegistrado();
-
     limpiarDetalleFlete();
-
     limpiarBotones();
 
 }
@@ -1763,6 +1840,22 @@ function formatearRut(valor) {
 
 
     return cuerpo + "-" + dv;
+
+}
+
+// ==========================================================
+// FORMATEAR FECHA VISUAL
+// ==========================================================
+
+function formatearFechaVisual(fecha) {
+
+    if (!fecha) return "";
+
+    const partes = fecha.split("-");
+
+    if (partes.length !== 3) return fecha;
+
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
 
 }
 

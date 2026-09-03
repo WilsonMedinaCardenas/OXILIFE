@@ -110,6 +110,96 @@
 
                 </section>
 
+                <!-- =================================================
+                    PROGRAMACIÓN DEL SERVICIO
+                ================================================== -->
+
+                <section
+                    id="seccionFechaServicio"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Programación del Servicio</h2>
+
+
+                    <!-- FECHA -->
+
+                    <div class="campo">
+
+                        <label for="inputFechaServicio">
+                            Fecha programada
+                        </label>
+
+                        <input
+                            type="date"
+                            id="inputFechaServicio"
+                            name="fechaServicio"
+                            required
+                        >
+
+                        <small class="campo-ayuda">
+                            Si el servicio es para hoy, no necesita modificar la fecha.
+                        </small>
+
+                    </div>
+
+
+                    <!-- VENTANA HORARIA -->
+
+                    <div class="campo">
+
+                        <label for="selectVentanaServicio">
+                            Ventana horaria
+                        </label>
+
+                        <select
+                            id="selectVentanaServicio"
+                            name="ventanaServicio"
+                            required
+                        >
+
+                            <option value="">
+                                Seleccione un horario
+                            </option>
+
+                        </select>
+
+                        <small class="campo-ayuda">
+                            Seleccione el rango horario informado al paciente.
+                        </small>
+
+                    </div>
+
+
+                    <!-- OPERARIO ASIGNADO -->
+
+                    <div class="campo">
+
+                        <label for="selectOperarioAsignado">
+                            Operario asignado
+                        </label>
+
+                        <select
+                            id="selectOperarioAsignado"
+                            name="operarioAsignado"
+                            required
+                        >
+
+                            <option value="">
+                                Seleccione un operario
+                            </option>
+
+                        </select>
+
+                        <small class="campo-ayuda">
+                            El operario seleccionado recibirá la notificación del servicio.
+                        </small>
+
+                    </div>
+
+                </section>
+
 
                 <!-- =================================================
                      PACIENTE NUEVO / REGISTRADO
