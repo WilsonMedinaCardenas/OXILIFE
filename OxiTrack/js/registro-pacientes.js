@@ -18,6 +18,7 @@ let llevaFleteActual = "";
 let horarioFleteActual = "";
 let convenioActual = "";
 let comunasDisponibles = [];
+let temporizadorBusquedaPaciente = null;
 
 
 // ==========================================================
@@ -799,6 +800,78 @@ inputBuscarPaciente.addEventListener("input", function () {
     resultadosBusquedaPaciente.innerHTML = "";
 
     ocultar(resultadosBusquedaPaciente);
+
+
+    const buscar =
+        inputBuscarPaciente.value.trim();
+
+
+    if (temporizadorBusquedaPaciente) {
+
+        clearTimeout(
+            temporizadorBusquedaPaciente
+        );
+
+    }
+
+
+    if (buscar.length < 4) return;
+
+
+    temporizadorBusquedaPaciente =
+        setTimeout(
+            function () {
+
+                buscarPacienteRegistrado(
+                    buscar
+                );
+
+            },
+            350
+        );
+
+});
+
+inputBuscarPaciente.addEventListener("input", function () {
+
+    pacienteSeleccionado = null;
+
+    pacienteSeleccionadoId.value = "";
+
+    ocultar(pacienteSeleccionadoCard);
+
+    resultadosBusquedaPaciente.innerHTML = "";
+
+    ocultar(resultadosBusquedaPaciente);
+
+
+    const buscar =
+        inputBuscarPaciente.value.trim();
+
+
+    if (temporizadorBusquedaPaciente) {
+
+        clearTimeout(
+            temporizadorBusquedaPaciente
+        );
+
+    }
+
+
+    if (buscar.length < 4) return;
+
+
+    temporizadorBusquedaPaciente =
+        setTimeout(
+            function () {
+
+                buscarPacienteRegistrado(
+                    buscar
+                );
+
+            },
+            350
+        );
 
 });
 
