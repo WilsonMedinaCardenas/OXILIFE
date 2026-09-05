@@ -14,10 +14,10 @@
 let servicioActual = "";
 let tipoPacienteActual = "";
 let pacienteSeleccionado = null;
-
 let llevaFleteActual = "";
 let horarioFleteActual = "";
 let convenioActual = "";
+let comunasDisponibles = [];
 
 
 // ==========================================================
@@ -66,22 +66,10 @@ const comunaSeleccionada = document.getElementById("comunaSeleccionada");
 
 // IMPLEMENTACIÓN
 
-const seccionImplementacion = document.getElementById(
-    "seccionImplementacion"
-);
-
-const selectTipoImplementacion = document.getElementById(
-    "selectTipoImplementacion"
-);
-
-const selectCicloImplementacion = document.getElementById(
-    "selectCicloImplementacion"
-);
-
-const resumenTarifasImplementacion = document.getElementById(
-    "resumenTarifasImplementacion"
-);
-
+const seccionImplementacion = document.getElementById("seccionImplementacion");
+const selectTipoImplementacion = document.getElementById("selectTipoImplementacion");
+const selectCicloImplementacion = document.getElementById("selectCicloImplementacion");
+const resumenTarifasImplementacion = document.getElementById("resumenTarifasImplementacion");
 const valorArriendo = document.getElementById("valorArriendo");
 const valorInsumos = document.getElementById("valorInsumos");
 const valorFleteDiurno = document.getElementById("valorFleteDiurno");
@@ -90,166 +78,69 @@ const valorFleteNocturno = document.getElementById("valorFleteNocturno");
 
 // RECARGA
 
-const seccionRecargaRegistrado = document.getElementById(
-    "seccionRecargaRegistrado"
-);
-
-const listaCilindrosPaciente = document.getElementById(
-    "listaCilindrosPaciente"
-);
-
-const seccionRecargaNuevo = document.getElementById(
-    "seccionRecargaNuevo"
-);
-
-const selectCilindroRecargaNuevo = document.getElementById(
-    "selectCilindroRecargaNuevo"
-);
-
+const seccionRecargaRegistrado = document.getElementById("seccionRecargaRegistrado");
+const listaCilindrosPaciente = document.getElementById("listaCilindrosPaciente");
+const seccionRecargaNuevo = document.getElementById("seccionRecargaNuevo");
+const selectCilindroRecargaNuevo = document.getElementById("selectCilindroRecargaNuevo");
 
 // RETIRO
 
 const seccionRetiro = document.getElementById("seccionRetiro");
-
-const retiroOrigenCard = document.getElementById(
-    "retiroOrigenCard"
-);
-
-const retiroIdOrigen = document.getElementById(
-    "retiroIdOrigen"
-);
-
-const retiroTipoOrigen = document.getElementById(
-    "retiroTipoOrigen"
-);
-
-const retiroElementosOrigen = document.getElementById(
-    "retiroElementosOrigen"
-);
-
-const inputRetiroIdOrigen = document.getElementById(
-    "inputRetiroIdOrigen"
-);
-
+const retiroOrigenCard = document.getElementById("retiroOrigenCard");
+const retiroIdOrigen = document.getElementById("retiroIdOrigen");
+const retiroTipoOrigen = document.getElementById("retiroTipoOrigen");
+const retiroElementosOrigen = document.getElementById("retiroElementosOrigen");
+const inputRetiroIdOrigen = document.getElementById("inputRetiroIdOrigen");
 
 // VENTA
 
 const seccionVenta = document.getElementById("seccionVenta");
 
-
 // FLETE
 
 const seccionFlete = document.getElementById("seccionFlete");
-
 const btnFleteSi = document.getElementById("btnFleteSi");
 const btnFleteNo = document.getElementById("btnFleteNo");
-
-const inputLlevaFlete = document.getElementById(
-    "inputLlevaFlete"
-);
-
-const seccionDetalleFlete = document.getElementById(
-    "seccionDetalleFlete"
-);
-
-const btnFleteDiurno = document.getElementById(
-    "btnFleteDiurno"
-);
-
-const btnFleteNocturno = document.getElementById(
-    "btnFleteNocturno"
-);
-
-const inputHorarioFlete = document.getElementById(
-    "inputHorarioFlete"
-);
-
-const btnConvenioSi = document.getElementById(
-    "btnConvenioSi"
-);
-
-const btnConvenioNo = document.getElementById(
-    "btnConvenioNo"
-);
-
-const inputConvenio = document.getElementById(
-    "inputConvenio"
-);
-
+const inputLlevaFlete = document.getElementById("inputLlevaFlete");
+const seccionDetalleFlete = document.getElementById("seccionDetalleFlete");
+const btnFleteDiurno = document.getElementById("btnFleteDiurno");
+const btnFleteNocturno = document.getElementById("btnFleteNocturno");
+const inputHorarioFlete = document.getElementById("inputHorarioFlete");
+const btnConvenioSi = document.getElementById("btnConvenioSi");
+const btnConvenioNo = document.getElementById("btnConvenioNo");
+const inputConvenio = document.getElementById("inputConvenio");
 
 // OBSERVACIONES
 
-const seccionObservacionesRegistro = document.getElementById(
-    "seccionObservacionesRegistro"
-);
-
-const inputObservacionesRegistro = document.getElementById(
-    "inputObservacionesRegistro"
-);
-
+const seccionObservacionesRegistro = document.getElementById("seccionObservacionesRegistro");
+const inputObservacionesRegistro = document.getElementById("inputObservacionesRegistro");
 
 // RESUMEN
 
-const seccionResumenRegistro = document.getElementById(
-    "seccionResumenRegistro"
-);
-
-const contenidoResumenRegistro = document.getElementById(
-    "contenidoResumenRegistro"
-);
-
+const seccionResumenRegistro = document.getElementById("seccionResumenRegistro");
+const contenidoResumenRegistro = document.getElementById("contenidoResumenRegistro");
 
 // BOTÓN
 
-const seccionBotonRegistro = document.getElementById(
-    "seccionBotonRegistro"
-);
-
-const btnRegistrarPaciente = document.getElementById(
-    "btnRegistrarPaciente"
-);
-
+const seccionBotonRegistro = document.getElementById("seccionBotonRegistro");
+const btnRegistrarPaciente = document.getElementById("btnRegistrarPaciente");
 
 // MENSAJE
 
-const mensajeRegistro = document.getElementById(
-    "mensajeRegistro"
-);
-
+const mensajeRegistro = document.getElementById("mensajeRegistro");
 
 // MODAL CONFIRMACIÓN
 
-const modalConfirmacionRegistro = document.getElementById(
-    "modalConfirmacionRegistro"
-);
-
-const modalResumenRegistro = document.getElementById(
-    "modalResumenRegistro"
-);
-
-const btnCancelarRegistro = document.getElementById(
-    "btnCancelarRegistro"
-);
-
-const btnConfirmarRegistro = document.getElementById(
-    "btnConfirmarRegistro"
-);
-
+const modalConfirmacionRegistro = document.getElementById("modalConfirmacionRegistro");
+const modalResumenRegistro = document.getElementById("modalResumenRegistro");
+const btnCancelarRegistro = document.getElementById("btnCancelarRegistro");
+const btnConfirmarRegistro = document.getElementById("btnConfirmarRegistro");
 
 // MODAL ÉXITO
 
-const modalRegistroExitoso = document.getElementById(
-    "modalRegistroExitoso"
-);
-
-const idRegistroCreado = document.getElementById(
-    "idRegistroCreado"
-);
-
-const btnNuevoRegistro = document.getElementById(
-    "btnNuevoRegistro"
-);
-
+const modalRegistroExitoso = document.getElementById("modalRegistroExitoso");
+const idRegistroCreado = document.getElementById("idRegistroCreado");
+const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
 
 // ==========================================================
 // INICIALIZACIÓN
@@ -260,7 +151,7 @@ document.addEventListener("DOMContentLoaded", function () {
     reiniciarFormularioCompleto();
     configurarFechaServicio();
     cargarVentanasHorarias();
-
+    cargarCatalogoRegistro();
 });
 
 // ==========================================================
@@ -344,6 +235,147 @@ function convertirMinutosAHora(totalMinutos) {
         ":" +
         String(minutos).padStart(2, "0")
     );
+
+}
+
+// ==========================================================
+// CATÁLOGO REGISTRO OFICINA
+// COMUNAS + TIPOS IMPLEMENTACIÓN + CILINDROS RECARGA
+// ==========================================================
+
+async function cargarCatalogoRegistro() {
+
+    try {
+
+        const respuesta =
+            await fetch(
+                "/api/oxitrack/?modo=catalogoRegistro",
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible obtener el catálogo de registro."
+            );
+
+        }
+
+
+        // ------------------------------------------------------
+        // COMUNAS
+        // ------------------------------------------------------
+
+        comunasDisponibles =
+            Array.isArray(datos.comunas)
+                ? [...new Set(
+                    datos.comunas
+                        .map(function (comuna) {
+                            return String(comuna || "").trim();
+                        })
+                        .filter(Boolean)
+                )]
+                : [];
+
+
+        // ------------------------------------------------------
+        // TIPOS IMPLEMENTACIÓN
+        // ------------------------------------------------------
+
+        selectTipoImplementacion.innerHTML =
+            `<option value="">
+                Seleccione un tipo
+            </option>`;
+
+
+        const tiposImplementacion =
+            Array.isArray(datos.tiposImplementacion)
+                ? [...new Set(datos.tiposImplementacion)]
+                : [];
+
+
+        tiposImplementacion.forEach(function (tipo) {
+
+            const valor =
+                String(tipo || "").trim();
+
+            if (!valor) return;
+
+
+            const opcion =
+                document.createElement("option");
+
+            opcion.value = valor;
+            opcion.textContent = valor;
+
+            selectTipoImplementacion.appendChild(opcion);
+
+        });
+
+
+        // ------------------------------------------------------
+        // CILINDROS RECARGA
+        // ------------------------------------------------------
+
+        selectCilindroRecargaNuevo.innerHTML =
+            `<option value="">
+                Seleccione un cilindro
+            </option>`;
+
+
+        const cilindrosRecarga =
+            Array.isArray(datos.cilindrosRecarga)
+                ? [...new Set(datos.cilindrosRecarga)]
+                : [];
+
+
+        cilindrosRecarga.forEach(function (cilindro) {
+
+            const valor =
+                String(cilindro || "").trim();
+
+            if (!valor) return;
+
+
+            const opcion =
+                document.createElement("option");
+
+            opcion.value = valor;
+            opcion.textContent = valor;
+
+            selectCilindroRecargaNuevo.appendChild(opcion);
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Error al cargar catálogo de registro:",
+            error
+        );
+
+
+        mostrarError(
+            "No fue posible cargar los datos necesarios para registrar servicios."
+        );
+
+    }
 
 }
 
@@ -686,9 +718,65 @@ inputComunaPaciente.addEventListener("input", function () {
 
     comunaSeleccionada.value = "";
 
+    resultadosComunas.innerHTML = "";
+
     ocultar(resultadosComunas);
 
-    resultadosComunas.innerHTML = "";
+
+    const busqueda =
+        inputComunaPaciente.value
+            .trim()
+            .toUpperCase();
+
+
+    if (busqueda.length < 2) return;
+
+
+    const coincidencias =
+        comunasDisponibles
+            .filter(function (comuna) {
+
+                return String(comuna)
+                    .toUpperCase()
+                    .includes(busqueda);
+
+            })
+            .slice(0, 10);
+
+
+    if (coincidencias.length === 0) return;
+
+
+    coincidencias.forEach(function (comuna) {
+
+        const resultado =
+            document.createElement("div");
+
+        resultado.className =
+            "resultado-busqueda-item";
+
+        resultado.textContent =
+            comuna;
+
+
+        resultado.addEventListener(
+            "click",
+            function () {
+
+                seleccionarComuna(comuna);
+
+            }
+        );
+
+
+        resultadosComunas.appendChild(
+            resultado
+        );
+
+    });
+
+
+    mostrar(resultadosComunas);
 
 });
 
