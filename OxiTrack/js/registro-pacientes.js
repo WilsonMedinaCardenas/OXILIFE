@@ -832,49 +832,6 @@ inputBuscarPaciente.addEventListener("input", function () {
 
 });
 
-inputBuscarPaciente.addEventListener("input", function () {
-
-    pacienteSeleccionado = null;
-
-    pacienteSeleccionadoId.value = "";
-
-    ocultar(pacienteSeleccionadoCard);
-
-    resultadosBusquedaPaciente.innerHTML = "";
-
-    ocultar(resultadosBusquedaPaciente);
-
-
-    const buscar =
-        inputBuscarPaciente.value.trim();
-
-
-    if (temporizadorBusquedaPaciente) {
-
-        clearTimeout(
-            temporizadorBusquedaPaciente
-        );
-
-    }
-
-
-    if (buscar.length < 4) return;
-
-
-    temporizadorBusquedaPaciente =
-        setTimeout(
-            function () {
-
-                buscarPacienteRegistrado(
-                    buscar
-                );
-
-            },
-            350
-        );
-
-});
-
 // ==========================================================
 // BUSCAR PACIENTE REGISTRADO
 // ==========================================================
