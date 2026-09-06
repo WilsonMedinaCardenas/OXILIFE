@@ -875,6 +875,139 @@ inputBuscarPaciente.addEventListener("input", function () {
 
 });
 
+// ==========================================================
+// BUSCAR PACIENTE REGISTRADO
+// ==========================================================
+
+async function buscarPacienteRegistrado(buscar) {
+
+    try {
+
+        resultadosBusquedaPaciente.innerHTML = "";
+
+        ocultar(resultadosBusquedaPaciente);
+
+
+        const respuesta =
+            await fetch(
+                "/api/oxitrack/" +
+                "?modo=buscarPacienteRegistro" +
+                "&buscar=" +
+                encodeURIComponent(buscar),
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible buscar el paciente."
+            );
+
+        }
+
+
+        const pacientes =
+            Array.isArray(datos.pacientes)
+                ? datos.pacientes
+                : [];
+
+
+        resultadosBusquedaPaciente.innerHTML = "";
+
+
+        if (pacientes.length === 0) {
+
+            const sinResultados =
+                document.createElement("div");
+
+            sinResultados.className =
+                "resultado-busqueda-item";
+
+            sinResultados.textContent =
+                "No se encontraron pacientes.";
+
+            resultadosBusquedaPaciente.appendChild(
+                sinResultados
+            );
+
+            mostrar(
+                resultadosBusquedaPaciente
+            );
+
+            return;
+
+        }
+
+
+        pacientes.forEach(function (paciente) {
+
+            const resultado =
+                document.createElement("div");
+
+            resultado.className =
+                "resultado-busqueda-item";
+
+            resultado.textContent =
+                paciente.nombreMostrar ||
+                paciente.nombre ||
+                "Paciente";
+
+
+            resultado.addEventListener(
+                "click",
+                function () {
+
+                    seleccionarPacienteRegistrado(
+                        paciente
+                    );
+
+                }
+            );
+
+
+            resultadosBusquedaPaciente.appendChild(
+                resultado
+            );
+
+        });
+
+
+        mostrar(
+            resultadosBusquedaPaciente
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Error al buscar paciente:",
+            error
+        );
+
+
+        mostrarError(
+            "No fue posible buscar el paciente registrado."
+        );
+
+    }
+
+}
+
 
 // ==========================================================
 // FORMATO RUT
