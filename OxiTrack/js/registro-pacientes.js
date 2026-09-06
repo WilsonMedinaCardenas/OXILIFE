@@ -153,6 +153,8 @@ document.addEventListener("DOMContentLoaded", function () {
     configurarFechaServicio();
     cargarVentanasHorarias();
     cargarCatalogoRegistro();
+    cargarOperariosRegistro();
+
 });
 
 // ==========================================================
@@ -374,6 +376,94 @@ async function cargarCatalogoRegistro() {
 
         mostrarError(
             "No fue posible cargar los datos necesarios para registrar servicios."
+        );
+
+    }
+
+}
+
+// ==========================================================
+// OPERARIOS ASIGNABLES
+// ==========================================================
+
+async function cargarOperariosRegistro() {
+
+    try {
+
+        selectOperarioAsignado.innerHTML =
+            `<option value="">
+                Seleccione un operario
+            </option>`;
+
+
+        const respuesta =
+            await fetch(
+                "/api/oxitrack/?modo=operariosRegistro",
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible obtener los operarios."
+            );
+
+        }
+
+
+        const operarios =
+            Array.isArray(datos.operarios)
+                ? datos.operarios
+                : [];
+
+
+        operarios.forEach(function (operario) {
+
+            const nombre =
+                String(operario || "").trim();
+
+            if (!nombre) return;
+
+
+            const opcion =
+                document.createElement("option");
+
+            opcion.value = nombre;
+
+            opcion.textContent = nombre;
+
+            selectOperarioAsignado.appendChild(
+                opcion
+            );
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Error al cargar operarios:",
+            error
+        );
+
+
+        mostrarError(
+            "No fue posible cargar los operarios disponibles."
         );
 
     }
