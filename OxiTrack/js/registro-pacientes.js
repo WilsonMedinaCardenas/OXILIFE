@@ -19,6 +19,7 @@ let horarioFleteActual = "";
 let convenioActual = "";
 let comunasDisponibles = [];
 let temporizadorBusquedaPaciente = null;
+let idSolicitudRegistro = "";
 
 
 // ==========================================================
@@ -1136,16 +1137,308 @@ btnCancelarRegistro.addEventListener("click", function () {
 // TODAVÍA NO SE ENVÍA AL BACKEND.
 // ==========================================================
 
-btnConfirmarRegistro.addEventListener("click", function () {
+btnConfirmarRegistro.addEventListener(
+    "click",
+    async function () {
 
-    ocultarModal(modalConfirmacionRegistro);
+        ocultarMensaje();
 
-    mostrarMensaje(
-        "La validación del formulario es correcta. Falta conectar el registro con el servidor.",
-        "exito"
-    );
 
-});
+        if (!idSolicitudRegistro) {
+
+            idSolicitudRegistro =
+                typeof crypto.randomUUID === "function"
+                    ? crypto.randomUUID()
+                    : (
+                        Date.now().toString(36) +
+                        "-" +
+                        Math.random()
+                            .toString(36)
+                            .slice(2)
+                    );
+
+        }
+
+
+        btnConfirmarRegistro.disabled = true;
+
+        btnConfirmarRegistro.textContent =
+            "Registrando...";
+
+
+        try {
+
+            validarFormulario();
+
+
+            const payload =
+                new FormData();
+
+
+            payload.append(
+                "tipoCliente",
+                "REGISTRO_OFICINA"
+            );
+
+
+            payload.append(
+                "solicitudId",
+                idSolicitudRegistro
+            );
+
+
+            payload.append(
+                "tipoPaciente",
+                servicioActual === "RETIRO"
+                    ? "REGISTRADO"
+                    : tipoPacienteActual
+            );
+
+
+            payload.append(
+                "servicio",
+                servicioActual
+            );
+
+
+            payload.append(
+                "pacienteId",
+                pacienteSeleccionadoId.value.trim()
+            );
+
+
+            payload.append(
+                "fechaProgramada",
+                inputFechaServicio.value
+            );
+
+
+            payload.append(
+                "ventanaHoraria",
+                selectVentanaServicio.value
+            );
+
+
+            payload.append(
+                "operarioAsignado",
+                selectOperarioAsignado.value
+            );
+
+
+            // ==================================================
+            // PACIENTE NUEVO
+            // ==================================================
+
+            if (
+                tipoPacienteActual === "NUEVO"
+            ) {
+
+                payload.append(
+                    "nombre",
+                    inputNombrePaciente.value.trim()
+                );
+
+                payload.append(
+                    "rut",
+                    inputRutPaciente.value.trim()
+                );
+
+                payload.append(
+                    "telefono",
+                    inputTelefonoPaciente.value.trim()
+                );
+
+                payload.append(
+                    "email",
+                    inputEmailPaciente.value.trim()
+                );
+
+                payload.append(
+                    "direccion",
+                    inputDireccionPaciente.value.trim()
+                );
+
+                payload.append(
+                    "comuna",
+                    comunaSeleccionada.value.trim()
+                );
+
+            }
+
+
+            // ==================================================
+            // IMPLEMENTACIÓN
+            // ==================================================
+
+            if (
+                servicioActual === "IMPLEMENTACIÓN"
+            ) {
+
+                payload.append(
+                    "tipo",
+                    selectTipoImplementacion.value
+                );
+
+                payload.append(
+                    "ciclo",
+                    selectCicloImplementacion.value
+                );
+
+            }
+
+
+            // ==================================================
+            // RECARGA
+            // ==================================================
+
+            if (
+                servicioActual === "RECARGA"
+            ) {
+
+                const cilindro =
+                    tipoPacienteActual === "NUEVO"
+                        ? selectCilindroRecargaNuevo.value
+                        : obtenerCilindroRegistradoSeleccionado();
+
+
+                payload.append(
+                    "tipo",
+                    cilindro
+                );
+
+            }
+
+
+            // ==================================================
+            // RETIRO
+            // ==================================================
+
+            if (
+                servicioActual === "RETIRO"
+            ) {
+
+                payload.append(
+                    "idOrigen",
+                    inputRetiroIdOrigen.value
+                );
+
+            }
+
+
+            // ==================================================
+            // FLETE
+            // ==================================================
+
+            if (
+                servicioActual === "IMPLEMENTACIÓN" ||
+                servicioActual === "RECARGA" ||
+                servicioActual === "VENTA"
+            ) {
+
+                payload.append(
+                    "llevaFlete",
+                    llevaFleteActual
+                );
+
+
+                if (
+                    llevaFleteActual === "SI"
+                ) {
+
+                    payload.append(
+                        "horarioFlete",
+                        horarioFleteActual
+                    );
+
+                    payload.append(
+                        "convenio",
+                        convenioActual
+                    );
+
+                }
+
+            }
+
+
+            payload.append(
+                "observaciones",
+                inputObservacionesRegistro.value.trim()
+            );
+
+
+            // ==================================================
+            // ENVÍO
+            // ==================================================
+
+            const respuesta =
+                await fetch(
+                    "/api/oxitrack/",
+                    {
+                        method: "POST",
+                        body: payload
+                    }
+                );
+
+
+            const resultado =
+                await respuesta.json();
+
+
+            if (
+                !respuesta.ok ||
+                resultado.ok !== true
+            ) {
+
+                throw new Error(
+                    resultado.error ||
+                    "El servidor rechazó el registro."
+                );
+
+            }
+
+
+            // ==================================================
+            // ÉXITO
+            // ==================================================
+
+            ocultarModal(
+                modalConfirmacionRegistro
+            );
+
+
+            idRegistroCreado.textContent =
+                resultado.id;
+
+
+            mostrarModal(
+                modalRegistroExitoso
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Error al registrar servicio:",
+                error
+            );
+
+
+            mostrarError(
+                error.message ||
+                "No fue posible registrar el servicio."
+            );
+
+        } finally {
+
+            btnConfirmarRegistro.disabled = false;
+
+            btnConfirmarRegistro.textContent =
+                "Confirmar";
+
+        }
+
+    }
+);
 
 
 // ==========================================================
@@ -1812,15 +2105,11 @@ function reiniciarFormularioCompleto() {
 function reiniciarFlujoServicio() {
 
     tipoPacienteActual = "";
-
     pacienteSeleccionado = null;
-
+    idSolicitudRegistro = "";
     llevaFleteActual = "";
-
     horarioFleteActual = "";
-
     convenioActual = "";
-
     ocultar(seccionFechaServicio);
     ocultar(seccionTipoPaciente);
     ocultar(seccionBusquedaPaciente);
