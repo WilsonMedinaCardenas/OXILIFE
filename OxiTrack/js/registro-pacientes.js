@@ -144,6 +144,7 @@ const modalRegistroExitoso = document.getElementById("modalRegistroExitoso");
 const idRegistroCreado = document.getElementById("idRegistroCreado");
 const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
 
+
 // ==========================================================
 // TEXTO EN MAYÚSCULAS - REGISTRO OFICINA
 // ==========================================================
@@ -151,7 +152,6 @@ const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
 [
     inputNombrePaciente,
     inputDireccionPaciente,
-    inputComunaPaciente,
     inputObservacionesRegistro
 ].forEach(function (campo) {
 
@@ -849,6 +849,8 @@ inputComunaPaciente.addEventListener("input", function () {
 
     ocultar(resultadosComunas);
 
+    inputComunaPaciente.value =
+    inputComunaPaciente.value.toUpperCase();
 
     const busqueda =
         inputComunaPaciente.value
