@@ -145,6 +145,41 @@ const idRegistroCreado = document.getElementById("idRegistroCreado");
 const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
 
 // ==========================================================
+// TEXTO EN MAYÚSCULAS - REGISTRO OFICINA
+// ==========================================================
+
+[
+    inputNombrePaciente,
+    inputDireccionPaciente,
+    inputComunaPaciente,
+    inputObservacionesRegistro
+].forEach(function (campo) {
+
+    campo.addEventListener("input", function () {
+
+        const inicio = campo.selectionStart;
+        const fin = campo.selectionEnd;
+
+        campo.value =
+            campo.value.toUpperCase();
+
+        if (
+            typeof inicio === "number" &&
+            typeof fin === "number"
+        ) {
+
+            campo.setSelectionRange(
+                inicio,
+                fin
+            );
+
+        }
+
+    });
+
+});
+
+// ==========================================================
 // INICIALIZACIÓN
 // ==========================================================
 
@@ -871,6 +906,36 @@ inputComunaPaciente.addEventListener("input", function () {
     mostrar(resultadosComunas);
 
 });
+
+// ==========================================================
+// COMUNA - SELECCIONAR PRIMER RESULTADO CON ENTER
+// ==========================================================
+
+inputComunaPaciente.addEventListener(
+    "keydown",
+    function (event) {
+
+        if (event.key !== "Enter") return;
+
+
+        const primerResultado =
+            resultadosComunas.querySelector(
+                ".resultado-busqueda-item"
+            );
+
+
+        if (!primerResultado) return;
+
+
+        event.preventDefault();
+
+
+        seleccionarComuna(
+            primerResultado.textContent.trim()
+        );
+
+    }
+);
 
 
 // ==========================================================
