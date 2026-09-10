@@ -637,14 +637,36 @@ async function intentarSincronizarOffline() {
         // 1. LEER REGISTROS PENDIENTES
         // ------------------------------------------------------
 
-        let registrosGuardados = JSON.parse(
-            localStorage.getItem("oxitrack_offline") || "[]"
-        );
+        let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
 
+        let registrosMigrados = false;
 
-        if (registrosGuardados.length === 0) {
-            return;
+        registrosGuardados.forEach(registro => {
+
+            if (!registro.envioId) {
+
+                registro.envioId =
+                    generarEnvioId();
+
+                registrosMigrados = true;
+            }
+
+        });
+
+        if (registrosMigrados) {
+
+            localStorage.setItem(
+                "oxitrack_offline",
+                JSON.stringify(registrosGuardados)
+            );
+
+            console.log(
+                "Sincronizador: registros offline antiguos actualizados con ID único."
+            );
         }
+
+
+        if (registrosGuardados.length === 0) {return;}
 
 
         // ------------------------------------------------------
