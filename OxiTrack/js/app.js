@@ -5,6 +5,31 @@ const WORKER_URL = "https://oxilife.cl/api/oxitrack/";
 let coordenadasGPS = "Buscando señal GPS...";
 
 // ==========================================================
+// CONTROL DE ENVÍOS ÚNICOS
+// ==========================================================
+
+let sincronizacionOfflineEnCurso = false;
+
+
+function generarEnvioId() {
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+    ) {
+        return window.crypto.randomUUID();
+    }
+
+    return (
+        Date.now().toString(36) +
+        "-" +
+        Math.random().toString(36).slice(2) +
+        "-" +
+        Math.random().toString(36).slice(2)
+    );
+}
+
+// ==========================================================
 // CACHE LOCAL DE CLIENTES
 // SOLO GUARDA ID + NOMBRE
 // ==========================================================
@@ -448,6 +473,8 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
+    const envioId = generarEnvioId();
+
     if (signaturePad.isEmpty()) {
         alert("Debe ingresar la firma.");
         return;
@@ -498,6 +525,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     // Construcción del FormData dinámico con las nuevas propiedades
     const payload = new FormData();
 
+    payload.append("envioId", envioId);
     payload.append("cliente", cliente);
     payload.append("servicio", servicio);
     payload.append("paciente", paciente);
@@ -551,6 +579,7 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
         
         // 🛡️ INYECTOR QUIRÚRGICO OFFLINE (GUARDA EN EL STORE DEL CELULAR SI SE PIERDE LA SEÑAL)
         const registroOffline = { 
+            envioId: envioId,
             cliente: cliente,
             clienteId: clienteIdSeleccionado,
             servicio: servicio,
@@ -728,6 +757,7 @@ async function intentarSincronizarOffline() {
 
         const payloadOffline = new FormData();
 
+        payloadOffline.append("envioId", reg.envioId || "");
         payloadOffline.append("cliente", reg.cliente || "");
         payloadOffline.append("clienteId", reg.clienteId || "");
         payloadOffline.append("servicio", reg.servicio || "");
