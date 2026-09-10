@@ -614,264 +614,447 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 
 async function intentarSincronizarOffline() {
 
-    // ------------------------------------------------------
-    // 1. LEER REGISTROS PENDIENTES
-    // ------------------------------------------------------
+    // ======================================================
+    // EVITAR DOS SINCRONIZACIONES SIMULTÁNEAS
+    // ======================================================
 
-    let registrosGuardados = JSON.parse(
-        localStorage.getItem("oxitrack_offline") || "[]"
-    );
-
-    if (registrosGuardados.length === 0) {
-        return;
-    }
-
-
-    // Si el navegador todavía considera que no hay conexión,
-    // ni siquiera intentamos sincronizar.
-    if (!navigator.onLine) {
+    if (sincronizacionOfflineEnCurso) {
 
         console.log(
-            "Sincronizador: aún no hay conexión. Registros conservados."
+            "Sincronizador: ya existe una sincronización en curso."
         );
 
         return;
     }
 
 
-    console.log(
-        `Sincronizador: Procesando ${registrosGuardados.length} envíos diferidos...`
-    );
+    sincronizacionOfflineEnCurso = true;
 
 
-    // ------------------------------------------------------
-    // 2. PROCESAR DE ATRÁS HACIA ADELANTE
-    // ------------------------------------------------------
+    try {
 
-    for (
-        let i = registrosGuardados.length - 1;
-        i >= 0;
-        i--
-    ) {
+        // ------------------------------------------------------
+        // 1. LEER REGISTROS PENDIENTES
+        // ------------------------------------------------------
 
-        const reg = registrosGuardados[i];
+        let registrosGuardados = JSON.parse(
+            localStorage.getItem("oxitrack_offline") || "[]"
+        );
 
 
-        // --------------------------------------------------
-        // GPS DEL REGISTRO OFFLINE
-        // --------------------------------------------------
-
-        let gpsFinal = reg.gps || "No disponible";
-
-        // Verificamos si realmente tenemos coordenadas válidas.
-        // Ejemplo válido:
-        // -33.412345, -70.598765
-        const gpsOriginalValido = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(String(gpsFinal).trim());
+        if (registrosGuardados.length === 0) {
+            return;
+        }
 
 
-        // --------------------------------------------------
-        // SI NO HUBO GPS AL MOMENTO DEL REGISTRO,
-        // INTENTAR CAPTURAR UNA UBICACIÓN AL RECUPERAR SEÑAL
-        // --------------------------------------------------
+        // ------------------------------------------------------
+        // MIGRAR REGISTROS OFFLINE ANTIGUOS SIN envioId
+        // ------------------------------------------------------
 
-       // --------------------------------------------------
-        // CALCULAR CUÁNTO TIEMPO HA PASADO DESDE EL REGISTRO
-        // --------------------------------------------------
-
-        const fechaOriginal = reg.fechaRegistroOffline
-            ? new Date(reg.fechaRegistroOffline)
-            : null;
-
-        const minutosDesdeRegistro = fechaOriginal
-            ? (Date.now() - fechaOriginal.getTime()) / 60000
-            : Infinity;
+        let huboMigracion = false;
 
 
-        // --------------------------------------------------
-        // SI NO HUBO GPS ORIGINAL:
-        // SOLO ACEPTAR GPS POSTERIOR SI HAN PASADO <= 10 MIN
-        // --------------------------------------------------
+        registrosGuardados.forEach(reg => {
 
-        if (
-            !gpsOriginalValido &&
-            navigator.geolocation &&
-            minutosDesdeRegistro <= 10
+            if (!reg.envioId) {
+
+                reg.envioId =
+                    generarEnvioId();
+
+                huboMigracion = true;
+
+            }
+
+        });
+
+
+        if (huboMigracion) {
+
+            localStorage.setItem(
+                "oxitrack_offline",
+                JSON.stringify(
+                    registrosGuardados
+                )
+            );
+
+        }
+
+
+        // Si el navegador todavía considera que no hay conexión,
+        // ni siquiera intentamos sincronizar.
+
+        if (!navigator.onLine) {
+
+            console.log(
+                "Sincronizador: aún no hay conexión. Registros conservados."
+            );
+
+            return;
+        }
+
+
+        console.log(
+            `Sincronizador: Procesando ${registrosGuardados.length} envíos diferidos...`
+        );
+
+
+        // ------------------------------------------------------
+        // 2. PROCESAR DE ATRÁS HACIA ADELANTE
+        // ------------------------------------------------------
+
+        for (
+            let i = registrosGuardados.length - 1;
+            i >= 0;
+            i--
         ) {
 
-            try {
+            const reg = registrosGuardados[i];
 
-                const posicionRecuperada =
-                    await new Promise((resolve, reject) => {
 
-                        navigator.geolocation.getCurrentPosition(
-                            resolve,
-                            reject,
-                            {
-                                enableHighAccuracy: true,
-                                timeout: 8000,
-                                maximumAge: 0
+            // --------------------------------------------------
+            // GPS DEL REGISTRO OFFLINE
+            // --------------------------------------------------
+
+            let gpsFinal =
+                reg.gps ||
+                "No disponible";
+
+
+            const gpsOriginalValido =
+                /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/
+                    .test(
+                        String(gpsFinal).trim()
+                    );
+
+
+            // --------------------------------------------------
+            // CALCULAR TIEMPO DESDE EL REGISTRO
+            // --------------------------------------------------
+
+            const fechaOriginal =
+                reg.fechaRegistroOffline
+                    ? new Date(
+                        reg.fechaRegistroOffline
+                    )
+                    : null;
+
+
+            const minutosDesdeRegistro =
+                fechaOriginal
+                    ? (
+                        Date.now() -
+                        fechaOriginal.getTime()
+                    ) / 60000
+                    : Infinity;
+
+
+            // --------------------------------------------------
+            // RECUPERAR GPS SOLO SI HAN PASADO <= 10 MIN
+            // --------------------------------------------------
+
+            if (
+                !gpsOriginalValido &&
+                navigator.geolocation &&
+                minutosDesdeRegistro <= 10
+            ) {
+
+                try {
+
+                    const posicionRecuperada =
+                        await new Promise(
+                            (resolve, reject) => {
+
+                                navigator.geolocation
+                                    .getCurrentPosition(
+                                        resolve,
+                                        reject,
+                                        {
+                                            enableHighAccuracy: true,
+                                            timeout: 8000,
+                                            maximumAge: 0
+                                        }
+                                    );
+
                             }
                         );
 
-                    });
 
-                const lat =
-                    posicionRecuperada.coords.latitude;
-
-                const lng =
-                    posicionRecuperada.coords.longitude;
-
-                gpsFinal =
-                    `${lat}, ${lng} (Ubicación capturada al recuperar señal)`;
-
-                console.log(
-                    "Sincronizador: ubicación cercana recuperada después del registro offline."
-                );
-
-            } catch (errorGps) {
-
-                gpsFinal =
-                    "No disponible";
-
-                console.warn(
-                    "Sincronizador: no fue posible obtener ubicación cercana al recuperar señal."
-                );
-            }
+                    const lat =
+                        posicionRecuperada
+                            .coords
+                            .latitude;
 
 
-        // --------------------------------------------------
-        // SI HAN PASADO MÁS DE 10 MINUTOS:
-        // NO USAR LA UBICACIÓN ACTUAL
-        // --------------------------------------------------
-
-        } else if (!gpsOriginalValido) {
-
-            gpsFinal =
-                "No disponible (sin ubicación válida cercana al momento del registro)";
-        }
+                    const lng =
+                        posicionRecuperada
+                            .coords
+                            .longitude;
 
 
-        // --------------------------------------------------
-        // 3. RECONSTRUIR FORMDATA
-        // --------------------------------------------------
-
-        const payloadOffline = new FormData();
-
-        payloadOffline.append("envioId", reg.envioId || "");
-        payloadOffline.append("cliente", reg.cliente || "");
-        payloadOffline.append("clienteId", reg.clienteId || "");
-        payloadOffline.append("servicio", reg.servicio || "");
-        payloadOffline.append("paciente", reg.paciente || "");
-        payloadOffline.append("entrega07", reg.entrega07 || "0");
-        payloadOffline.append("entrega10", reg.entrega10 || "0");
-        payloadOffline.append("retiro07", reg.retiro07 || "0");
-        payloadOffline.append("retiro10", reg.retiro10 || "0");
-        payloadOffline.append("observaciones", (reg.observaciones || "") + " Sincronizado offline");
-        payloadOffline.append("dispositivo", reg.dispositivo || "");
-        payloadOffline.append("gps", gpsFinal);
-        // Guardamos también cuándo se creó originalmente.
-        payloadOffline.append("fechaRegistroOffline", reg.fechaRegistroOffline || "");
-
-        // --------------------------------------------------
-        // 4. RECONSTRUIR FIRMA PNG
-        // --------------------------------------------------
-
-        const caracteresBinarios =atob(reg.firmaBase64);
-
-        const arrayConBytes = new Uint8Array(caracteresBinarios.length);
-
-        for (let j = 0; j < caracteresBinarios.length; j++) {
-                arrayConBytes[j] =
-                caracteresBinarios.charCodeAt(j);
-            }
+                    gpsFinal =
+                        `${lat}, ${lng} (Ubicación capturada al recuperar señal)`;
 
 
-        const blobFirma = new Blob(
-                [arrayConBytes],
-                { type: "image/png" }
-            );
+                    console.log(
+                        "Sincronizador: ubicación cercana recuperada después del registro offline."
+                    );
 
-        payloadOffline.append("firma", blobFirma, "firma.png");
-        // --------------------------------------------------
-        // 5. INTENTAR SINCRONIZAR
-        // --------------------------------------------------
 
-        try {
+                } catch (errorGps) {
 
-            const res = await fetch(
-                WORKER_URL,
-                {
-                    method: "POST",
-                    body: payloadOffline
+                    gpsFinal =
+                        "No disponible";
+
+
+                    console.warn(
+                        "Sincronizador: no fue posible obtener ubicación cercana al recuperar señal."
+                    );
+
                 }
+
+
+            } else if (!gpsOriginalValido) {
+
+                gpsFinal =
+                    "No disponible (sin ubicación válida cercana al momento del registro)";
+
+            }
+
+
+            // --------------------------------------------------
+            // 3. RECONSTRUIR FORMDATA
+            // --------------------------------------------------
+
+            const payloadOffline =
+                new FormData();
+
+
+            payloadOffline.append(
+                "envioId",
+                reg.envioId || ""
             );
-            // ------------------------------------------------
-            // NO CONFIAR ÚNICAMENTE EN res.ok
-            // ------------------------------------------------
-            let resultado;
+
+            payloadOffline.append(
+                "cliente",
+                reg.cliente || ""
+            );
+
+            payloadOffline.append(
+                "clienteId",
+                reg.clienteId || ""
+            );
+
+            payloadOffline.append(
+                "servicio",
+                reg.servicio || ""
+            );
+
+            payloadOffline.append(
+                "paciente",
+                reg.paciente || ""
+            );
+
+            payloadOffline.append(
+                "entrega07",
+                reg.entrega07 || "0"
+            );
+
+            payloadOffline.append(
+                "entrega10",
+                reg.entrega10 || "0"
+            );
+
+            payloadOffline.append(
+                "retiro07",
+                reg.retiro07 || "0"
+            );
+
+            payloadOffline.append(
+                "retiro10",
+                reg.retiro10 || "0"
+            );
+
+            payloadOffline.append(
+                "observaciones",
+                (reg.observaciones || "") +
+                " Sincronizado offline"
+            );
+
+            payloadOffline.append(
+                "dispositivo",
+                reg.dispositivo || ""
+            );
+
+            payloadOffline.append(
+                "gps",
+                gpsFinal
+            );
+
+            payloadOffline.append(
+                "fechaRegistroOffline",
+                reg.fechaRegistroOffline || ""
+            );
+
+
+            // --------------------------------------------------
+            // 4. RECONSTRUIR FIRMA PNG
+            // --------------------------------------------------
+
+            const caracteresBinarios =
+                atob(
+                    reg.firmaBase64
+                );
+
+
+            const arrayConBytes =
+                new Uint8Array(
+                    caracteresBinarios.length
+                );
+
+
+            for (
+                let j = 0;
+                j < caracteresBinarios.length;
+                j++
+            ) {
+
+                arrayConBytes[j] =
+                    caracteresBinarios
+                        .charCodeAt(j);
+
+            }
+
+
+            const blobFirma =
+                new Blob(
+                    [arrayConBytes],
+                    {
+                        type:
+                            "image/png"
+                    }
+                );
+
+
+            payloadOffline.append(
+                "firma",
+                blobFirma,
+                "firma.png"
+            );
+
+
+            // --------------------------------------------------
+            // 5. INTENTAR SINCRONIZAR
+            // --------------------------------------------------
 
             try {
 
-                resultado = await res.json();
+                const res =
+                    await fetch(
+                        WORKER_URL,
+                        {
+                            method:
+                                "POST",
+                            body:
+                                payloadOffline
+                        }
+                    );
 
-            } catch (errorJson) {
+
+                let resultado;
+
+
+                try {
+
+                    resultado =
+                        await res.json();
+
+
+                } catch (errorJson) {
+
+                    console.error(
+                        "Sincronizador: el servidor no devolvió JSON válido. " +
+                        "El registro se conservará."
+                    );
+
+                    break;
+
+                }
+
+
+                // ------------------------------------------------
+                // BORRAR SOLO SI EL WORKER CONFIRMA ok:true
+                // ------------------------------------------------
+
+                if (
+                    res.ok &&
+                    resultado &&
+                    resultado.ok === true
+                ) {
+
+                    registrosGuardados.splice(
+                        i,
+                        1
+                    );
+
+
+                    localStorage.setItem(
+                        "oxitrack_offline",
+                        JSON.stringify(
+                            registrosGuardados
+                        )
+                    );
+
+
+                    if (
+                        resultado.duplicado === true
+                    ) {
+
+                        console.log(
+                            `✅ Registro diferido de ${reg.cliente} ya había sido procesado. Eliminado de la cola local.`
+                        );
+
+                    } else {
+
+                        console.log(
+                            `✅ Registro diferido de ${reg.cliente} sincronizado con éxito.`
+                        );
+
+                    }
+
+
+                } else {
+
+                    console.error(
+                        "❌ El Worker rechazó el registro offline:",
+                        resultado?.error ||
+                        "Error desconocido"
+                    );
+
+
+                    break;
+
+                }
+
+
+            } catch (err) {
 
                 console.error(
-                    "Sincronizador: el servidor no devolvió JSON válido. " +
-                    "El registro se conservará."
+                    "Sincronizador: volvió a fallar la conexión. " +
+                    "El registro permanecerá guardado."
                 );
+
 
                 break;
+
             }
 
-            // ------------------------------------------------
-            // BORRAR SOLO SI EL WORKER CONFIRMA ok:true
-            // ------------------------------------------------
-
-            if (
-                res.ok &&
-                resultado &&
-                resultado.ok === true
-            ) {
-
-                registrosGuardados.splice(i, 1);
-
-                localStorage.setItem(
-                    "oxitrack_offline",
-                    JSON.stringify(
-                        registrosGuardados
-                    )
-                );
-
-
-                console.log(
-                    `✅ Registro diferido de ${reg.cliente} sincronizado con éxito.`
-                );
-
-            } else {
-
-                console.error(
-                    "❌ El Worker rechazó el registro offline:",
-                    resultado?.error ||
-                    "Error desconocido"
-                );
-
-                // NO eliminamos nada.
-                // Queda pendiente para otro intento.
-                break;
-            }
-
-        } catch (err) {
-
-            console.error(
-                "Sincronizador: volvió a fallar la conexión. " +
-                "El registro permanecerá guardado."
-            );
-
-
-            // Detenemos el resto para no generar múltiples
-            // intentos con una conexión inestable.
-            break;
         }
+
+
+    } finally {
+
+        sincronizacionOfflineEnCurso = false;
+
     }
+
 }
