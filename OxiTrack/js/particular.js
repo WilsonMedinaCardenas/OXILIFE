@@ -12,6 +12,26 @@ let streamCamara = null;
 let fotosCapturadas = [];
 let signaturePad = null;
 let elementosDisponibles = [];
+let envioIdParticularActual = "";
+
+
+function generarEnvioIdParticular() {
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+    ) {
+        return window.crypto.randomUUID();
+    }
+
+    return (
+        Date.now().toString(36) +
+        "-" +
+        Math.random().toString(36).slice(2) +
+        "-" +
+        Math.random().toString(36).slice(2)
+    );
+}
 
 
 // ==========================================================
@@ -773,6 +793,10 @@ function inicializarFormulario() {
         });
 
         if (!confirmado) return;
+        if (!envioIdParticularActual) {
+            envioIdParticularActual =
+            generarEnvioIdParticular();
+        }
 
         btnEnviar.disabled = true;
         btnEnviar.textContent = "Enviando...";
@@ -785,6 +809,7 @@ function inicializarFormulario() {
             const payload = new FormData();
 
             payload.append("tipoCliente", "PARTICULAR");
+            payload.append("envioId",envioIdParticularActual);
             payload.append("servicio", servicio);
             payload.append("pacienteId", pacienteId);
             payload.append("elementos", JSON.stringify(elementosSeleccionados));
