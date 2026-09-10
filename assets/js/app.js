@@ -75,8 +75,8 @@ document.getElementById("year").textContent = new Date().getFullYear();
     const now = new Date();
     const hour = now.getHours();
 
-    // Si la hora es >= 23 o < 8 (de 11 PM a 7:59 AM)
-    if (hour >= 23 || hour < 8) {
+    // Si la hora es >= 22 o < 8 (de 10 PM a 7:59 AM)
+    if (hour >= 22 || hour < 8) {
       popup.style.display = "flex";
     } else {
       popup.style.display = "none";
