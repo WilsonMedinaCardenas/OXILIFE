@@ -5,6 +5,12 @@
 const WORKER_URL = "https://oxilife.cl/api/oxitrack/";
 const CLAVE_CACHE_SERVICIOS = "oxitrack_particular_servicios";
 const CLAVE_CACHE_PACIENTES = "oxitrack_particulares_cache";
+const CLAVE_CACHE_ELEMENTOS = "oxitrack_particular_elementos";
+const DB_PARTICULAR = "oxitrack_particular_db";
+const DB_PARTICULAR_VERSION = 1;
+const STORE_ENVIOS_PARTICULAR = "envios";
+
+let sincronizacionParticularEnCurso = false;
 
 let coordenadasGPS = "Buscando señal GPS...";
 let pacientesDisponibles = [];
@@ -70,6 +76,574 @@ function obtenerPacientesOffline(servicio) {
     }
 }
 
+// ==========================================================
+// CACHE LOCAL DE ELEMENTOS
+// ==========================================================
+
+function guardarElementosOffline(tipo, elementos) {
+
+    try {
+
+        const cache =
+            JSON.parse(
+                localStorage.getItem(CLAVE_CACHE_ELEMENTOS) ||
+                "{}"
+            );
+
+        cache[String(tipo || "").trim()] = elementos;
+
+        localStorage.setItem(
+            CLAVE_CACHE_ELEMENTOS,
+            JSON.stringify(cache)
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "No fue posible guardar elementos offline.",
+            error
+        );
+
+    }
+
+}
+
+
+function obtenerElementosOffline(tipo) {
+
+    try {
+
+        const cache =
+            JSON.parse(
+                localStorage.getItem(CLAVE_CACHE_ELEMENTOS) ||
+                "{}"
+            );
+
+        const elementos =
+            cache[String(tipo || "").trim()];
+
+        return Array.isArray(elementos)
+            ? elementos
+            : [];
+
+    } catch {
+
+        return [];
+
+    }
+
+}
+
+// ==========================================================
+// INDEXEDDB - COLA PARTICULAR
+// ==========================================================
+
+function abrirDbParticular() {
+
+    return new Promise((resolve, reject) => {
+
+        const request =
+            indexedDB.open(
+                DB_PARTICULAR,
+                DB_PARTICULAR_VERSION
+            );
+
+
+        request.onupgradeneeded = () => {
+
+            const db = request.result;
+
+            if (
+                !db.objectStoreNames.contains(
+                    STORE_ENVIOS_PARTICULAR
+                )
+            ) {
+
+                db.createObjectStore(
+                    STORE_ENVIOS_PARTICULAR,
+                    {
+                        keyPath: "envioId"
+                    }
+                );
+
+            }
+
+        };
+
+
+        request.onsuccess = () =>
+            resolve(request.result);
+
+
+        request.onerror = () =>
+            reject(request.error);
+
+    });
+
+}
+
+
+async function guardarEnvioOfflineParticular(registro) {
+
+    const db =
+        await abrirDbParticular();
+
+
+    return new Promise((resolve, reject) => {
+
+        const tx =
+            db.transaction(
+                STORE_ENVIOS_PARTICULAR,
+                "readwrite"
+            );
+
+
+        tx.objectStore(
+            STORE_ENVIOS_PARTICULAR
+        ).put(registro);
+
+
+        tx.oncomplete = () => {
+
+            db.close();
+            resolve();
+
+        };
+
+
+        tx.onerror = () => {
+
+            const error = tx.error;
+
+            db.close();
+
+            reject(error);
+
+        };
+
+    });
+
+}
+
+
+async function obtenerEnviosOfflineParticular() {
+
+    const db =
+        await abrirDbParticular();
+
+
+    return new Promise((resolve, reject) => {
+
+        const tx =
+            db.transaction(
+                STORE_ENVIOS_PARTICULAR,
+                "readonly"
+            );
+
+
+        const request =
+            tx.objectStore(
+                STORE_ENVIOS_PARTICULAR
+            ).getAll();
+
+
+        request.onsuccess = () => {
+
+            const registros =
+                Array.isArray(request.result)
+                    ? request.result
+                    : [];
+
+            db.close();
+
+            resolve(registros);
+
+        };
+
+
+        request.onerror = () => {
+
+            const error = request.error;
+
+            db.close();
+
+            reject(error);
+
+        };
+
+    });
+
+}
+
+
+async function eliminarEnvioOfflineParticular(envioId) {
+
+    const db =
+        await abrirDbParticular();
+
+
+    return new Promise((resolve, reject) => {
+
+        const tx =
+            db.transaction(
+                STORE_ENVIOS_PARTICULAR,
+                "readwrite"
+            );
+
+
+        tx.objectStore(
+            STORE_ENVIOS_PARTICULAR
+        ).delete(envioId);
+
+
+        tx.oncomplete = () => {
+
+            db.close();
+            resolve();
+
+        };
+
+
+        tx.onerror = () => {
+
+            const error = tx.error;
+
+            db.close();
+
+            reject(error);
+
+        };
+
+    });
+
+}
+
+// ==========================================================
+// CONSTRUIR EL POST DESDE UN REGISTRO GUARDADO
+// ==========================================================
+
+function construirPayloadParticular(registro) {
+
+    const payload =
+        new FormData();
+
+
+    payload.append(
+        "tipoCliente",
+        "PARTICULAR"
+    );
+
+    payload.append(
+        "envioId",
+        registro.envioId
+    );
+
+    payload.append(
+        "servicio",
+        registro.servicio
+    );
+
+    payload.append(
+        "pacienteId",
+        registro.pacienteId
+    );
+
+    payload.append(
+        "elementos",
+        registro.elementos
+    );
+
+    payload.append(
+        "paciente",
+        registro.paciente
+    );
+
+    payload.append(
+        "entrega07",
+        registro.entrega07
+    );
+
+    payload.append(
+        "entrega10",
+        registro.entrega10
+    );
+
+    payload.append(
+        "retiro07",
+        registro.retiro07
+    );
+
+    payload.append(
+        "retiro10",
+        registro.retiro10
+    );
+
+    payload.append(
+        "observaciones",
+        registro.observaciones
+    );
+
+    payload.append(
+        "gps",
+        registro.gps
+    );
+
+    payload.append(
+        "dispositivo",
+        registro.dispositivo
+    );
+
+    payload.append(
+        "firma",
+        registro.firma,
+        "firma.png"
+    );
+
+
+    if (registro.foto) {
+
+        payload.append(
+            "foto",
+            registro.foto,
+            "foto-servicio-1.jpg"
+        );
+
+    }
+
+
+    if (registro.foto2) {
+
+        payload.append(
+            "foto2",
+            registro.foto2,
+            "foto-servicio-2.jpg"
+        );
+
+    }
+
+
+    return payload;
+
+}
+
+// ==========================================================
+// ENVÍO ÚNICO AL WORKER
+// ==========================================================
+
+async function enviarRegistroParticular(registro) {
+
+    let respuesta;
+
+
+    try {
+
+        respuesta =
+            await fetch(
+                WORKER_URL,
+                {
+                    method: "POST",
+                    body:
+                        construirPayloadParticular(
+                            registro
+                        ),
+                    credentials: "same-origin"
+                }
+            );
+
+    } catch (error) {
+
+        error.reintentable = true;
+
+        throw error;
+
+    }
+
+
+    let resultado;
+
+
+    try {
+
+        resultado =
+            await respuesta.json();
+
+    } catch {
+
+        const error =
+            new Error(
+                "El servidor no devolvió una respuesta JSON válida."
+            );
+
+        error.reintentable = true;
+
+        throw error;
+
+    }
+
+
+    if (
+        !respuesta.ok ||
+        resultado.ok !== true
+    ) {
+
+        const error =
+            new Error(
+                resultado.error ||
+                "El servidor rechazó el registro."
+            );
+
+        error.reintentable = false;
+
+        throw error;
+
+    }
+
+
+    return resultado;
+
+}
+
+// ==========================================================
+// PROGRAMAR BACKGROUND SYNC
+// ==========================================================
+
+async function programarSyncParticular() {
+
+    if (!("serviceWorker" in navigator)) {
+        return;
+    }
+
+
+    try {
+
+        const registroSW =
+            await navigator.serviceWorker.ready;
+
+
+        if (
+            "sync" in registroSW
+        ) {
+
+            await registroSW.sync.register(
+                "oxitrack-particular-sync"
+            );
+
+        }
+
+
+        if (
+            navigator.serviceWorker.controller
+        ) {
+
+            navigator.serviceWorker.controller.postMessage({
+                type:
+                    "SINCRONIZAR_PARTICULAR"
+            });
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "No fue posible programar Background Sync.",
+            error
+        );
+
+    }
+
+}
+
+// ==========================================================
+// SINCRONIZACIÓN DE RESPALDO DESDE LA PÁGINA
+// ==========================================================
+
+async function sincronizarPendientesParticular() {
+
+    if (
+        sincronizacionParticularEnCurso ||
+        !navigator.onLine
+    ) {
+        return;
+    }
+
+
+    sincronizacionParticularEnCurso = true;
+
+
+    try {
+
+        const registros =
+            await obtenerEnviosOfflineParticular();
+
+
+        registros.sort(
+            (a, b) =>
+                String(a.fechaCreacion || "")
+                    .localeCompare(
+                        String(b.fechaCreacion || "")
+                    )
+        );
+
+
+        for (const registro of registros) {
+
+            try {
+
+                const resultado =
+                    await enviarRegistroParticular(
+                        registro
+                    );
+
+
+                await eliminarEnvioOfflineParticular(
+                    registro.envioId
+                );
+
+
+                if (
+                    resultado.duplicado === true
+                ) {
+
+                    console.log(
+                        "Particular offline: el envío ya había sido procesado:",
+                        registro.envioId
+                    );
+
+                } else {
+
+                    console.log(
+                        "Particular offline sincronizado:",
+                        registro.envioId
+                    );
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "No fue posible sincronizar particular:",
+                    registro.envioId,
+                    error
+                );
+
+
+                if (
+                    error.reintentable !== false
+                ) {
+                    break;
+                }
+
+            }
+
+        }
+
+    } finally {
+
+        sincronizacionParticularEnCurso = false;
+
+    }
+
+}
 
 // ==========================================================
 // INICIO
@@ -86,6 +660,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const inputPacienteId = document.getElementById("pacienteId");
 
     await cargarServicios(selectServicio);
+    precargarDatosOfflineParticular();
+    sincronizarPendientesParticular();
 
     selectServicio.addEventListener("change", async () => {
         const servicio = selectServicio.value.trim();
@@ -133,6 +709,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 });
 
+window.addEventListener(
+    "online",
+    () => {
+
+        sincronizarPendientesParticular();
+
+        programarSyncParticular();
+
+    }
+);
+
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (
+            document.visibilityState ===
+            "visible"
+        ) {
+
+            sincronizarPendientesParticular();
+
+        }
+
+    }
+);
 
 // ==========================================================
 // SERVICIOS - VIENEN DESDE EL WORKER
@@ -166,7 +769,6 @@ async function cargarServicios(selectServicio) {
         selectServicio.appendChild(opcion);
     });
 }
-
 
 // ==========================================================
 // ÚLTIMOS 5 PACIENTES SEGÚN SERVICIO
@@ -211,76 +813,321 @@ async function cargarUltimosPacientes(servicio, selectPaciente) {
     selectPaciente.disabled = false;
 }
 
+// ==========================================================
+// PRECARGA PARA TRABAJO OFFLINE
+// ==========================================================
+
+async function precargarDatosOfflineParticular() {
+
+    if (!navigator.onLine) {
+        return;
+    }
+
+
+    const servicios =
+        obtenerServiciosOffline();
+
+
+    for (const servicio of servicios) {
+
+        try {
+
+            const respuesta =
+                await fetch(
+                    `${WORKER_URL}?modo=particular&servicio=${encodeURIComponent(servicio)}`
+                );
+
+
+            const datos =
+                await respuesta.json();
+
+
+            if (
+                respuesta.ok &&
+                datos.ok === true &&
+                Array.isArray(datos.pacientes)
+            ) {
+
+                const pacientes =
+                    datos.pacientes.slice(
+                        0,
+                        5
+                    );
+
+
+                guardarPacientesOffline(
+                    servicio,
+                    pacientes
+                );
+
+
+                const tipos =
+                    [
+                        ...new Set(
+                            pacientes
+                                .map(
+                                    paciente =>
+                                        String(
+                                            paciente.tipo ||
+                                            ""
+                                        ).trim()
+                                )
+                                .filter(Boolean)
+                        )
+                    ];
+
+
+                for (
+                    const tipo of tipos
+                ) {
+
+                    try {
+
+                        const respuestaElementos =
+                            await fetch(
+                                `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`
+                            );
+
+
+                        const datosElementos =
+                            await respuestaElementos.json();
+
+
+                        if (
+                            respuestaElementos.ok &&
+                            datosElementos.ok === true &&
+                            Array.isArray(
+                                datosElementos.elementos
+                            )
+                        ) {
+
+                            guardarElementosOffline(
+                                tipo,
+                                datosElementos.elementos
+                            );
+
+                        }
+
+                    } catch (error) {
+
+                        console.warn(
+                            "No se pudo precargar elementos:",
+                            tipo,
+                            error
+                        );
+
+                    }
+
+                }
+
+            }
+
+        } catch (error) {
+
+            console.warn(
+                "No se pudo precargar el servicio:",
+                servicio,
+                error
+            );
+
+        }
+
+    }
+
+}
 
 // ==========================================================
 // ELEMENTOS SEGÚN TIPO DE IMPLEMENTACIÓN
 // ==========================================================
 
 async function cargarElementos(tipo) {
-    const seccion = document.getElementById("seccionElementos");
-    const lista = document.getElementById("listaElementos");
 
-    elementosDisponibles = [];
-    lista.innerHTML = "";
-    seccion.hidden = true;
-
-    try {
-        const respuesta = await fetch(
-            `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`
+    const seccion =
+        document.getElementById(
+            "seccionElementos"
         );
 
-        const datos = await respuesta.json();
+    const lista =
+        document.getElementById(
+            "listaElementos"
+        );
 
-        if (!respuesta.ok || datos.ok !== true || !Array.isArray(datos.elementos)) {
-            throw new Error(datos.error || "No fue posible obtener los elementos.");
+
+    elementosDisponibles = [];
+
+    lista.innerHTML = "";
+
+    seccion.hidden = true;
+
+
+    let elementos = [];
+
+
+    if (navigator.onLine) {
+
+        try {
+
+            const respuesta =
+                await fetch(
+                    `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`
+                );
+
+
+            const datos =
+                await respuesta.json();
+
+
+            if (
+                respuesta.ok &&
+                datos.ok === true &&
+                Array.isArray(datos.elementos)
+            ) {
+
+                elementos =
+                    datos.elementos;
+
+
+                guardarElementosOffline(
+                    tipo,
+                    elementos
+                );
+
+            }
+
+        } catch (error) {
+
+            console.warn(
+                "Falló consulta online de elementos. Se utilizará caché.",
+                error
+            );
+
         }
 
-        elementosDisponibles = datos.elementos;
+    }
 
-        if (!elementosDisponibles.length) {
-            lista.innerHTML = `<p>No hay elementos configurados para este tipo.</p>`;
-            seccion.hidden = false;
-            return;
-        }
 
-        elementosDisponibles.forEach((elemento, index) => {
-            const fila = document.createElement("div");
-            fila.className = "elemento-fila";
+    if (elementos.length === 0) {
 
-            fila.innerHTML = `
-                <label class="elemento-nombre">${elemento.elemento}</label>
-
-                <div class="contador elemento-contador">
-                    <button type="button" class="btn-elemento-menos" data-index="${index}">−</button>
-                    <input id="elemento-${index}" value="0" readonly>
-                    <button type="button" class="btn-elemento-mas" data-index="${index}">+</button>
-                </div>
-            `;
-
-            lista.appendChild(fila);
-        });
-
-        lista.querySelectorAll(".btn-elemento-menos").forEach(btn => {
-            btn.addEventListener(
-                "click",
-                () => cambiarCantidadElemento(Number(btn.dataset.index), -1)
+        elementos =
+            obtenerElementosOffline(
+                tipo
             );
-        });
 
-        lista.querySelectorAll(".btn-elemento-mas").forEach(btn => {
-            btn.addEventListener(
-                "click",
-                () => cambiarCantidadElemento(Number(btn.dataset.index), 1)
-            );
-        });
+    }
+
+
+    elementosDisponibles =
+        elementos;
+
+
+    if (!elementosDisponibles.length) {
+
+        lista.innerHTML =
+            `<p>No hay elementos disponibles sin conexión para este tipo.</p>`;
 
         seccion.hidden = false;
 
-    } catch (error) {
-        console.error("Error cargando elementos:", error);
-        limpiarElementos();
-        alert("No fue posible cargar los elementos de la implementación.");
+        return;
+
     }
+
+
+    elementosDisponibles.forEach(
+        (elemento, index) => {
+
+            const fila =
+                document.createElement(
+                    "div"
+                );
+
+
+            fila.className =
+                "elemento-fila";
+
+
+            fila.innerHTML = `
+                <label class="elemento-nombre">
+                    ${elemento.elemento}
+                </label>
+
+                <div class="contador elemento-contador">
+
+                    <button
+                        type="button"
+                        class="btn-elemento-menos"
+                        data-index="${index}"
+                    >
+                        −
+                    </button>
+
+                    <input
+                        id="elemento-${index}"
+                        value="0"
+                        readonly
+                    >
+
+                    <button
+                        type="button"
+                        class="btn-elemento-mas"
+                        data-index="${index}"
+                    >
+                        +
+                    </button>
+
+                </div>
+            `;
+
+
+            lista.appendChild(
+                fila
+            );
+
+        }
+    );
+
+
+    lista
+        .querySelectorAll(
+            ".btn-elemento-menos"
+        )
+        .forEach(btn => {
+
+            btn.addEventListener(
+                "click",
+                () =>
+                    cambiarCantidadElemento(
+                        Number(
+                            btn.dataset.index
+                        ),
+                        -1
+                    )
+            );
+
+        });
+
+
+    lista
+        .querySelectorAll(
+            ".btn-elemento-mas"
+        )
+        .forEach(btn => {
+
+            btn.addEventListener(
+                "click",
+                () =>
+                    cambiarCantidadElemento(
+                        Number(
+                            btn.dataset.index
+                        ),
+                        1
+                    )
+            );
+
+        });
+
+
+    seccion.hidden = false;
+
 }
 
 function cargarElementosRetiro(elementosOrigen) {
@@ -387,7 +1234,6 @@ function limpiarElementos() {
     if (seccion) seccion.hidden = true;
 }
 
-
 // ==========================================================
 // MOSTRAR / OCULTAR SECCIONES SEGÚN SERVICIO
 // ==========================================================
@@ -421,7 +1267,6 @@ function actualizarVistaSegunServicio(servicio) {
     detenerCamara();
 }
 
-
 // ==========================================================
 // CONTADORES
 // ==========================================================
@@ -436,7 +1281,6 @@ function disminuir(id) {
     const valor = parseInt(input.value, 10) || 0;
     input.value = valor > 0 ? valor - 1 : 0;
 }
-
 
 // ==========================================================
 // FIRMA
@@ -459,7 +1303,6 @@ function inicializarFirma() {
         btnLimpiar.addEventListener("click", () => signaturePad.clear());
     }
 }
-
 
 // ==========================================================
 // CÁMARA PARTICULAR - MÁXIMO 2 FOTOS
@@ -606,7 +1449,6 @@ function pintarFotosCapturadas() {
     }
 }
 
-
 // ==========================================================
 // GPS
 // ==========================================================
@@ -645,7 +1487,6 @@ function capturarUbicacionGps() {
         }
     );
 }
-
 
 // ==========================================================
 // CONFIRMACIÓN FINAL ANTES DEL ENVÍO
@@ -697,7 +1538,6 @@ function confirmarEnvioParticular(datos) {
 
     return window.confirm(resumen);
 }
-
 
 // ==========================================================
 // ENVÍO DEL FORMULARIO
@@ -793,80 +1633,102 @@ function inicializarFormulario() {
         });
 
         if (!confirmado) return;
-        if (!envioIdParticularActual) {
-            envioIdParticularActual =
-            generarEnvioIdParticular();
-        }
+        if (!envioIdParticularActual) {envioIdParticularActual = generarEnvioIdParticular();}
 
         btnEnviar.disabled = true;
         btnEnviar.textContent = "Enviando...";
 
+
         try {
+
             const firmaDataUrl = signaturePad.toDataURL("image/png");
             const respuestaFirma = await fetch(firmaDataUrl);
             const blobFirma = await respuestaFirma.blob();
+            const registroParticular = {
 
-            const payload = new FormData();
+                envioId: envioIdParticularActual,
+                fechaCreacion: new Date().toISOString(),
+                servicio: servicio,
+                pacienteId: pacienteId,
+                elementos: JSON.stringify(elementosSeleccionados),
+                paciente: pacienteNombre,
+                entrega07: e07,
+                entrega10: e10,
+                retiro07: r07,
+                retiro10: r10,
+                observaciones: observaciones,
+                gps: coordenadasGPS,
+                dispositivo: navigator.userAgent,
+                firma: blobFirma,
+                foto: fotosCapturadas[0] || null,
+                foto2: fotosCapturadas[1] || null
+            };
 
-            payload.append("tipoCliente", "PARTICULAR");
-            payload.append("envioId",envioIdParticularActual);
-            payload.append("servicio", servicio);
-            payload.append("pacienteId", pacienteId);
-            payload.append("elementos", JSON.stringify(elementosSeleccionados));
-            payload.append("paciente", pacienteNombre);
-            payload.append("entrega07", e07);
-            payload.append("entrega10", e10);
-            payload.append("retiro07", r07);
-            payload.append("retiro10", r10);
-            payload.append("observaciones", observaciones);
-            payload.append("gps", coordenadasGPS);
-            payload.append("dispositivo", navigator.userAgent);
-            payload.append("firma", blobFirma, "firma.png");
+            // ======================================================
+            // SIN CONEXIÓN DESDE EL PRINCIPIO
+            // ======================================================
 
-            if (fotosCapturadas[0]) {
-                payload.append(
-                    "foto",
-                    fotosCapturadas[0],
-                    "foto-servicio-1.jpg"
+            if (!navigator.onLine) {
+
+                await guardarEnvioOfflineParticular(registroParticular);
+                await programarSyncParticular();
+                
+                alert(
+                    "No hay conexión a internet.\n\n" +
+                    "El registro quedó guardado de forma segura " +
+                    "y se enviará automáticamente cuando vuelva la señal."
                 );
+
+                location.reload();
+                return;
             }
 
-            if (fotosCapturadas[1]) {
-                payload.append(
-                    "foto2",
-                    fotosCapturadas[1],
-                    "foto-servicio-2.jpg"
-                );
-            }
+            // ======================================================
+            // INTENTO ONLINE
+            // ======================================================
 
-            const respuesta = await fetch(
-                WORKER_URL,
-                {
-                    method: "POST",
-                    body: payload
+            try {
+                await enviarRegistroParticular(registroParticular);
+
+                alert("Registro particular enviado correctamente.");
+                location.reload();
+
+            } catch (errorEnvio) {
+
+                // --------------------------------------------------
+                // ERROR DE RED / RESPUESTA PERDIDA
+                // GUARDAMOS EL MISMO envioId
+                // --------------------------------------------------
+
+                if (errorEnvio.reintentable !== false) {
+                    await guardarEnvioOfflineParticular(registroParticular);
+                    await programarSyncParticular();
+                    alert(
+                        "No fue posible confirmar el envío con el servidor.\n\n" +
+                        "El registro quedó guardado y se sincronizará " +
+                        "automáticamente cuando exista conexión."
+                    );
+                    location.reload();
+                    return;
                 }
-            );
 
-            const resultado = await respuesta.json();
+                // --------------------------------------------------
+                // EL SERVIDOR RESPONDIÓ Y RECHAZÓ EL REGISTRO
+                // NO LO GUARDAMOS EN COLA
+                // --------------------------------------------------
 
-            if (!respuesta.ok || resultado.ok !== true) {
-                throw new Error(
-                    resultado.error ||
-                    "El servidor rechazó el registro."
-                );
+                throw errorEnvio;
+
             }
 
-            alert("Registro particular enviado correctamente.");
-            location.reload();
 
         } catch (error) {
-            console.error("Error al enviar registro particular:", error);
 
-            alert(
-                `No fue posible enviar el registro.\n\n${error.message}`
-            );
+            console.error("Error al procesar registro particular:", error);
+            alert(`No fue posible enviar el registro.\n\n${error.message}`);
 
         } finally {
+
             btnEnviar.disabled = false;
             btnEnviar.textContent = "Enviar Registro";
         }
