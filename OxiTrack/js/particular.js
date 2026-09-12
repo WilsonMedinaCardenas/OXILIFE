@@ -430,7 +430,21 @@ function construirPayloadParticular(registro) {
 // ENVÍO ÚNICO AL WORKER
 // ==========================================================
 
-async function enviarRegistroParticular(registro) {
+async function enviarRegistroParticular(
+    registro,
+    timeoutMs = 12000
+) {
+
+    const controller =
+        new AbortController();
+
+
+    const temporizador =
+        setTimeout(
+            () => controller.abort(),
+            timeoutMs
+        );
+
 
     let respuesta;
 
@@ -442,19 +456,41 @@ async function enviarRegistroParticular(registro) {
                 WORKER_URL,
                 {
                     method: "POST",
+
                     body:
                         construirPayloadParticular(
                             registro
                         ),
-                    credentials: "same-origin"
+
+                    credentials:
+                        "same-origin",
+
+                    signal:
+                        controller.signal
                 }
             );
 
+
     } catch (error) {
 
-        error.reintentable = true;
+        const errorFinal =
+            new Error(
+                error.name === "AbortError"
+                    ? "No fue posible conectar con el servidor dentro del tiempo esperado."
+                    : "No fue posible conectar con el servidor."
+            );
 
-        throw error;
+
+        errorFinal.reintentable = true;
+
+        throw errorFinal;
+
+
+    } finally {
+
+        clearTimeout(
+            temporizador
+        );
 
     }
 
@@ -467,12 +503,14 @@ async function enviarRegistroParticular(registro) {
         resultado =
             await respuesta.json();
 
+
     } catch {
 
         const error =
             new Error(
-                "El servidor no devolvió una respuesta JSON válida."
+                "El servidor no devolvió una respuesta válida."
             );
+
 
         error.reintentable = true;
 
@@ -491,6 +529,7 @@ async function enviarRegistroParticular(registro) {
                 resultado.error ||
                 "El servidor rechazó el registro."
             );
+
 
         error.reintentable = false;
 
@@ -516,9 +555,7 @@ async function programarSyncParticular() {
 
     try {
 
-        const registroSW =
-            await navigator.serviceWorker.ready;
-
+        const registroSW = await navigator.serviceWorker.ready;
 
         if (
             "sync" in registroSW
@@ -1638,99 +1675,184 @@ function inicializarFormulario() {
         btnEnviar.disabled = true;
         btnEnviar.textContent = "Enviando...";
 
-
         try {
 
             const firmaDataUrl = signaturePad.toDataURL("image/png");
             const respuestaFirma = await fetch(firmaDataUrl);
             const blobFirma = await respuestaFirma.blob();
-            const registroParticular = {
+            const registroParticular = {envioId:envioIdParticularActual,
+                fechaCreacion:new Date().toISOString(),
+                servicio:servicio,
+                pacienteId:pacienteId,
+                elementos:JSON.stringify(elementosSeleccionados),
+                paciente:pacienteNombre,
+                entrega07:e07,
+                entrega10:e10,
+                retiro07:r07,
+                retiro10:r10,
+                observaciones:observaciones,
+                gps:coordenadasGPS,
+                dispositivo:navigator.userAgent,
+                firma:blobFirma,
+                foto:fotosCapturadas[0] || null,
+                foto2:fotosCapturadas[1] || null
 
-                envioId: envioIdParticularActual,
-                fechaCreacion: new Date().toISOString(),
-                servicio: servicio,
-                pacienteId: pacienteId,
-                elementos: JSON.stringify(elementosSeleccionados),
-                paciente: pacienteNombre,
-                entrega07: e07,
-                entrega10: e10,
-                retiro07: r07,
-                retiro10: r10,
-                observaciones: observaciones,
-                gps: coordenadasGPS,
-                dispositivo: navigator.userAgent,
-                firma: blobFirma,
-                foto: fotosCapturadas[0] || null,
-                foto2: fotosCapturadas[1] || null
             };
 
+
             // ======================================================
-            // SIN CONEXIÓN DESDE EL PRINCIPIO
+            // PRIMERO GUARDAMOS LOCALMENTE
+            // ANTES DE INTENTAR CUALQUIER ENVÍO
+            // ======================================================
+
+            await guardarEnvioOfflineParticular(
+                registroParticular
+            );
+
+
+            console.log(
+                "Registro Particular protegido en IndexedDB:",
+                registroParticular.envioId
+            );
+
+
+            // ======================================================
+            // SIN CONEXIÓN SEGÚN EL NAVEGADOR
             // ======================================================
 
             if (!navigator.onLine) {
 
-                await guardarEnvioOfflineParticular(registroParticular);
-                await programarSyncParticular();
-                
+                programarSyncParticular();
+
+
                 alert(
                     "No hay conexión a internet.\n\n" +
                     "El registro quedó guardado de forma segura " +
                     "y se enviará automáticamente cuando vuelva la señal."
                 );
 
+
                 location.reload();
+
                 return;
+
             }
 
+
             // ======================================================
-            // INTENTO ONLINE
+            // INTENTAR ENVÍO ONLINE
+            // MÁXIMO 12 SEGUNDOS
             // ======================================================
 
             try {
-                await enviarRegistroParticular(registroParticular);
 
-                alert("Registro particular enviado correctamente.");
+                const resultado =
+                    await enviarRegistroParticular(
+                        registroParticular,
+                        12000
+                    );
+
+
+                // ----------------------------------------------
+                // SERVIDOR CONFIRMÓ EL REGISTRO
+                // YA PODEMOS ELIMINAR LA COPIA LOCAL
+                // ----------------------------------------------
+
+                await eliminarEnvioOfflineParticular(
+                    registroParticular.envioId
+                );
+
+
+                if (
+                    resultado.duplicado === true
+                ) {
+
+                    console.log(
+                        "El registro ya había sido procesado."
+                    );
+
+                }
+
+
+                alert(
+                    "Registro particular enviado correctamente."
+                );
+
+
                 location.reload();
+
+                return;
+
 
             } catch (errorEnvio) {
 
-                // --------------------------------------------------
-                // ERROR DE RED / RESPUESTA PERDIDA
-                // GUARDAMOS EL MISMO envioId
-                // --------------------------------------------------
+                // ==================================================
+                // ERROR REAL DEL SERVIDOR
+                // NO ES UN PROBLEMA DE CONECTIVIDAD
+                // ==================================================
 
-                if (errorEnvio.reintentable !== false) {
-                    await guardarEnvioOfflineParticular(registroParticular);
-                    await programarSyncParticular();
-                    alert(
-                        "No fue posible confirmar el envío con el servidor.\n\n" +
-                        "El registro quedó guardado y se sincronizará " +
-                        "automáticamente cuando exista conexión."
+                if (
+                    errorEnvio.reintentable === false
+                ) {
+
+                    await eliminarEnvioOfflineParticular(
+                        registroParticular.envioId
                     );
-                    location.reload();
-                    return;
+
+
+                    throw errorEnvio;
+
                 }
 
-                // --------------------------------------------------
-                // EL SERVIDOR RESPONDIÓ Y RECHAZÓ EL REGISTRO
-                // NO LO GUARDAMOS EN COLA
-                // --------------------------------------------------
 
-                throw errorEnvio;
+                // ==================================================
+                // SIN INTERNET / TIMEOUT / RESPUESTA PERDIDA
+                // EL REGISTRO YA ESTÁ EN INDEXEDDB
+                // ==================================================
+
+                console.warn(
+                    "Registro Particular pendiente de sincronización:",
+                    errorEnvio.message
+                );
+
+
+                programarSyncParticular();
+
+
+                alert(
+                    "No fue posible confirmar el envío con el servidor.\n\n" +
+                    "El registro quedó guardado de forma segura " +
+                    "y se enviará automáticamente cuando vuelva la señal."
+                );
+
+
+                location.reload();
+
+                return;
 
             }
 
 
         } catch (error) {
 
-            console.error("Error al procesar registro particular:", error);
-            alert(`No fue posible enviar el registro.\n\n${error.message}`);
+            console.error(
+                "Error al procesar registro particular:",
+                error
+            );
+
+
+            alert(
+                `No fue posible enviar el registro.\n\n${error.message}`
+            );
+
 
         } finally {
 
             btnEnviar.disabled = false;
-            btnEnviar.textContent = "Enviar Registro";
+
+            btnEnviar.textContent =
+                "Enviar Registro";
+
         }
     });
 }
