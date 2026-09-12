@@ -432,7 +432,7 @@ function construirPayloadParticular(registro) {
 
 async function enviarRegistroParticular(
     registro,
-    timeoutMs = 12000
+    timeoutMs = 60000
 ) {
 
     const controller =
@@ -811,43 +811,108 @@ async function cargarServicios(selectServicio) {
 // ÚLTIMOS 5 PACIENTES SEGÚN SERVICIO
 // ==========================================================
 
-async function cargarUltimosPacientes(servicio, selectPaciente) {
+async function cargarUltimosPacientes(servicio,selectPaciente) {
+
     let resultados = [];
+    let consultaOnlineExitosa = false;
 
     if (navigator.onLine) {
+
         try {
+
             const url = `${WORKER_URL}?modo=particular&servicio=${encodeURIComponent(servicio)}`;
-            const respuesta = await fetch(url);
+            const respuesta = await fetch(url, {cache: "no-store"});
             const datos = await respuesta.json();
 
-            if (respuesta.ok && datos.ok === true && Array.isArray(datos.pacientes)) {
+            if (
+                respuesta.ok &&
+                datos.ok === true &&
+                Array.isArray(datos.pacientes)
+            ) {
+
+                consultaOnlineExitosa = true;
                 resultados = datos.pacientes.slice(0, 5);
+
+                // La respuesta online es la verdad actual,
+                // incluso si viene vacía.
+
                 guardarPacientesOffline(servicio, resultados);
             }
+
+
         } catch (error) {
-            console.warn("Falló consulta online de pacientes. Se utilizará caché local.", error);
+
+            console.warn(
+                "Falló consulta online de pacientes. Se utilizará caché local.",
+                error
+            );
+
         }
+
     }
 
-    if (resultados.length === 0) resultados = obtenerPacientesOffline(servicio);
 
-    pacientesDisponibles = resultados;
-    selectPaciente.innerHTML = `<option value="">Seleccione el paciente...</option>`;
+    // Solo usamos caché si NO conseguimos
+    // una respuesta válida del servidor.
 
-    if (resultados.length === 0) {
-        selectPaciente.innerHTML = `<option value="">No hay pacientes disponibles</option>`;
+    if (!consultaOnlineExitosa) {
+
+        resultados =
+            obtenerPacientesOffline(
+                servicio
+            );
+
+    }
+
+
+    pacientesDisponibles =
+        resultados;
+
+
+    selectPaciente.innerHTML =
+        `<option value="">Seleccione el paciente...</option>`;
+
+
+    if (
+        resultados.length === 0
+    ) {
+
+        selectPaciente.innerHTML =
+            `<option value="">No hay pacientes disponibles</option>`;
+
         selectPaciente.disabled = true;
+
         return;
+
     }
+
 
     resultados.forEach(item => {
-        const opcion = document.createElement("option");
-        opcion.value = item.id;
-        opcion.textContent = item.nombreMostrar || item.nombre;
-        selectPaciente.appendChild(opcion);
+
+        const opcion =
+            document.createElement(
+                "option"
+            );
+
+
+        opcion.value =
+            item.id;
+
+
+        opcion.textContent =
+            item.nombreMostrar ||
+            item.nombre;
+
+
+        selectPaciente.appendChild(
+            opcion
+        );
+
     });
 
+
     selectPaciente.disabled = false;
+
 }
 
 // ==========================================================
@@ -1731,9 +1796,6 @@ function inicializarFormulario() {
                     "y se enviará automáticamente cuando vuelva la señal."
                 );
 
-
-                location.reload();
-
                 return;
 
             }
@@ -1746,12 +1808,7 @@ function inicializarFormulario() {
 
             try {
 
-                const resultado =
-                    await enviarRegistroParticular(
-                        registroParticular,
-                        12000
-                    );
-
+                const resultado = await enviarRegistroParticular(registroParticular, 60000);
 
                 // ----------------------------------------------
                 // SERVIDOR CONFIRMÓ EL REGISTRO
@@ -1824,9 +1881,6 @@ function inicializarFormulario() {
                     "El registro quedó guardado de forma segura " +
                     "y se enviará automáticamente cuando vuelva la señal."
                 );
-
-
-                location.reload();
 
                 return;
 
