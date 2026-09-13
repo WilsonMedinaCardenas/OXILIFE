@@ -116,134 +116,139 @@
             <!-- ==================================================
                  ENTREGADOS
                  ================================================== -->
-        <div id="seccionCilindros">
-            <div class="titulo"> ENTREGADOS</div>
+
+            <div id="seccionCilindros">
+
+                <div class="titulo">
+                    ENTREGADOS
+                </div>
 
 
-            <label>
-                Cilindros 0.7 m³
-            </label>
+                <label>
+                    Cilindros 0.7 m³
+                </label>
 
-            <div class="contador">
+                <div class="contador">
 
-                <button
-                    type="button"
-                    onclick="disminuir('e07')"
-                >
-                    −
-                </button>
+                    <button
+                        type="button"
+                        onclick="disminuir('e07')"
+                    >
+                        −
+                    </button>
 
-                <input
-                    id="e07"
-                    value="0"
-                    readonly
-                >
+                    <input
+                        id="e07"
+                        value="0"
+                        readonly
+                    >
 
-                <button
-                    type="button"
-                    onclick="aumentar('e07')"
-                >
-                    +
-                </button>
+                    <button
+                        type="button"
+                        onclick="aumentar('e07')"
+                    >
+                        +
+                    </button>
+
+                </div>
+
+
+                <label>
+                    Cilindros 10 m³
+                </label>
+
+                <div class="contador">
+
+                    <button
+                        type="button"
+                        onclick="disminuir('e10')"
+                    >
+                        −
+                    </button>
+
+                    <input
+                        id="e10"
+                        value="0"
+                        readonly
+                    >
+
+                    <button
+                        type="button"
+                        onclick="aumentar('e10')"
+                    >
+                        +
+                    </button>
+
+                </div>
+
+
+                <!-- ==================================================
+                     RETIRADOS
+                     ================================================== -->
+
+                <div class="titulo">
+                    RETIRADOS
+                </div>
+
+
+                <label>
+                    Cilindros 0.7 m³
+                </label>
+
+                <div class="contador">
+
+                    <button
+                        type="button"
+                        onclick="disminuir('r07')"
+                    >
+                        −
+                    </button>
+
+                    <input
+                        id="r07"
+                        value="0"
+                        readonly
+                    >
+
+                    <button
+                        type="button"
+                        onclick="aumentar('r07')"
+                    >
+                        +
+                    </button>
+
+                </div>
+
+
+                <label>
+                    Cilindros 10 m³
+                </label>
+
+                <div class="contador">
+
+                    <button
+                        type="button"
+                        onclick="disminuir('r10')"
+                    >
+                        −
+                    </button>
+
+                    <input
+                        id="r10"
+                        value="0"
+                        readonly
+                    >
+
+                    <button
+                        type="button"
+                        onclick="aumentar('r10')"
+                    >
+                        +
+                    </button>
+
+                </div>
 
             </div>
-
-
-            <label>
-                Cilindros 10 m³
-            </label>
-
-            <div class="contador">
-
-                <button
-                    type="button"
-                    onclick="disminuir('e10')"
-                >
-                    −
-                </button>
-
-                <input
-                    id="e10"
-                    value="0"
-                    readonly
-                >
-
-                <button
-                    type="button"
-                    onclick="aumentar('e10')"
-                >
-                    +
-                </button>
-
-            </div>
-
-
-            <!-- ==================================================
-                 RETIRADOS
-                 ================================================== -->
-
-            <div class="titulo">
-                RETIRADOS
-            </div>
-
-
-            <label>
-                Cilindros 0.7 m³
-            </label>
-
-            <div class="contador">
-
-                <button
-                    type="button"
-                    onclick="disminuir('r07')"
-                >
-                    −
-                </button>
-
-                <input
-                    id="r07"
-                    value="0"
-                    readonly
-                >
-
-                <button
-                    type="button"
-                    onclick="aumentar('r07')"
-                >
-                    +
-                </button>
-
-            </div>
-
-
-            <label>
-                Cilindros 10 m³
-            </label>
-
-            <div class="contador">
-
-                <button
-                    type="button"
-                    onclick="disminuir('r10')"
-                >
-                    −
-                </button>
-
-                <input
-                    id="r10"
-                    value="0"
-                    readonly
-                >
-
-                <button
-                    type="button"
-                    onclick="aumentar('r10')"
-                >
-                    +
-                </button>
-
-            </div>
-        </div>
 
 
             <!-- ==================================================
@@ -270,33 +275,63 @@
             <!-- OCULTA EN RETIRO -->
             <!-- ===================================================== -->
 
-            <div id="seccionFotos" class="seccion-fotos">
+            <div
+                id="seccionFotos"
+                class="seccion-fotos"
+            >
 
-                <div class="titulo">EVIDENCIA FOTOGRÁFICA</div>
+                <div class="titulo">
+                    EVIDENCIA FOTOGRÁFICA
+                </div>
 
                 <p class="texto-foto">
                     Tome al menos una fotografía del servicio realizado.
                 </p>
 
                 <!-- Vista en vivo de la cámara -->
-                <video id="vistaCamara" autoplay playsinline hidden></video>
+                <video
+                    id="vistaCamara"
+                    autoplay
+                    playsinline
+                    hidden
+                ></video>
 
                 <!-- Botones de cámara -->
                 <div class="botones-camara">
-                    <button type="button" id="btnAbrirCamara">Abrir Cámara</button>
-                    <button type="button" id="btnTomarFoto" hidden>Tomar Foto</button>
+
+                    <button
+                        type="button"
+                        id="btnAbrirCamara"
+                    >
+                        Abrir Cámara
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnTomarFoto"
+                        hidden
+                    >
+                        Tomar Foto
+                    </button>
+
                 </div>
 
                 <!-- Previsualización de máximo 2 fotos -->
-                <div id="previewFotos" class="preview-fotos"></div>
+                <div
+                    id="previewFotos"
+                    class="preview-fotos"
+                ></div>
 
                 <!-- Canvas interno para capturar la imagen -->
-                <canvas id="canvasFoto" hidden></canvas>
+                <canvas
+                    id="canvasFoto"
+                    hidden
+                ></canvas>
 
             </div>
 
 
-                <!-- ==================================================
+            <!-- ==================================================
                  FIRMA
                  ================================================== -->
 
@@ -338,45 +373,46 @@
 
 
     <!-- JS EXCLUSIVO PARA PARTICULARES -->
-    <script src="./js/particular.js?v=20260909-4"></script>
+    <script src="./js/particular.js?v=20260913-1"></script>
+
     <script>
-    if ("serviceWorker" in navigator) {
+        if ("serviceWorker" in navigator) {
 
-        window.addEventListener(
-            "load",
-            async () => {
+            window.addEventListener(
+                "load",
+                async () => {
 
-                try {
+                    try {
 
-                    const registro =
-                        await navigator.serviceWorker.register(
-                            "./sw-particular.js",
-                            {
-                                scope: "./",
-                                updateViaCache: "none"
-                            }
+                        const registro =
+                            await navigator.serviceWorker.register(
+                                "./sw-particular.js?v=20260913-1",
+                                {
+                                    scope: "./",
+                                    updateViaCache: "none"
+                                }
+                            );
+
+                        await registro.update();
+
+                        console.log(
+                            "Service Worker Particular activo."
                         );
 
-                    await registro.update();
+                    } catch (error) {
 
-                    console.log(
-                        "Service Worker Particular activo."
-                    );
+                        console.error(
+                            "No fue posible registrar el Service Worker Particular:",
+                            error
+                        );
 
-                } catch (error) {
-
-                    console.error(
-                        "No fue posible registrar el Service Worker Particular:",
-                        error
-                    );
+                    }
 
                 }
+            );
 
-            }
-        );
-
-    }
-</script>
+        }
+    </script>
 
 </body>
 

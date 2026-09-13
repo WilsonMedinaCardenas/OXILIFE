@@ -438,16 +438,13 @@ async function enviarRegistroParticular(
     const controller =
         new AbortController();
 
-
     const temporizador =
         setTimeout(
             () => controller.abort(),
             timeoutMs
         );
 
-
     let respuesta;
-
 
     try {
 
@@ -456,20 +453,18 @@ async function enviarRegistroParticular(
                 WORKER_URL,
                 {
                     method: "POST",
-
                     body:
                         construirPayloadParticular(
                             registro
                         ),
-
                     credentials:
                         "same-origin",
-
+                    cache:
+                        "no-store",
                     signal:
                         controller.signal
                 }
             );
-
 
     } catch (error) {
 
@@ -480,11 +475,8 @@ async function enviarRegistroParticular(
                     : "No fue posible conectar con el servidor."
             );
 
-
         errorFinal.reintentable = true;
-
         throw errorFinal;
-
 
     } finally {
 
@@ -494,30 +486,56 @@ async function enviarRegistroParticular(
 
     }
 
+    const tipoContenido =
+        String(
+            respuesta.headers.get(
+                "content-type"
+            ) || ""
+        ).toLowerCase();
+
+    if (
+        !tipoContenido.includes(
+            "application/json"
+        )
+    ) {
+
+        const texto =
+            await respuesta.text();
+
+        const pareceHtml =
+            /<!doctype\s+html|<html/i.test(
+                texto
+            );
+
+        const error =
+            new Error(
+                pareceHtml
+                    ? "La sesión de OxiTrack no pudo validarse. El registro quedó guardado y se reintentará cuando la sesión esté disponible."
+                    : "El servidor devolvió una respuesta inesperada."
+            );
+
+        error.reintentable = true;
+        error.respuestaHtml = pareceHtml;
+        throw error;
+    }
 
     let resultado;
-
 
     try {
 
         resultado =
             await respuesta.json();
 
-
     } catch {
 
         const error =
             new Error(
-                "El servidor no devolvió una respuesta válida."
+                "El servidor no devolvió un JSON válido."
             );
 
-
         error.reintentable = true;
-
         throw error;
-
     }
-
 
     if (
         !respuesta.ok ||
@@ -530,16 +548,11 @@ async function enviarRegistroParticular(
                 "El servidor rechazó el registro."
             );
 
-
         error.reintentable = false;
-
         throw error;
-
     }
 
-
     return resultado;
-
 }
 
 // ==========================================================
@@ -568,16 +581,6 @@ async function programarSyncParticular() {
         }
 
 
-        if (
-            navigator.serviceWorker.controller
-        ) {
-
-            navigator.serviceWorker.controller.postMessage({
-                type:
-                    "SINCRONIZAR_PARTICULAR"
-            });
-
-        }
 
     } catch (error) {
 
@@ -746,13 +749,67 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 });
 
+async function refrescarPacientesServicioActual() {
+
+    if (!navigator.onLine) return;
+
+    const selectServicio =
+        document.getElementById(
+            "servicioParticular"
+        );
+
+    const selectPaciente =
+        document.getElementById(
+            "pacienteParticular"
+        );
+
+    const inputPacienteId =
+        document.getElementById(
+            "pacienteId"
+        );
+
+    if (
+        !selectServicio ||
+        !selectPaciente
+    ) {
+        return;
+    }
+
+    const servicio =
+        selectServicio.value.trim();
+
+    if (!servicio) return;
+
+    const idAnterior =
+        inputPacienteId?.value || "";
+
+    await cargarUltimosPacientes(
+        servicio,
+        selectPaciente
+    );
+
+    if (
+        idAnterior &&
+        pacientesDisponibles.some(
+            item =>
+                String(item.id) ===
+                String(idAnterior)
+        )
+    ) {
+        selectPaciente.value =
+            idAnterior;
+    } else if (inputPacienteId) {
+        inputPacienteId.value = "";
+    }
+}
+
+
 window.addEventListener(
     "online",
-    () => {
+    async () => {
 
-        sincronizarPendientesParticular();
-
-        programarSyncParticular();
+        await sincronizarPendientesParticular();
+        await refrescarPacientesServicioActual();
 
     }
 );
@@ -760,19 +817,64 @@ window.addEventListener(
 
 document.addEventListener(
     "visibilitychange",
-    () => {
+    async () => {
 
         if (
             document.visibilityState ===
             "visible"
         ) {
 
-            sincronizarPendientesParticular();
+            await sincronizarPendientesParticular();
+            await refrescarPacientesServicioActual();
 
         }
 
     }
 );
+
+
+window.addEventListener(
+    "focus",
+    async () => {
+
+        await sincronizarPendientesParticular();
+        await refrescarPacientesServicioActual();
+
+    }
+);
+
+
+window.addEventListener(
+    "pageshow",
+    async () => {
+
+        await sincronizarPendientesParticular();
+        await refrescarPacientesServicioActual();
+
+    }
+);
+
+
+if ("serviceWorker" in navigator) {
+
+    navigator.serviceWorker.addEventListener(
+        "message",
+        async event => {
+
+            if (
+                event.data &&
+                event.data.type ===
+                "PARTICULAR_SINCRONIZADO"
+            ) {
+
+                await refrescarPacientesServicioActual();
+
+            }
+
+        }
+    );
+
+}
 
 // ==========================================================
 // SERVICIOS - VIENEN DESDE EL WORKER
@@ -783,7 +885,7 @@ async function cargarServicios(selectServicio) {
 
     if (navigator.onLine) {
         try {
-            const respuesta = await fetch(WORKER_URL + "?modo=serviciosParticular");
+            const respuesta = await fetch(WORKER_URL + "?modo=serviciosParticular", { cache: "no-store" });
             const datos = await respuesta.json();
 
             if (respuesta.ok && datos.ok === true && Array.isArray(datos.servicios)) {
@@ -936,7 +1038,8 @@ async function precargarDatosOfflineParticular() {
 
             const respuesta =
                 await fetch(
-                    `${WORKER_URL}?modo=particular&servicio=${encodeURIComponent(servicio)}`
+                    `${WORKER_URL}?modo=particular&servicio=${encodeURIComponent(servicio)}`,
+                    { cache: "no-store" }
                 );
 
 
@@ -987,7 +1090,8 @@ async function precargarDatosOfflineParticular() {
 
                         const respuestaElementos =
                             await fetch(
-                                `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`
+                                `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`,
+                                { cache: "no-store" }
                             );
 
 
@@ -1071,7 +1175,8 @@ async function cargarElementos(tipo) {
 
             const respuesta =
                 await fetch(
-                    `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`
+                    `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`,
+                    { cache: "no-store" }
                 );
 
 
@@ -1803,7 +1908,7 @@ function inicializarFormulario() {
 
             // ======================================================
             // INTENTAR ENVÍO ONLINE
-            // MÁXIMO 12 SEGUNDOS
+            // MÁXIMO 60 SEGUNDOS
             // ======================================================
 
             try {

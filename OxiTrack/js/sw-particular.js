@@ -3,7 +3,7 @@
 // ==========================================================
 
 const CACHE_NAME =
-    "oxitrack-particular-v1";
+    "oxitrack-particular-v2";
 
 const DB_NAME =
     "oxitrack_particular_db";
@@ -21,7 +21,7 @@ const APP_SHELL = [
     "./particular.html",
     "./css/oxitrack-base.css",
     "./css/particular.css",
-    "./js/particular.js",
+    "./js/particular.js?v=20260913-1",
     "/assets/img/favicon.png"
 ];
 
@@ -134,21 +134,28 @@ self.addEventListener(
                 try {
 
                     const respuesta =
-                        await fetch(request);
+                        await fetch(
+                            request,
+                            { cache: "no-store" }
+                        );
 
+                    const urlRespuesta =
+                        new URL(respuesta.url);
 
-                    if (
-                        respuesta.ok ||
-                        respuesta.type === "opaque"
-                    ) {
+                    const respuestaCacheable =
+                        respuesta.ok &&
+                        !respuesta.redirected &&
+                        urlRespuesta.origin ===
+                            url.origin;
+
+                    if (respuestaCacheable) {
 
                         const cache =
                             await caches.open(
                                 CACHE_NAME
                             );
 
-
-                        cache.put(
+                        await cache.put(
                             request,
                             respuesta.clone()
                         );
@@ -465,7 +472,10 @@ async function sincronizarParticular() {
                             ),
 
                         credentials:
-                            "same-origin"
+                            "same-origin",
+
+                        cache:
+                            "no-store"
                     }
                 );
 
@@ -509,6 +519,23 @@ async function sincronizarParticular() {
             await eliminarPendiente(
                 registro.envioId
             );
+
+            const clientes =
+                await self.clients.matchAll({
+                    type: "window",
+                    includeUncontrolled: true
+                });
+
+            for (const cliente of clientes) {
+                cliente.postMessage({
+                    type: "PARTICULAR_SINCRONIZADO",
+                    envioId: registro.envioId,
+                    pacienteId: registro.pacienteId,
+                    servicio: registro.servicio,
+                    duplicado:
+                        resultado.duplicado === true
+                });
+            }
 
 
         } catch (error) {
