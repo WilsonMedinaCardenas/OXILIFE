@@ -1442,6 +1442,140 @@ function limpiarElementos() {
 }
 
 // ==========================================================
+// LIMPIAR FORMULARIO PARTICULAR
+// ==========================================================
+
+function limpiarFormularioParticular() {
+
+    const formulario =
+        document.getElementById("formularioParticular");
+
+    const selectServicio =
+        document.getElementById("servicioParticular");
+
+    const selectPaciente =
+        document.getElementById("pacienteParticular");
+
+    const inputPacienteId =
+        document.getElementById("pacienteId");
+
+    const obs =
+        document.getElementById("obs");
+
+
+    // ------------------------------------------------------
+    // FORMULARIO BASE
+    // ------------------------------------------------------
+
+    if (formulario) {
+        formulario.reset();
+    }
+
+
+    // ------------------------------------------------------
+    // SERVICIO
+    // ------------------------------------------------------
+
+    if (selectServicio) {
+        selectServicio.value = "";
+    }
+
+
+    // ------------------------------------------------------
+    // PACIENTE
+    // ------------------------------------------------------
+
+    if (selectPaciente) {
+
+        selectPaciente.innerHTML =
+            `<option value="">
+                Primero seleccione un servicio...
+            </option>`;
+
+        selectPaciente.disabled = true;
+
+    }
+
+
+    if (inputPacienteId) {
+        inputPacienteId.value = "";
+    }
+
+
+    pacientesDisponibles = [];
+
+
+    // ------------------------------------------------------
+    // CONTADORES
+    // ------------------------------------------------------
+
+    ["e07", "e10", "r07", "r10"]
+        .forEach(id => {
+
+            const input =
+                document.getElementById(id);
+
+            if (input) {
+                input.value = "0";
+            }
+
+        });
+
+
+    // ------------------------------------------------------
+    // ELEMENTOS
+    // ------------------------------------------------------
+
+    limpiarElementos();
+
+    elementosDisponibles = [];
+
+
+    // ------------------------------------------------------
+    // OBSERVACIONES
+    // ------------------------------------------------------
+
+    if (obs) {
+        obs.value = "";
+    }
+
+
+    // ------------------------------------------------------
+    // FOTOS
+    // ------------------------------------------------------
+
+    detenerCamara();
+
+    fotosCapturadas = [];
+
+    pintarFotosCapturadas();
+
+
+    // ------------------------------------------------------
+    // FIRMA
+    // ------------------------------------------------------
+
+    if (signaturePad) {
+        signaturePad.clear();
+    }
+
+
+    // ------------------------------------------------------
+    // NUEVO ENVÍO = NUEVO ID
+    // ------------------------------------------------------
+
+    envioIdParticularActual = "";
+
+
+    // ------------------------------------------------------
+    // RESTABLECER VISTA
+    // ------------------------------------------------------
+
+    actualizarVistaSegunServicio("");
+
+}
+
+// ==========================================================
 // MOSTRAR / OCULTAR SECCIONES SEGÚN SERVICIO
 // ==========================================================
 
@@ -1901,6 +2035,7 @@ function inicializarFormulario() {
                     "y se enviará automáticamente cuando vuelva la señal."
                 );
 
+                limpiarFormularioParticular();
                 return;
 
             }
@@ -1987,6 +2122,7 @@ function inicializarFormulario() {
                     "y se enviará automáticamente cuando vuelva la señal."
                 );
 
+                limpiarFormularioParticular();
                 return;
 
             }
