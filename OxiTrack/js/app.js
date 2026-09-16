@@ -10,6 +10,94 @@ let coordenadasGPS = "Buscando señal GPS...";
 
 let sincronizacionOfflineEnCurso = false;
 
+// ==========================================================
+// MODALES OXITRACK
+// ==========================================================
+
+function abrirModalConfirmacion(contenidoHtml) {
+
+    return new Promise(resolve => {
+
+        const modal =
+            document.getElementById("modalConfirmacion");
+
+        const resumen =
+            document.getElementById("modalResumen");
+
+        const btnVolver =
+            document.getElementById("btnModalVolver");
+
+        const btnConfirmar =
+            document.getElementById("btnModalConfirmar");
+
+
+        resumen.innerHTML = contenidoHtml;
+
+        modal.hidden = false;
+
+
+        const cerrar = resultado => {
+
+            modal.hidden = true;
+
+            btnVolver.onclick = null;
+            btnConfirmar.onclick = null;
+
+            resolve(resultado);
+
+        };
+
+
+        btnVolver.onclick =
+            () => cerrar(false);
+
+
+        btnConfirmar.onclick =
+            () => cerrar(true);
+
+    });
+
+}
+
+
+function mostrarModalResultado(titulo, mensaje) {
+
+    return new Promise(resolve => {
+
+        const modal =
+            document.getElementById("modalResultado");
+
+        const tituloElemento =
+            document.getElementById("modalResultadoTitulo");
+
+        const mensajeElemento =
+            document.getElementById("modalResultadoMensaje");
+
+        const boton =
+            document.getElementById("btnModalResultado");
+
+
+        tituloElemento.textContent = titulo;
+
+        mensajeElemento.textContent = mensaje;
+
+        modal.hidden = false;
+
+
+        boton.onclick = () => {
+
+            modal.hidden = true;
+
+            boton.onclick = null;
+
+            resolve();
+
+        };
+
+    });
+
+}
+
 
 function generarEnvioId() {
 
@@ -488,24 +576,49 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     const cliente = document.getElementById("cliente").value;
     const servicio = document.getElementById("servicio").value;
     const paciente = document.getElementById("paciente").value.toUpperCase();
+    const clienteIdSeleccionado = document.getElementById("clienteId").value.trim();
 
-    // POPUP ENRIQUECIDO DE CONTROL DE CILINDROS
-    const mensajeConfirmacion = 
-        `¿Está seguro del conteo de los cilindros?\n\n` +
-        `🏢 Empresa: ${cliente}\n` +
-        `🛠️ Servicio: ${servicio}\n` +
-        `👤 Paciente: ${paciente || "No aplica"}\n\n` +
-        `📥 ENTREGADOS:\n` +
-        `• Cilindros 0.7 m³: ${e07}\n` +
-        `• Cilindros 10 m³: ${e10}\n\n` +
-        `📤 RETIRADOS:\n` +
-        `• Cilindros 0.7 m³: ${r07}\n` +
-        `• Cilindros 10 m³: ${r10}`;
-
-
-    if (!confirm(mensajeConfirmacion)) {
-        return; 
+    if (!clienteIdSeleccionado) {
+        alert("Debe seleccionar una empresa válida de la lista.");
+        return;
     }
+
+    // ======================================================
+    // MODAL DE CONFIRMACIÓN OXITRACK
+    // ======================================================
+
+    const mensajeConfirmacion = `
+        <div class="modal-seccion">
+            <strong>Empresa</strong>
+            <span>${cliente}</span>
+        </div>
+
+        <div class="modal-seccion">
+            <strong>Servicio</strong>
+            <span>${servicio}</span>
+        </div>
+
+        <div class="modal-seccion">
+            <strong>Paciente</strong>
+            <span>${paciente || "No aplica"}</span>
+        </div>
+
+        <div class="modal-seccion">
+            <strong>Entregados</strong>
+            <span>Cilindros 0.7 m³: ${e07}</span>
+            <span>Cilindros 10 m³: ${e10}</span>
+        </div>
+
+        <div class="modal-seccion">
+            <strong>Retirados</strong>
+            <span>Cilindros 0.7 m³: ${r07}</span>
+            <span>Cilindros 10 m³: ${r10}</span>
+        </div>
+    `;
+
+    const confirmado = await abrirModalConfirmacion(mensajeConfirmacion);
+
+    if (!confirmado) {return;}
 
     const btn = document.getElementById("btnEnviar");
     btn.disabled = true;
@@ -536,8 +649,6 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
     payload.append("observaciones", document.getElementById("obs").value.toUpperCase());
     payload.append("dispositivo", navigator.userAgent);
     payload.append("gps", coordenadasGPS);
-    const clienteIdSeleccionado = document.getElementById("clienteId").value.trim();
-    if (!clienteIdSeleccionado) { alert("Debe seleccionar una empresa válida de la lista."); return;}
     payload.append("clienteId", clienteIdSeleccionado);
     payload.append("firma", blobFirma, "firma.png");
 
@@ -554,7 +665,10 @@ document.getElementById("formulario").addEventListener("submit", async (e) => {
 
     if (respuesta.ok && resultado.ok === true) {
 
-        alert("Formulario enviado con éxito.");
+        await mostrarModalResultado(
+            "Registro enviado",
+            "El servicio fue registrado correctamente."
+        );
         location.reload();
 
     } else {
@@ -667,40 +781,6 @@ async function intentarSincronizarOffline() {
 
 
         if (registrosGuardados.length === 0) {return;}
-
-
-        // ------------------------------------------------------
-        // MIGRAR REGISTROS OFFLINE ANTIGUOS SIN envioId
-        // ------------------------------------------------------
-
-        let huboMigracion = false;
-
-
-        registrosGuardados.forEach(reg => {
-
-            if (!reg.envioId) {
-
-                reg.envioId =
-                    generarEnvioId();
-
-                huboMigracion = true;
-
-            }
-
-        });
-
-
-        if (huboMigracion) {
-
-            localStorage.setItem(
-                "oxitrack_offline",
-                JSON.stringify(
-                    registrosGuardados
-                )
-            );
-
-        }
-
 
         // Si el navegador todavía considera que no hay conexión,
         // ni siquiera intentamos sincronizar.

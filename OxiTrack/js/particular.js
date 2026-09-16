@@ -20,6 +20,94 @@ let signaturePad = null;
 let elementosDisponibles = [];
 let envioIdParticularActual = "";
 
+// ==========================================================
+// MODALES OXITRACK
+// ==========================================================
+
+function abrirModalConfirmacion(contenidoHtml) {
+
+    return new Promise(resolve => {
+
+        const modal =
+            document.getElementById("modalConfirmacion");
+
+        const resumen =
+            document.getElementById("modalResumen");
+
+        const btnVolver =
+            document.getElementById("btnModalVolver");
+
+        const btnConfirmar =
+            document.getElementById("btnModalConfirmar");
+
+
+        resumen.innerHTML = contenidoHtml;
+
+        modal.hidden = false;
+
+
+        const cerrar = resultado => {
+
+            modal.hidden = true;
+
+            btnVolver.onclick = null;
+            btnConfirmar.onclick = null;
+
+            resolve(resultado);
+
+        };
+
+
+        btnVolver.onclick =
+            () => cerrar(false);
+
+
+        btnConfirmar.onclick =
+            () => cerrar(true);
+
+    });
+
+}
+
+
+function mostrarModalResultado(titulo, mensaje) {
+
+    return new Promise(resolve => {
+
+        const modal =
+            document.getElementById("modalResultado");
+
+        const tituloElemento =
+            document.getElementById("modalResultadoTitulo");
+
+        const mensajeElemento =
+            document.getElementById("modalResultadoMensaje");
+
+        const boton =
+            document.getElementById("btnModalResultado");
+
+
+        tituloElemento.textContent = titulo;
+
+        mensajeElemento.textContent = mensaje;
+
+        modal.hidden = false;
+
+
+        boton.onclick = () => {
+
+            modal.hidden = true;
+
+            boton.onclick = null;
+
+            resolve();
+
+        };
+
+    });
+
+}
+
 
 function generarEnvioIdParticular() {
 
@@ -38,7 +126,6 @@ function generarEnvioIdParticular() {
         Math.random().toString(36).slice(2)
     );
 }
-
 
 // ==========================================================
 // CACHE LOCAL
@@ -1833,51 +1920,152 @@ function capturarUbicacionGps() {
 // CONFIRMACIÓN FINAL ANTES DEL ENVÍO
 // ==========================================================
 
-function confirmarEnvioParticular(datos) {
-    const servicio = String(datos.servicio || "").toUpperCase();
-    const esImplementacion = servicio.includes("IMPLEMENT");
-    const esVenta = servicio.includes("VENTA");
-    const esRetiro = servicio.includes("RETIRO");
+async function confirmarEnvioParticular(datos) {
 
-    let resumen = "CONFIRMAR SERVICIO\n\n";
+    const servicio =
+        String(datos.servicio || "").toUpperCase();
 
-    resumen += `Paciente: ${datos.paciente}\n`;
-    resumen += `Servicio: ${servicio}\n`;
+    const esImplementacion =
+        servicio.includes("IMPLEMENT");
 
-    if (esImplementacion && Array.isArray(datos.elementos)) {
-        resumen += "\nELEMENTOS ENTREGADOS:\n";
+    const esVenta =
+        servicio.includes("VENTA");
+
+    const esRetiro =
+        servicio.includes("RETIRO");
+
+
+    let contenido = `
+        <div class="modal-seccion">
+            <strong>Paciente</strong>
+            <span>${datos.paciente}</span>
+        </div>
+
+        <div class="modal-seccion">
+            <strong>Servicio</strong>
+            <span>${servicio}</span>
+        </div>
+    `;
+
+
+    // ======================================================
+    // IMPLEMENTACIÓN
+    // ======================================================
+
+    if (
+        esImplementacion &&
+        Array.isArray(datos.elementos)
+    ) {
+
+        let elementosHtml = "";
 
         datos.elementos.forEach(item => {
-            resumen += `${item.cantidad} × ${item.elemento}\n`;
+
+            elementosHtml +=
+                `<span>${item.cantidad} × ${item.elemento}</span>`;
+
         });
+
+
+        contenido += `
+            <div class="modal-seccion">
+                <strong>Elementos entregados</strong>
+                ${elementosHtml}
+            </div>
+        `;
+
     }
 
-    if (esRetiro && Array.isArray(datos.elementos) && datos.elementos.length > 0) {
-        resumen += "\nELEMENTOS A RETIRAR:\n";
+
+    // ======================================================
+    // RETIRO CON ELEMENTOS
+    // ======================================================
+
+    if (
+        esRetiro &&
+        Array.isArray(datos.elementos) &&
+        datos.elementos.length > 0
+    ) {
+
+        let elementosHtml = "";
 
         datos.elementos.forEach(item => {
-            resumen += `${item.cantidad} de ${item.cantidadOriginal} × ${item.elemento}\n`;
+
+            elementosHtml +=
+                `<span>
+                    ${item.cantidad} de
+                    ${item.cantidadOriginal} ×
+                    ${item.elemento}
+                </span>`;
+
         });
 
-    } else if (!esImplementacion && !esVenta) {
-        resumen += "\n";
-        resumen += `Entregados 0.7 m³: ${datos.e07}\n`;
-        resumen += `Entregados 10 m³: ${datos.e10}\n`;
-        resumen += `Retirados 0.7 m³: ${datos.r07}\n`;
-        resumen += `Retirados 10 m³: ${datos.r10}\n`;
+
+        contenido += `
+            <div class="modal-seccion">
+                <strong>Elementos a retirar</strong>
+                ${elementosHtml}
+            </div>
+        `;
+
+
+    } else if (
+        !esImplementacion &&
+        !esVenta
+    ) {
+
+        contenido += `
+            <div class="modal-seccion">
+                <strong>Entregados</strong>
+                <span>Cilindros 0.7 m³: ${datos.e07}</span>
+                <span>Cilindros 10 m³: ${datos.e10}</span>
+            </div>
+
+            <div class="modal-seccion">
+                <strong>Retirados</strong>
+                <span>Cilindros 0.7 m³: ${datos.r07}</span>
+                <span>Cilindros 10 m³: ${datos.r10}</span>
+            </div>
+        `;
+
     }
 
-    if (!servicio.includes("RETIRO")) {
-        resumen += `\nFotografías: ${datos.fotos}\n`;
+
+    // ======================================================
+    // FOTOGRAFÍAS
+    // ======================================================
+
+    if (!esRetiro) {
+
+        contenido += `
+            <div class="modal-seccion">
+                <strong>Fotografías</strong>
+                <span>${datos.fotos}</span>
+            </div>
+        `;
+
     }
+
+
+    // ======================================================
+    // OBSERVACIONES
+    // ======================================================
 
     if (datos.observaciones) {
-        resumen += `\nObservaciones:\n${datos.observaciones}\n`;
+
+        contenido += `
+            <div class="modal-seccion">
+                <strong>Observaciones</strong>
+                <span>${datos.observaciones}</span>
+            </div>
+        `;
+
     }
 
-    resumen += "\n¿Confirma que la información es correcta?";
 
-    return window.confirm(resumen);
+    return await abrirModalConfirmacion(
+        contenido
+    );
 }
 
 // ==========================================================
@@ -1961,7 +2149,7 @@ function inicializarFormulario() {
             return;
         }
 
-        const confirmado = confirmarEnvioParticular({
+        const confirmado = await confirmarEnvioParticular({
             servicio,
             paciente: pacienteNombre,
             elementos: elementosSeleccionados,
@@ -2028,11 +2216,9 @@ function inicializarFormulario() {
 
                 programarSyncParticular();
 
-
-                alert(
-                    "No hay conexión a internet.\n\n" +
-                    "El registro quedó guardado de forma segura " +
-                    "y se enviará automáticamente cuando vuelva la señal."
+                await mostrarModalResultado(
+                    "Registro guardado",
+                    "No hay conexión a internet. El registro quedó guardado de forma segura y se enviará automáticamente cuando vuelva la señal."
                 );
 
                 limpiarFormularioParticular();
@@ -2070,16 +2256,12 @@ function inicializarFormulario() {
 
                 }
 
-
-                alert(
-                    "Registro particular enviado correctamente."
+                await mostrarModalResultado(
+                    "Registro enviado",
+                    "El servicio fue registrado correctamente."
                 );
-
-
                 location.reload();
-
                 return;
-
 
             } catch (errorEnvio) {
 
@@ -2116,10 +2298,9 @@ function inicializarFormulario() {
                 programarSyncParticular();
 
 
-                alert(
-                    "No fue posible confirmar el envío con el servidor.\n\n" +
-                    "El registro quedó guardado de forma segura " +
-                    "y se enviará automáticamente cuando vuelva la señal."
+                await mostrarModalResultado(
+                    "Registro pendiente",
+                    "No fue posible confirmar el envío con el servidor. El registro quedó guardado de forma segura y se sincronizará automáticamente cuando exista conexión."
                 );
 
                 limpiarFormularioParticular();

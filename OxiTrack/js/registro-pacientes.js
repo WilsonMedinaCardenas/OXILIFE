@@ -190,6 +190,7 @@ document.addEventListener("DOMContentLoaded", function () {
     cargarVentanasHorarias();
     cargarCatalogoRegistro();
     cargarOperariosRegistro();
+    selectVentanaServicio.disabled = true;
 
 });
 
@@ -220,12 +221,39 @@ function obtenerFechaLocal() {
 }
 
 // ==========================================================
+// CAMBIO DE FECHA PROGRAMADA
+// ==========================================================
+
+inputFechaServicio.addEventListener(
+    "change",
+    function () {
+
+        const hoy =
+            obtenerFechaLocal();
+
+
+        if (
+            inputFechaServicio.value &&
+            inputFechaServicio.value < hoy
+        ) {
+
+            inputFechaServicio.value = hoy;
+
+        }
+
+
+        actualizarDisponibilidadAgenda();
+
+    }
+);
+
+// ==========================================================
 // VENTANAS HORARIAS
 // 1 HORA DE DURACIÓN
 // INICIO CADA 30 MINUTOS
 // ==========================================================
 
-function cargarVentanasHorarias() {
+function cargarVentanasHorarias(ventanasOcupadas = []) {
 
     selectVentanaServicio.innerHTML = `
         <option value="">
@@ -233,47 +261,183 @@ function cargarVentanasHorarias() {
         </option>
     `;
 
-
-    const inicioMinutos = 8 * 60;
-    const ultimoInicioMinutos = 22 * 60;
-
+    const ocupadas = new Set(
+        Array.isArray(ventanasOcupadas)
+            ? ventanasOcupadas
+            : []
+    );
 
     for (
-        let minutos = inicioMinutos;
-        minutos <= ultimoInicioMinutos;
+        let minutos = 0;
+        minutos < 24 * 60;
         minutos += 30
     ) {
 
-        const inicio = convertirMinutosAHora(minutos);
+        const inicio =
+            convertirMinutosAHora(minutos);
 
-        const fin = convertirMinutosAHora(
-            minutos + 60
-        );
+        const fin =
+            convertirMinutosAHora(
+                (minutos + 60) % (24 * 60)
+            );
 
-        const ventana = `${inicio} - ${fin}`;
+        const ventana =
+            `${inicio} - ${fin}`;
 
-        const option = document.createElement("option");
+        const option =
+            document.createElement("option");
 
         option.value = ventana;
         option.textContent = ventana;
 
-        selectVentanaServicio.appendChild(option);
+        if (ocupadas.has(ventana)) {
+
+            option.disabled = true;
+
+            option.textContent =
+                `${ventana} — NO DISPONIBLE`;
+
+        }
+
+        selectVentanaServicio.appendChild(
+            option
+        );
 
     }
 
 }
 
-
 function convertirMinutosAHora(totalMinutos) {
 
-    const horas = Math.floor(totalMinutos / 60);
-    const minutos = totalMinutos % 60;
+    const minutosDia =
+        ((totalMinutos % (24 * 60)) + (24 * 60)) %
+        (24 * 60);
+
+    const horas =
+        Math.floor(minutosDia / 60);
+
+    const minutos =
+        minutosDia % 60;
 
     return (
         String(horas).padStart(2, "0") +
         ":" +
         String(minutos).padStart(2, "0")
     );
+
+}
+
+// ==========================================================
+// DISPONIBILIDAD DE AGENDA
+// FECHA + OPERARIO
+// ==========================================================
+
+async function actualizarDisponibilidadAgenda() {
+
+    const fecha =
+        inputFechaServicio.value;
+
+    const operario =
+        selectOperarioAsignado.value.trim();
+
+
+    selectVentanaServicio.value = "";
+
+
+    if (!fecha || !operario) {
+
+        cargarVentanasHorarias();
+
+        selectVentanaServicio.disabled = true;
+
+        return;
+
+    }
+
+
+    selectVentanaServicio.disabled = true;
+
+    selectVentanaServicio.innerHTML = `
+        <option value="">
+            Consultando disponibilidad...
+        </option>
+    `;
+
+
+    try {
+
+        const respuesta =
+            await fetch(
+                "/api/oxitrack/" +
+                "?modo=disponibilidadAgenda" +
+                "&fecha=" +
+                encodeURIComponent(fecha) +
+                "&operario=" +
+                encodeURIComponent(operario),
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible consultar la disponibilidad."
+            );
+
+        }
+
+
+        const ventanasOcupadas =
+            Array.isArray(datos.ventanasOcupadas)
+                ? datos.ventanasOcupadas
+                : [];
+
+
+        cargarVentanasHorarias(
+            ventanasOcupadas
+        );
+
+
+        selectVentanaServicio.disabled = false;
+
+
+    } catch (error) {
+
+        console.error(
+            "Error al consultar disponibilidad de agenda:",
+            error
+        );
+
+
+        selectVentanaServicio.innerHTML = `
+            <option value="">
+                No fue posible cargar horarios
+            </option>
+        `;
+
+
+        selectVentanaServicio.disabled = true;
+
+
+        mostrarError(
+            "No fue posible consultar la disponibilidad del operario."
+        );
+
+    }
 
 }
 
@@ -505,6 +669,19 @@ async function cargarOperariosRegistro() {
     }
 
 }
+
+// ==========================================================
+// CAMBIO DE OPERARIO
+// ==========================================================
+
+selectOperarioAsignado.addEventListener(
+    "change",
+    function () {
+
+        actualizarDisponibilidadAgenda();
+
+    }
+);
 
 
 // ==========================================================
@@ -1560,6 +1737,22 @@ function validarFormulario() {
 
         throw new Error(
             "Debe seleccionar la ventana horaria del servicio."
+        );
+
+    }
+
+    const opcionHorarioSeleccionada = selectVentanaServicio.options[
+        selectVentanaServicio.selectedIndex
+    ];
+
+
+    if (
+        opcionHorarioSeleccionada &&
+        opcionHorarioSeleccionada.disabled
+    ) {
+
+        throw new Error(
+            "La ventana horaria seleccionada ya no está disponible."
         );
 
     }
