@@ -1748,6 +1748,7 @@ function inicializarCamara() {
 
 async function abrirCamara() {
     const video = document.getElementById("vistaCamara");
+    const btnAbrir = document.getElementById("btnAbrirCamara");
     const btnTomar = document.getElementById("btnTomarFoto");
 
     if (!video || !btnTomar) {
@@ -1770,6 +1771,7 @@ async function abrirCamara() {
 
         video.srcObject = streamCamara;
         video.hidden = false;
+        if (btnAbrir) btnAbrir.hidden = true;
         btnTomar.hidden = false;
 
     } catch (error) {
@@ -1785,6 +1787,7 @@ function detenerCamara() {
     }
 
     const video = document.getElementById("vistaCamara");
+    const btnAbrir = document.getElementById("btnAbrirCamara");
     const btnTomar = document.getElementById("btnTomarFoto");
 
     if (video) {
@@ -1793,6 +1796,7 @@ function detenerCamara() {
     }
 
     if (btnTomar) btnTomar.hidden = true;
+    if (btnAbrir) btnAbrir.hidden = false;
 }
 
 async function tomarFoto() {
@@ -1937,12 +1941,12 @@ async function confirmarEnvioParticular(datos) {
 
     let contenido = `
         <div class="modal-seccion">
-            <strong>Paciente</strong>
+            <strong>Paciente:</strong>
             <span>${datos.paciente}</span>
         </div>
 
         <div class="modal-seccion">
-            <strong>Servicio</strong>
+            <strong>Servicio:</strong>
             <span>${servicio}</span>
         </div>
     `;
@@ -1969,7 +1973,7 @@ async function confirmarEnvioParticular(datos) {
 
         contenido += `
             <div class="modal-seccion">
-                <strong>Elementos entregados</strong>
+                <strong>Elementos entregados:</strong>
                 ${elementosHtml}
             </div>
         `;
@@ -2003,7 +2007,7 @@ async function confirmarEnvioParticular(datos) {
 
         contenido += `
             <div class="modal-seccion">
-                <strong>Elementos a retirar</strong>
+                <strong>Elementos a retirar:</strong>
                 ${elementosHtml}
             </div>
         `;
@@ -2016,13 +2020,13 @@ async function confirmarEnvioParticular(datos) {
 
         contenido += `
             <div class="modal-seccion">
-                <strong>Entregados</strong>
+                <strong>Entregados:</strong>
                 <span>Cilindros 0.7 m³: ${datos.e07}</span>
                 <span>Cilindros 10 m³: ${datos.e10}</span>
             </div>
 
             <div class="modal-seccion">
-                <strong>Retirados</strong>
+                <strong>Retirados:</strong>
                 <span>Cilindros 0.7 m³: ${datos.r07}</span>
                 <span>Cilindros 10 m³: ${datos.r10}</span>
             </div>
@@ -2039,7 +2043,7 @@ async function confirmarEnvioParticular(datos) {
 
         contenido += `
             <div class="modal-seccion">
-                <strong>Fotografías</strong>
+                <strong>Fotografías:</strong>
                 <span>${datos.fotos}</span>
             </div>
         `;
@@ -2055,7 +2059,7 @@ async function confirmarEnvioParticular(datos) {
 
         contenido += `
             <div class="modal-seccion">
-                <strong>Observaciones</strong>
+                <strong>Observaciones:</strong>
                 <span>${datos.observaciones}</span>
             </div>
         `;

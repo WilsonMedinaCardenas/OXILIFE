@@ -294,8 +294,7 @@ function cargarVentanasHorarias(ventanasOcupadas = []) {
 
             option.disabled = true;
 
-            option.textContent =
-                `${ventana} — NO DISPONIBLE`;
+            option.textContent = ventana;
 
         }
 
