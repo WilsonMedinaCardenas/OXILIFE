@@ -370,9 +370,9 @@ async function actualizarDisponibilidadAgenda() {
             await fetch(
                 "/api/oxitrack/" +
                 "?modo=disponibilidadAgenda" +
-                "&fecha=" +
+                "&fechaProgramada=" +
                 encodeURIComponent(fecha) +
-                "&operario=" +
+                "&operarioAsignado=" +
                 encodeURIComponent(operario),
                 {
                     method: "GET",
@@ -2328,6 +2328,7 @@ function reiniciarFormularioCompleto() {
     servicioActual = "";
     tipoPacienteActual = "";
     pacienteSeleccionado = null;
+    idSolicitudRegistro = "";
     llevaFleteActual = "";
     horarioFleteActual = "";
     convenioActual = "";
