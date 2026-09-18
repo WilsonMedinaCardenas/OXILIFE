@@ -267,11 +267,37 @@ function cargarVentanasHorarias(ventanasOcupadas = []) {
             : []
     );
 
+
+    const hoy =
+        obtenerFechaLocal();
+
+    const fechaSeleccionada =
+        inputFechaServicio.value;
+
+    const ahora =
+        new Date();
+
+    const minutosActuales =
+        ahora.getHours() * 60 +
+        ahora.getMinutes();
+
+
     for (
         let minutos = 0;
         minutos < 24 * 60;
         minutos += 30
     ) {
+
+        // SI LA FECHA ES HOY,
+        // NO MOSTRAR HORARIOS QUE YA COMENZARON
+
+        if (
+            fechaSeleccionada === hoy &&
+            minutos < minutosActuales
+        ) {
+            continue;
+        }
+
 
         const inicio =
             convertirMinutosAHora(minutos);
@@ -290,13 +316,13 @@ function cargarVentanasHorarias(ventanasOcupadas = []) {
         option.value = ventana;
         option.textContent = ventana;
 
+
         if (ocupadas.has(ventana)) {
 
             option.disabled = true;
 
-            option.textContent = ventana;
-
         }
+
 
         selectVentanaServicio.appendChild(
             option
@@ -1666,10 +1692,21 @@ btnConfirmarRegistro.addEventListener(
             );
 
 
+            ocultarModal(
+                modalConfirmacionRegistro
+            );
+
+
             mostrarError(
                 error.message ||
                 "No fue posible registrar el servicio."
             );
+
+
+            mensajeRegistro.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
 
         } finally {
 
