@@ -196,6 +196,63 @@
 
                     </div>
 
+
+                    <!-- ATENCIÓN INMEDIATA -->
+
+                    <div class="campo">
+
+                        <button
+                            type="button"
+                            id="btnAtencionInmediata"
+                            class="btn-selector"
+                        >
+                            Atención inmediata
+                        </button>
+
+                        <input
+                            type="hidden"
+                            id="inputAtencionInmediata"
+                            name="atencionInmediata"
+                            value="NO"
+                        >
+
+                        <small class="campo-ayuda">
+                            Utilice esta opción cuando el servicio deba realizarse lo antes posible.
+                        </small>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     GESTIÓN DE SERVICIOS AGENDADOS
+                ================================================== -->
+
+                <section class="form-seccion">
+
+                    <h2>Gestionar servicio agendado</h2>
+
+                    <div class="selector-tipo-paciente">
+
+                        <button
+                            type="button"
+                            id="btnAbrirReagendar"
+                            class="btn-selector"
+                        >
+                            Reagendar servicio
+                        </button>
+
+                        <button
+                            type="button"
+                            id="btnAbrirCancelarServicio"
+                            class="btn-selector"
+                        >
+                            Cancelar servicio
+                        </button>
+
+                    </div>
+
                 </section>
 
 
@@ -1027,6 +1084,151 @@
 
         </section>
 
+                <!-- =====================================================
+             MODAL GESTIÓN DE SERVICIO
+        ====================================================== -->
+
+        <div
+            id="modalGestionServicio"
+            class="modal"
+            hidden
+        >
+
+            <div class="modal-contenido">
+
+                <h2 id="tituloGestionServicio">
+                    Gestionar servicio
+                </h2>
+
+
+                <div class="campo">
+
+                    <label for="inputBuscarGestion">
+                        RUT o teléfono
+                    </label>
+
+                    <input
+                        type="text"
+                        id="inputBuscarGestion"
+                        placeholder="Ingrese RUT o teléfono"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div
+                    id="resultadosGestionServicio"
+                    class="resultados-busqueda"
+                    hidden
+                ></div>
+
+
+                <div
+                    id="detalleGestionServicio"
+                    hidden
+                >
+
+                    <div id="resumenGestionServicio"></div>
+
+
+                    <div
+                        id="nuevaProgramacionGestion"
+                        hidden
+                    >
+
+                        <div class="campo">
+
+                            <label for="inputNuevaFechaGestion">
+                                Nueva fecha
+                            </label>
+
+                            <input
+                                type="date"
+                                id="inputNuevaFechaGestion"
+                            >
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label for="selectNuevoOperarioGestion">
+                                Operario asignado
+                            </label>
+
+                            <select id="selectNuevoOperarioGestion">
+
+                                <option value="">
+                                    Seleccione un operario
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label for="selectNuevaVentanaGestion">
+                                Nueva ventana horaria
+                            </label>
+
+                            <select id="selectNuevaVentanaGestion">
+
+                                <option value="">
+                                    Seleccione un horario
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="modal-acciones">
+
+                        <button
+                            type="button"
+                            id="btnCerrarGestionServicio"
+                            class="btn-secundario"
+                        >
+                            Volver
+                        </button>
+
+                        <button
+                            type="button"
+                            id="btnConfirmarGestionServicio"
+                            class="btn-principal"
+                        >
+                            Confirmar
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="accionesCerrarGestion"
+                    class="modal-acciones"
+                >
+
+                    <button
+                        type="button"
+                        id="btnCerrarGestionSinSeleccion"
+                        class="btn-secundario"
+                    >
+                        Cerrar
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
 
         <!-- =====================================================
              MODAL CONFIRMACIÓN
@@ -1122,7 +1324,7 @@
          JAVASCRIPT
     ========================================================== -->
 
-    <script src="./js/registro-pacientes.js?v=20260905-5" defer></script>
+    <script src="./js/registro-pacientes.js?v=20260918-1" defer></script>
 
 
 </body>

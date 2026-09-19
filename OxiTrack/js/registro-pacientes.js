@@ -35,6 +35,29 @@ const seccionFechaServicio = document.getElementById("seccionFechaServicio");
 const inputFechaServicio = document.getElementById("inputFechaServicio");
 const selectVentanaServicio = document.getElementById("selectVentanaServicio");
 const selectOperarioAsignado = document.getElementById("selectOperarioAsignado");
+const btnAtencionInmediata =document.getElementById("btnAtencionInmediata");
+const inputAtencionInmediata =document.getElementById("inputAtencionInmediata");
+const btnAbrirReagendar =document.getElementById("btnAbrirReagendar");
+const btnAbrirCancelarServicio =document.getElementById("btnAbrirCancelarServicio");
+const modalGestionServicio =document.getElementById("modalGestionServicio");
+const tituloGestionServicio =document.getElementById("tituloGestionServicio");
+const inputBuscarGestion =document.getElementById("inputBuscarGestion");
+const resultadosGestionServicio =document.getElementById("resultadosGestionServicio");
+const detalleGestionServicio =document.getElementById("detalleGestionServicio");
+const resumenGestionServicio =document.getElementById("resumenGestionServicio");
+const nuevaProgramacionGestion =document.getElementById("nuevaProgramacionGestion");
+const inputNuevaFechaGestion =document.getElementById("inputNuevaFechaGestion");
+const selectNuevoOperarioGestion =document.getElementById("selectNuevoOperarioGestion");
+const selectNuevaVentanaGestion =document.getElementById("selectNuevaVentanaGestion");
+const btnCerrarGestionServicio =document.getElementById("btnCerrarGestionServicio");
+const btnCerrarGestionSinSeleccion =document.getElementById("btnCerrarGestionSinSeleccion");
+const btnConfirmarGestionServicio =document.getElementById("btnConfirmarGestionServicio");
+const accionesCerrarGestion =document.getElementById("accionesCerrarGestion");
+
+let tipoGestionActual = "";
+let servicioGestionSeleccionado = null;
+let solicitudGestionId = "";
+let temporizadorBusquedaGestion = null;
 
 // PACIENTE NUEVO / REGISTRADO
 
@@ -708,6 +731,52 @@ selectOperarioAsignado.addEventListener(
     }
 );
 
+// ==========================================================
+// ATENCIÓN INMEDIATA
+// ==========================================================
+
+btnAtencionInmediata.addEventListener(
+    "click",
+    function () {
+
+        const activa =
+            inputAtencionInmediata.value ===
+            "SI";
+
+
+        inputAtencionInmediata.value =
+            activa
+                ? "NO"
+                : "SI";
+
+
+        btnAtencionInmediata.classList.toggle(
+            "activo",
+            !activa
+        );
+
+
+        if (!activa) {
+
+            inputFechaServicio.value =
+                obtenerFechaLocal();
+
+            selectVentanaServicio.value = "";
+
+            selectVentanaServicio.disabled =
+                true;
+
+        } else {
+
+            selectVentanaServicio.disabled =
+                !selectOperarioAsignado.value;
+
+            actualizarDisponibilidadAgenda();
+
+        }
+
+    }
+);
 
 // ==========================================================
 // CAMBIO DE SERVICIO
@@ -1325,6 +1394,715 @@ async function buscarPacienteRegistrado(buscar) {
 
 }
 
+// ==========================================================
+// GESTIÓN DE SERVICIOS
+// REAGENDAR / CANCELAR
+// ==========================================================
+
+function abrirGestionServicio(tipo) {
+
+    tipoGestionActual = tipo;
+    servicioGestionSeleccionado = null;
+    solicitudGestionId = "";
+
+    inputBuscarGestion.value = "";
+    resultadosGestionServicio.innerHTML = "";
+
+    ocultar(resultadosGestionServicio);
+    ocultar(detalleGestionServicio);
+    ocultar(nuevaProgramacionGestion);
+
+    mostrar(accionesCerrarGestion);
+
+    tituloGestionServicio.textContent =
+        tipo === "REAGENDAR"
+            ? "Reagendar servicio"
+            : "Cancelar servicio";
+
+    mostrarModal(modalGestionServicio);
+
+    inputBuscarGestion.focus();
+
+}
+
+
+btnAbrirReagendar.addEventListener(
+    "click",
+    function () {
+        abrirGestionServicio(
+            "REAGENDAR"
+        );
+    }
+);
+
+
+btnAbrirCancelarServicio.addEventListener(
+    "click",
+    function () {
+        abrirGestionServicio(
+            "CANCELAR"
+        );
+    }
+);
+
+
+btnCerrarGestionServicio.addEventListener(
+    "click",
+    function () {
+        ocultarModal(
+            modalGestionServicio
+        );
+    }
+);
+
+
+btnCerrarGestionSinSeleccion.addEventListener(
+    "click",
+    function () {
+        ocultarModal(
+            modalGestionServicio
+        );
+    }
+);
+
+
+inputBuscarGestion.addEventListener(
+    "input",
+    function () {
+
+        clearTimeout(
+            temporizadorBusquedaGestion
+        );
+
+        const buscar =
+            inputBuscarGestion.value.trim();
+
+
+        if (
+            buscar.replace(
+                /[^0-9kK]/g,
+                ""
+            ).length < 4
+        ) {
+
+            resultadosGestionServicio.innerHTML = "";
+
+            ocultar(
+                resultadosGestionServicio
+            );
+
+            return;
+
+        }
+
+
+        temporizadorBusquedaGestion =
+            setTimeout(
+                function () {
+                    buscarServiciosGestion(
+                        buscar
+                    );
+                },
+                350
+            );
+
+    }
+);
+
+
+async function buscarServiciosGestion(
+    buscar
+) {
+
+    try {
+
+        const respuesta =
+            await fetch(
+                "/api/oxitrack/" +
+                "?modo=buscarServiciosPendientesOficina" +
+                "&buscar=" +
+                encodeURIComponent(buscar),
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible buscar servicios."
+            );
+
+        }
+
+
+        const servicios =
+            Array.isArray(datos.servicios)
+                ? datos.servicios
+                : [];
+
+
+        resultadosGestionServicio.innerHTML =
+            "";
+
+
+        if (!servicios.length) {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "resultado-busqueda-item";
+
+            item.textContent =
+                "No se encontraron servicios pendientes.";
+
+            resultadosGestionServicio.appendChild(
+                item
+            );
+
+            mostrar(
+                resultadosGestionServicio
+            );
+
+            return;
+
+        }
+
+
+        servicios.forEach(
+            function (servicio) {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+                item.className =
+                    "resultado-busqueda-item";
+
+                item.textContent =
+                    servicio.nombre +
+                    " | " +
+                    servicio.servicio +
+                    " | " +
+                    servicio.fechaProgramada +
+                    " | " +
+                    servicio.ventanaHoraria;
+
+
+                item.addEventListener(
+                    "click",
+                    function () {
+
+                        seleccionarServicioGestion(
+                            servicio
+                        );
+
+                    }
+                );
+
+
+                resultadosGestionServicio.appendChild(
+                    item
+                );
+
+            }
+        );
+
+
+        mostrar(
+            resultadosGestionServicio
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Error gestión:",
+            error
+        );
+
+        mostrarError(
+            error.message ||
+            "No fue posible buscar servicios."
+        );
+
+    }
+
+}
+
+
+function seleccionarServicioGestion(
+    servicio
+) {
+
+    servicioGestionSeleccionado =
+        servicio;
+
+    solicitudGestionId = "";
+
+    ocultar(
+        resultadosGestionServicio
+    );
+
+    ocultar(
+        accionesCerrarGestion
+    );
+
+
+    resumenGestionServicio.innerHTML =
+        crearFilaResumen(
+            "ID",
+            servicio.id
+        ) +
+        crearFilaResumen(
+            "Paciente",
+            servicio.nombre
+        ) +
+        crearFilaResumen(
+            "Servicio",
+            servicio.servicio
+        ) +
+        crearFilaResumen(
+            "Dirección",
+            servicio.direccion
+        ) +
+        crearFilaResumen(
+            "Comuna",
+            servicio.comuna
+        ) +
+        crearFilaResumen(
+            "Fecha actual",
+            formatearFechaVisual(
+                servicio.fechaProgramada
+            )
+        ) +
+        crearFilaResumen(
+            "Programación actual",
+            servicio.ventanaHoraria
+        ) +
+        crearFilaResumen(
+            "Operario actual",
+            servicio.operarioAsignado
+        );
+
+
+    mostrar(
+        detalleGestionServicio
+    );
+
+
+    if (
+        tipoGestionActual ===
+        "REAGENDAR"
+    ) {
+
+        mostrar(
+            nuevaProgramacionGestion
+        );
+
+        inputNuevaFechaGestion.value =
+            obtenerFechaLocal();
+
+        inputNuevaFechaGestion.min =
+            obtenerFechaLocal();
+
+
+        cargarOperariosGestion(
+            servicio.operarioAsignado
+        );
+
+        actualizarDisponibilidadGestion();
+
+        btnConfirmarGestionServicio.textContent =
+            "Confirmar reagendamiento";
+
+    } else {
+
+        ocultar(
+            nuevaProgramacionGestion
+        );
+
+        btnConfirmarGestionServicio.textContent =
+            "Confirmar cancelación";
+
+    }
+
+}
+
+
+function cargarOperariosGestion(
+    operarioActual
+) {
+
+    selectNuevoOperarioGestion.innerHTML =
+        selectOperarioAsignado.innerHTML;
+
+    selectNuevoOperarioGestion.value =
+        operarioActual || "";
+
+}
+
+
+inputNuevaFechaGestion.addEventListener(
+    "change",
+    actualizarDisponibilidadGestion
+);
+
+
+selectNuevoOperarioGestion.addEventListener(
+    "change",
+    actualizarDisponibilidadGestion
+);
+
+
+async function actualizarDisponibilidadGestion() {
+
+    if (
+        tipoGestionActual !==
+        "REAGENDAR"
+    ) {
+        return;
+    }
+
+
+    const fecha =
+        inputNuevaFechaGestion.value;
+
+    const operario =
+        selectNuevoOperarioGestion.value;
+
+
+    selectNuevaVentanaGestion.innerHTML =
+        `<option value="">
+            Seleccione un horario
+        </option>`;
+
+
+    if (!fecha || !operario) {
+        return;
+    }
+
+
+    try {
+
+        const respuesta =
+            await fetch(
+                "/api/oxitrack/" +
+                "?modo=disponibilidadAgenda" +
+                "&fechaProgramada=" +
+                encodeURIComponent(fecha) +
+                "&operarioAsignado=" +
+                encodeURIComponent(operario),
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible consultar la agenda."
+            );
+
+        }
+
+
+        const ocupadas =
+            new Set(
+                Array.isArray(
+                    datos.ventanasOcupadas
+                )
+                    ? datos.ventanasOcupadas
+                    : []
+            );
+
+
+        const hoy =
+            obtenerFechaLocal();
+
+        const ahora =
+            new Date();
+
+        const minutosActuales =
+            ahora.getHours() * 60 +
+            ahora.getMinutes();
+
+
+        for (
+            let minutos = 0;
+            minutos < 24 * 60;
+            minutos += 30
+        ) {
+
+            if (
+                fecha === hoy &&
+                minutos < minutosActuales
+            ) {
+                continue;
+            }
+
+
+            const inicio =
+                convertirMinutosAHora(
+                    minutos
+                );
+
+            const fin =
+                convertirMinutosAHora(
+                    (minutos + 60) %
+                    (24 * 60)
+                );
+
+            const ventana =
+                `${inicio} - ${fin}`;
+
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                ventana;
+
+            option.textContent =
+                ventana;
+
+
+            if (
+                ocupadas.has(
+                    ventana
+                )
+            ) {
+
+                option.disabled =
+                    true;
+
+            }
+
+
+            selectNuevaVentanaGestion.appendChild(
+                option
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Error disponibilidad gestión:",
+            error
+        );
+
+        mostrarError(
+            "No fue posible consultar la agenda."
+        );
+
+    }
+
+}
+
+
+btnConfirmarGestionServicio.addEventListener(
+    "click",
+    async function () {
+
+        if (
+            !servicioGestionSeleccionado
+        ) {
+            return;
+        }
+
+
+        if (
+            tipoGestionActual ===
+            "REAGENDAR" &&
+            (
+                !inputNuevaFechaGestion.value ||
+                !selectNuevoOperarioGestion.value ||
+                !selectNuevaVentanaGestion.value
+            )
+        ) {
+
+            mostrarError(
+                "Debe seleccionar nueva fecha, operario y ventana horaria."
+            );
+
+            return;
+
+        }
+
+
+        if (!solicitudGestionId) {
+
+            solicitudGestionId =
+                typeof crypto.randomUUID ===
+                "function"
+                    ? crypto.randomUUID()
+                    : (
+                        Date.now().toString(36) +
+                        "-" +
+                        Math.random()
+                            .toString(36)
+                            .slice(2)
+                    );
+
+        }
+
+
+        btnConfirmarGestionServicio.disabled =
+            true;
+
+
+        try {
+
+            const payload =
+                new FormData();
+
+
+            payload.append(
+                "tipoCliente",
+                "GESTION_SERVICIO_OFICINA"
+            );
+
+            payload.append(
+                "accion",
+                tipoGestionActual
+            );
+
+            payload.append(
+                "id",
+                servicioGestionSeleccionado.id
+            );
+
+            payload.append(
+                "solicitudGestionId",
+                solicitudGestionId
+            );
+
+
+            if (
+                tipoGestionActual ===
+                "REAGENDAR"
+            ) {
+
+                payload.append(
+                    "fechaProgramada",
+                    inputNuevaFechaGestion.value
+                );
+
+                payload.append(
+                    "ventanaHoraria",
+                    selectNuevaVentanaGestion.value
+                );
+
+                payload.append(
+                    "operarioAsignado",
+                    selectNuevoOperarioGestion.value
+                );
+
+            }
+
+
+            const respuesta =
+                await fetch(
+                    "/api/oxitrack/",
+                    {
+                        method: "POST",
+                        body: payload
+                    }
+                );
+
+
+            const resultado =
+                await respuesta.json();
+
+
+            if (
+                !respuesta.ok ||
+                resultado.ok !== true
+            ) {
+
+                throw new Error(
+                    resultado.error ||
+                    "No fue posible gestionar el servicio."
+                );
+
+            }
+
+
+            ocultarModal(
+                modalGestionServicio
+            );
+
+
+            mostrarMensaje(
+                tipoGestionActual ===
+                "REAGENDAR"
+                    ? "Servicio reagendado correctamente."
+                    : "Servicio cancelado correctamente.",
+                "exito"
+            );
+
+
+            servicioGestionSeleccionado =
+                null;
+
+            solicitudGestionId =
+                "";
+
+
+        } catch (error) {
+
+            console.error(
+                "Error gestión servicio:",
+                error
+            );
+
+            mostrarError(
+                error.message ||
+                "No fue posible gestionar el servicio."
+            );
+
+
+        } finally {
+
+            btnConfirmarGestionServicio.disabled =
+                false;
+
+        }
+
+    }
+);
 
 // ==========================================================
 // FORMATO RUT
@@ -1440,58 +2218,16 @@ btnConfirmarRegistro.addEventListener(
             validarFormulario();
 
 
-            const payload =
-                new FormData();
-
-
-            payload.append(
-                "tipoCliente",
-                "REGISTRO_OFICINA"
-            );
-
-
-            payload.append(
-                "solicitudId",
-                idSolicitudRegistro
-            );
-
-
-            payload.append(
-                "tipoPaciente",
-                servicioActual === "RETIRO"
-                    ? "REGISTRADO"
-                    : tipoPacienteActual
-            );
-
-
-            payload.append(
-                "servicio",
-                servicioActual
-            );
-
-
-            payload.append(
-                "pacienteId",
-                pacienteSeleccionadoId.value.trim()
-            );
-
-
-            payload.append(
-                "fechaProgramada",
-                inputFechaServicio.value
-            );
-
-
-            payload.append(
-                "ventanaHoraria",
-                selectVentanaServicio.value
-            );
-
-
-            payload.append(
-                "operarioAsignado",
-                selectOperarioAsignado.value
-            );
+            const payload = new FormData();
+            payload.append("tipoCliente","REGISTRO_OFICINA");
+            payload.append("solicitudId", idSolicitudRegistro);
+            payload.append("tipoPaciente", servicioActual === "RETIRO" ? "REGISTRADO" : tipoPacienteActual);
+            payload.append("servicio", servicioActual);
+            payload.append("pacienteId", pacienteSeleccionadoId.value.trim());
+            payload.append("fechaProgramada", inputFechaServicio.value);
+            payload.append("ventanaHoraria", inputAtencionInmediata.value === "SI" ? "ATENCIÓN INMEDIATA" : selectVentanaServicio.value);
+            payload.append("atencionInmediata", inputAtencionInmediata.value);
+            payload.append("operarioAsignado", selectOperarioAsignado.value);
 
 
             // ==================================================
@@ -1769,7 +2505,7 @@ function validarFormulario() {
     }
 
 
-    if (!selectVentanaServicio.value) {
+    if (inputAtencionInmediata.value !== "SI" && !selectVentanaServicio.value) {
 
         throw new Error(
             "Debe seleccionar la ventana horaria del servicio."
@@ -2112,27 +2848,10 @@ function construirResumen() {
     let html = "";
 
 
-    html += crearFilaResumen(
-        "Servicio",
-        servicioActual
-    );
-
-        html += crearFilaResumen(
-        "Fecha del servicio",
-        formatearFechaVisual(inputFechaServicio.value)
-    );
-
-
-    html += crearFilaResumen(
-        "Ventana horaria",
-        selectVentanaServicio.value
-    );
-
-
-    html += crearFilaResumen(
-        "Operario asignado",
-        textoOpcionSeleccionada(selectOperarioAsignado)
-    );
+    html += crearFilaResumen("Servicio",servicioActual);
+    html += crearFilaResumen("Fecha del servicio",formatearFechaVisual(inputFechaServicio.value));
+    html += crearFilaResumen("Programación", inputAtencionInmediata.value === "SI" ? "ATENCIÓN INMEDIATA" : selectVentanaServicio.value);
+    html += crearFilaResumen("Operario asignado",textoOpcionSeleccionada(selectOperarioAsignado));
 
     // ------------------------------------------------------
     // PACIENTE
@@ -2391,6 +3110,8 @@ function reiniciarFormularioCompleto() {
     ocultarMensaje();
     limpiarBotones();
     limpiarValoresInternos();
+    inputAtencionInmediata.value = "NO";
+    btnAtencionInmediata.classList.remove("activo");
 
 }
 
@@ -2429,6 +3150,8 @@ function reiniciarFlujoServicio() {
     limpiarPacienteRegistrado();
     limpiarDetalleFlete();
     limpiarBotones();
+    inputAtencionInmediata.value = "NO";
+    btnAtencionInmediata.classList.remove("activo");
 
 }
 
