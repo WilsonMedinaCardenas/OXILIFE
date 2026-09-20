@@ -1672,6 +1672,7 @@ function actualizarVistaSegunServicio(servicio) {
     const esImplementacion = valor.includes("implement");
     const esRecarga = valor.includes("recarga");
     const esRetiro = valor.includes("retiro");
+    const esCitaTecnica = valor.includes("cita técnica");
     const mostrarCilindros = esRecarga || esRetiro;
     const mostrarFotos = !esRetiro;
 
@@ -2039,7 +2040,7 @@ async function confirmarEnvioParticular(datos) {
     // FOTOGRAFÍAS
     // ======================================================
 
-    if (!esRetiro) {
+    if (!esRetiro && !String(datos.servicio || "").toLowerCase().includes("cita técnica")) {
 
         contenido += `
             <div class="modal-seccion">
@@ -2116,15 +2117,9 @@ function inicializarFormulario() {
         const servicioNormalizado = servicio.toLowerCase();
         const esImplementacion = servicioNormalizado.includes("implement");
         const esRetiro = servicioNormalizado.includes("retiro");
-        const retiroConOrigen =
-            esRetiro &&
-            pacienteActual &&
-            pacienteActual.idOrigen &&
-            pacienteActual.elementosOrigen;
-        const requiereFoto =
-            esImplementacion ||
-            servicioNormalizado.includes("recarga") ||
-            servicioNormalizado.includes("venta");
+        const esVisitaTecnica = servicioNormalizado.includes("visita técnica") || servicioNormalizado.includes("visita tecnica");
+        const retiroConOrigen = esRetiro && pacienteActual && pacienteActual.idOrigen && pacienteActual.elementosOrigen;
+        const requiereFoto = esImplementacion || servicioNormalizado.includes("recarga") || servicioNormalizado.includes("venta");
 
         if (requiereFoto && fotosCapturadas.length === 0) {
             alert("Debe tomar al menos una fotografía antes de enviar el registro.");
@@ -2133,6 +2128,11 @@ function inicializarFormulario() {
 
         if (fotosCapturadas.length > 2) {
             alert("Solo se permite un máximo de 2 fotografías.");
+            return;
+        }
+
+        if (esVisitaTecnica && !observaciones.trim()) {
+            alert("Debe registrar las observaciones de la visita técnica.");
             return;
         }
 

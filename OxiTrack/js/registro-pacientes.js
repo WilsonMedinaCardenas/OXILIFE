@@ -817,6 +817,21 @@ selectServicioRegistro.addEventListener("change", function () {
         return;
     }
 
+    // ------------------------------------------------------
+    // CITA TÉCNICA
+    // ------------------------------------------------------
+
+    if (servicioActual === "CITA TÉCNICA") {
+
+        tipoPacienteActual = "REGISTRADO";
+
+        mostrar(seccionBusquedaPaciente);
+        mostrar(seccionObservacionesRegistro);
+        mostrar(seccionBotonRegistro);
+        mostrar(seccionFlete);
+
+        return;
+    }
 
     // ------------------------------------------------------
     // IMPLEMENTACIÓN / RECARGA / VENTA
@@ -939,15 +954,10 @@ btnPacienteRegistrado.addEventListener("click", function () {
     if (servicioActual === "IMPLEMENTACIÓN") {
 
         mostrar(seccionImplementacion);
-
         ocultar(seccionRecargaNuevo);
-
         ocultar(seccionRecargaRegistrado);
-
         ocultar(seccionVenta);
-
         mostrar(seccionFlete);
-
         return;
     }
 
@@ -959,18 +969,26 @@ btnPacienteRegistrado.addEventListener("click", function () {
     if (servicioActual === "RECARGA") {
 
         ocultar(seccionImplementacion);
-
         ocultar(seccionRecargaNuevo);
-
         mostrar(seccionRecargaRegistrado);
-
         ocultar(seccionVenta);
-
         mostrar(seccionFlete);
-
         return;
     }
 
+    // ------------------------------------------------------
+    // CITA TÉCNICA
+    // ------------------------------------------------------
+
+    if (servicioActual === "CITA TÉCNICA") {
+
+        ocultar(seccionImplementacion);
+        ocultar(seccionRecargaNuevo);
+        ocultar(seccionRecargaRegistrado);
+        ocultar(seccionVenta);
+        mostrar(seccionFlete);
+        return;
+    }
 
     // ------------------------------------------------------
     // VENTA
@@ -979,13 +997,9 @@ btnPacienteRegistrado.addEventListener("click", function () {
     if (servicioActual === "VENTA") {
 
         ocultar(seccionImplementacion);
-
         ocultar(seccionRecargaNuevo);
-
         ocultar(seccionRecargaRegistrado);
-
         mostrar(seccionVenta);
-
         mostrar(seccionFlete);
 
     }
@@ -2283,35 +2297,12 @@ btnConfirmarRegistro.addEventListener(
                 tipoPacienteActual === "NUEVO"
             ) {
 
-                payload.append(
-                    "nombre",
-                    inputNombrePaciente.value.trim()
-                );
-
-                payload.append(
-                    "rut",
-                    inputRutPaciente.value.trim()
-                );
-
-                payload.append(
-                    "telefono",
-                    inputTelefonoPaciente.value.trim()
-                );
-
-                payload.append(
-                    "email",
-                    inputEmailPaciente.value.trim()
-                );
-
-                payload.append(
-                    "direccion",
-                    inputDireccionPaciente.value.trim()
-                );
-
-                payload.append(
-                    "comuna",
-                    comunaSeleccionada.value.trim()
-                );
+                payload.append("nombre", inputNombrePaciente.value.trim());
+                payload.append("rut",NinputRutPaciente.value.trim());
+                payload.append("telefono", inputTelefonoPaciente.value.trim());
+                payload.append("email", inputEmailPaciente.value.trim());
+                payload.append("direccion", inputDireccionPaciente.value.trim());
+                payload.append("comuna", comunaSeleccionada.value.trim());
 
             }
 
@@ -2382,7 +2373,8 @@ btnConfirmarRegistro.addEventListener(
             if (
                 servicioActual === "IMPLEMENTACIÓN" ||
                 servicioActual === "RECARGA" ||
-                servicioActual === "VENTA"
+                servicioActual === "VENTA" ||
+                servicioActual === "CITA TÉCNICA"
             ) {
 
                 payload.append(
@@ -2610,6 +2602,21 @@ function validarFormulario() {
 
     }
 
+    // ------------------------------------------------------
+    // CITA TÉCNICA
+    // ------------------------------------------------------
+
+    if (servicioActual === "CITA TÉCNICA") {
+
+        if (!pacienteSeleccionadoId.value) {
+
+            throw new Error(
+                "Debe seleccionar un paciente registrado."
+            );
+
+        }
+
+}
 
     // ------------------------------------------------------
     // NUEVO / REGISTRADO
@@ -2817,7 +2824,8 @@ function validarFlete() {
     if (
         servicioActual !== "IMPLEMENTACIÓN" &&
         servicioActual !== "RECARGA" &&
-        servicioActual !== "VENTA"
+        servicioActual !== "VENTA" &&
+        servicioActual !== "CITA TÉCNICA"
     ) {
 
         return;
@@ -3474,6 +3482,10 @@ function normalizarServicio(valor) {
 
     if (texto.includes("VENTA")) {
         return "VENTA";
+    }
+
+    if (texto.includes("CITA") && texto.includes("TECNICA")) {
+        return "CITA TÉCNICA";
     }
 
     return "";
