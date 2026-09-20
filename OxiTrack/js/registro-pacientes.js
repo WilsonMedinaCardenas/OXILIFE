@@ -49,6 +49,8 @@ const nuevaProgramacionGestion =document.getElementById("nuevaProgramacionGestio
 const inputNuevaFechaGestion =document.getElementById("inputNuevaFechaGestion");
 const selectNuevoOperarioGestion =document.getElementById("selectNuevoOperarioGestion");
 const selectNuevaVentanaGestion =document.getElementById("selectNuevaVentanaGestion");
+const btnAtencionInmediataGestion =document.getElementById("btnAtencionInmediataGestion");
+const inputAtencionInmediataGestion =document.getElementById("inputAtencionInmediataGestion");
 const btnCerrarGestionServicio =document.getElementById("btnCerrarGestionServicio");
 const btnCerrarGestionSinSeleccion =document.getElementById("btnCerrarGestionSinSeleccion");
 const btnConfirmarGestionServicio =document.getElementById("btnConfirmarGestionServicio");
@@ -1718,6 +1720,10 @@ function seleccionarServicioGestion(
             nuevaProgramacionGestion
         );
 
+        inputAtencionInmediataGestion.value = "NO";
+        btnAtencionInmediataGestion.classList.remove("activo");
+        selectNuevaVentanaGestion.disabled = false;
+
         inputNuevaFechaGestion.value =
             obtenerFechaLocal();
 
@@ -1766,6 +1772,37 @@ inputNuevaFechaGestion.addEventListener(
     actualizarDisponibilidadGestion
 );
 
+btnAtencionInmediataGestion.addEventListener(
+    "click",
+    function () {
+
+        const activa = inputAtencionInmediataGestion.value === "SI";
+
+        inputAtencionInmediataGestion.value = activa ? "NO" : "SI";
+        btnAtencionInmediataGestion.classList.toggle("activo", !activa);
+
+        if (!activa) {
+
+            inputNuevaFechaGestion.value = obtenerFechaLocal();
+
+            selectNuevaVentanaGestion.innerHTML =
+                `<option value="ATENCIÓN INMEDIATA">
+                    ATENCIÓN INMEDIATA
+                </option>`;
+
+            selectNuevaVentanaGestion.value = "ATENCIÓN INMEDIATA";
+            selectNuevaVentanaGestion.disabled = true;
+
+        } else {
+
+            selectNuevaVentanaGestion.disabled = false;
+            actualizarDisponibilidadGestion();
+
+        }
+
+    }
+);
+
 
 selectNuevoOperarioGestion.addEventListener(
     "change",
@@ -1779,6 +1816,21 @@ async function actualizarDisponibilidadGestion() {
         tipoGestionActual !==
         "REAGENDAR"
     ) {
+        return;
+    }
+
+        if (inputAtencionInmediataGestion.value === "SI") {
+
+        inputNuevaFechaGestion.value = obtenerFechaLocal();
+
+        selectNuevaVentanaGestion.innerHTML =
+            `<option value="ATENCIÓN INMEDIATA">
+                ATENCIÓN INMEDIATA
+            </option>`;
+
+        selectNuevaVentanaGestion.value = "ATENCIÓN INMEDIATA";
+        selectNuevaVentanaGestion.disabled = true;
+
         return;
     }
 
@@ -2022,7 +2074,7 @@ btnConfirmarGestionServicio.addEventListener(
 
                 payload.append(
                     "ventanaHoraria",
-                    selectNuevaVentanaGestion.value
+                    inputAtencionInmediataGestion.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestion.value
                 );
 
                 payload.append(
@@ -2064,16 +2116,9 @@ btnConfirmarGestionServicio.addEventListener(
                 modalGestionServicio
             );
 
-
-            mostrarMensaje(
-                tipoGestionActual ===
-                "REAGENDAR"
-                    ? "Servicio reagendado correctamente."
-                    : "Servicio cancelado correctamente.",
-                "exito"
-            );
-
-
+            mostrarMensaje(tipoGestionActual === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.", "exito");
+            setTimeout(
+            function () {ocultarMensaje();}, 30000);
             servicioGestionSeleccionado =
                 null;
 
