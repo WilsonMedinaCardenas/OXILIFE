@@ -818,10 +818,10 @@ selectServicioRegistro.addEventListener("change", function () {
     }
 
     // ------------------------------------------------------
-    // CITA TÉCNICA
+    // VISITA TÉCNICA
     // ------------------------------------------------------
 
-    if (servicioActual === "CITA TÉCNICA") {
+    if (servicioActual === "VISITA TÉCNICA") {
 
         tipoPacienteActual = "REGISTRADO";
 
@@ -977,10 +977,10 @@ btnPacienteRegistrado.addEventListener("click", function () {
     }
 
     // ------------------------------------------------------
-    // CITA TÉCNICA
+    // VISITA TÉCNICA
     // ------------------------------------------------------
 
-    if (servicioActual === "CITA TÉCNICA") {
+    if (servicioActual === "VISITA TÉCNICA") {
 
         ocultar(seccionImplementacion);
         ocultar(seccionRecargaNuevo);
@@ -2280,7 +2280,7 @@ btnConfirmarRegistro.addEventListener(
             const payload = new FormData();
             payload.append("tipoCliente","REGISTRO_OFICINA");
             payload.append("solicitudId", idSolicitudRegistro);
-            payload.append("tipoPaciente", servicioActual === "RETIRO" ? "REGISTRADO" : tipoPacienteActual);
+            payload.append("tipoPaciente", servicioActual === "RETIRO" || servicioActual === "VISITA TÉCNICA" ? "REGISTRADO" : tipoPacienteActual);
             payload.append("servicio", servicioActual);
             payload.append("pacienteId", pacienteSeleccionadoId.value.trim());
             payload.append("fechaProgramada", inputFechaServicio.value);
@@ -2374,7 +2374,7 @@ btnConfirmarRegistro.addEventListener(
                 servicioActual === "IMPLEMENTACIÓN" ||
                 servicioActual === "RECARGA" ||
                 servicioActual === "VENTA" ||
-                servicioActual === "CITA TÉCNICA"
+                servicioActual === "VISITA TÉCNICA"
             ) {
 
                 payload.append(
@@ -2603,10 +2603,10 @@ function validarFormulario() {
     }
 
     // ------------------------------------------------------
-    // CITA TÉCNICA
+    // VISITA TÉCNICA
     // ------------------------------------------------------
 
-    if (servicioActual === "CITA TÉCNICA") {
+    if (servicioActual === "VISITA TÉCNICA") {
 
         if (!pacienteSeleccionadoId.value) {
 
@@ -2825,7 +2825,7 @@ function validarFlete() {
         servicioActual !== "IMPLEMENTACIÓN" &&
         servicioActual !== "RECARGA" &&
         servicioActual !== "VENTA" &&
-        servicioActual !== "CITA TÉCNICA"
+        servicioActual !== "VISITA TÉCNICA"
     ) {
 
         return;
@@ -3484,8 +3484,8 @@ function normalizarServicio(valor) {
         return "VENTA";
     }
 
-    if (texto.includes("CITA") && texto.includes("TECNICA")) {
-        return "CITA TÉCNICA";
+    if (texto.includes("VISITA") && texto.includes("TECNICA")) {
+        return "VISITA TÉCNICA";
     }
 
     return "";
