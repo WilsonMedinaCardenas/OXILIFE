@@ -818,23 +818,7 @@ selectServicioRegistro.addEventListener("change", function () {
     }
 
     // ------------------------------------------------------
-    // VISITA TÉCNICA
-    // ------------------------------------------------------
-
-    if (servicioActual === "VISITA TÉCNICA") {
-
-        tipoPacienteActual = "REGISTRADO";
-
-        mostrar(seccionBusquedaPaciente);
-        mostrar(seccionObservacionesRegistro);
-        mostrar(seccionBotonRegistro);
-        mostrar(seccionFlete);
-
-        return;
-    }
-
-    // ------------------------------------------------------
-    // IMPLEMENTACIÓN / RECARGA / VENTA
+    // IMPLEMENTACIÓN / RECARGA / VENTA / VISITA TÉCNICA
     // ------------------------------------------------------
 
     mostrar(seccionTipoPaciente);
@@ -2280,7 +2264,7 @@ btnConfirmarRegistro.addEventListener(
             const payload = new FormData();
             payload.append("tipoCliente","REGISTRO_OFICINA");
             payload.append("solicitudId", idSolicitudRegistro);
-            payload.append("tipoPaciente", servicioActual === "RETIRO" || servicioActual === "VISITA TÉCNICA" ? "REGISTRADO" : tipoPacienteActual);
+            payload.append("tipoPaciente", servicioActual === "RETIRO" ? "REGISTRADO" : tipoPacienteActual);
             payload.append("servicio", servicioActual);
             payload.append("pacienteId", pacienteSeleccionadoId.value.trim());
             payload.append("fechaProgramada", inputFechaServicio.value);
@@ -2298,7 +2282,7 @@ btnConfirmarRegistro.addEventListener(
             ) {
 
                 payload.append("nombre", inputNombrePaciente.value.trim());
-                payload.append("rut",NinputRutPaciente.value.trim());
+                payload.append("rut", inputRutPaciente.value.trim());
                 payload.append("telefono", inputTelefonoPaciente.value.trim());
                 payload.append("email", inputEmailPaciente.value.trim());
                 payload.append("direccion", inputDireccionPaciente.value.trim());
@@ -2603,29 +2587,11 @@ function validarFormulario() {
     }
 
     // ------------------------------------------------------
-    // VISITA TÉCNICA
-    // ------------------------------------------------------
-
-    if (servicioActual === "VISITA TÉCNICA") {
-
-        if (!pacienteSeleccionadoId.value) {
-
-            throw new Error(
-                "Debe seleccionar un paciente registrado."
-            );
-
-        }
-
-}
-
-    // ------------------------------------------------------
     // NUEVO / REGISTRADO
     // ------------------------------------------------------
 
     if (
-        tipoPacienteActual !== "NUEVO" &&
-        tipoPacienteActual !== "REGISTRADO"
-    ) {
+        tipoPacienteActual !== "NUEVO" && tipoPacienteActual !== "REGISTRADO") {
 
         throw new Error(
             "Debe indicar si el paciente es nuevo o registrado."
