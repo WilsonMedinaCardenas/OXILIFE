@@ -37,6 +37,7 @@ const selectVentanaServicio = document.getElementById("selectVentanaServicio");
 const selectOperarioAsignado = document.getElementById("selectOperarioAsignado");
 const btnAtencionInmediata =document.getElementById("btnAtencionInmediata");
 const inputAtencionInmediata =document.getElementById("inputAtencionInmediata");
+const seccionGestionServicio =document.getElementById("seccionGestionServicio");
 const btnAbrirReagendar =document.getElementById("btnAbrirReagendar");
 const btnAbrirCancelarServicio =document.getElementById("btnAbrirCancelarServicio");
 const modalGestionServicio =document.getElementById("modalGestionServicio");
@@ -792,7 +793,12 @@ selectServicioRegistro.addEventListener("change", function () {
 
     reiniciarFlujoServicio();
 
-    if (!servicioActual) return;
+    if (!servicioActual) {
+        mostrar(seccionGestionServicio);
+        return;
+    }
+
+    ocultar(seccionGestionServicio);
     mostrar(seccionFechaServicio);
 
 
