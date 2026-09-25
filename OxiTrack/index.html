@@ -1,169 +1,56 @@
 <!DOCTYPE html>
-
 <html lang="es">
 
 <head>
-
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>OxiTrack</title>
 
-    <link rel="stylesheet" href="css/oxitrack-base.css">
-
+    <link rel="stylesheet" href="./css/oxitrack-base.css">
+    <link rel="stylesheet" href="./css/menu.css">
 </head>
 
 <body>
 
-    <div class="contenedor">
+    <main class="menu-oxitrack">
 
-        <!-- CABECERA CON LOGO Y TÍTULOS -->
-        <div class="cabecera-logo">
-            <img src="..\assets\img\favicon.png" 
-                alt="Logo Oxilfe" 
-                class="logo-marca">
+        <img
+            src="..\assets\img\favicon.png"
+            alt="Oxilife"
+            class="menu-logo"
+        >
 
-            <div class="textos-cabecera">
-                <h1>OxiTrack</h1>
-                <p class="subtitulo">Registro Empresa</p>
-            </div>
-        </div>
+        <div class="menu-botones">
 
-        <form id="formulario">
-            <label>Empresa</label>
-
-            <input type="text" id="cliente" list="listaEmpresas" placeholder="Escriba al menos 3 letras de la empresa..." autocomplete="off">
-            <input type="hidden" id="clienteId">
-            <datalist id="listaEmpresas"></datalist>
-
-            <!-- NUEVO CAMPO: SERVICIO DESPLEGABLE -->
-            <label>Servicio</label>
-            <input type="text" id="servicio" list="listaServicios" placeholder="Seleccione el tipo de servicio...">
-            <datalist id="listaServicios"></datalist>
-
-            <!-- NUEVO CAMPO: PACIENTE MANUAL -->
-            <label>Paciente</label>
-            <input type="text" id="paciente" placeholder="Nombre del paciente (Ingreso manual)">
-
-            <!--<label>Operario</label>
-            <input type="text" id="operario" maxlength="80" placeholder="Nombre del operario">-->
-
-            <div class="titulo">ENTREGADOS</div>
-
-            <label>Cilindros 0.7 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('e07')">−</button>
-                <input id="e07" value="0" readonly>
-                <button type="button" onclick="aumentar('e07')">+</button>
-            </div>
-
-            <label>Cilindros 10 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('e10')">−</button>
-                <input id="e10" value="0" readonly>
-                <button type="button" onclick="aumentar('e10')">+</button>
-            </div>
-
-            <div class="titulo">RETIRADOS</div>
-
-            <label>Cilindros 0.7 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('r07')">−</button>
-                <input id="r07" value="0" readonly>
-                <button type="button" onclick="aumentar('r07')">+</button>
-            </div>
-
-            <label>Cilindros 10 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('r10')">−</button>
-                <input id="r10" value="0" readonly>
-                <button type="button" onclick="aumentar('r10')">+</button>
-            </div>
-
-            <label>Observaciones</label>
-            <textarea id="obs"></textarea>
-
-            <label>Firma Cliente</label>
-            <canvas id="firma"></canvas>
-
-            <button type="submit" id="btnEnviar">Enviar Registro</button>
-            <button type="button" id="btnLimpiar">Limpiar Firma</button>
-
-        </form>
-    </div>
-
-        <!-- =====================================================
-         MODAL CONFIRMACIÓN
-         ===================================================== -->
-
-    <div id="modalConfirmacion" class="modal" hidden>
-
-        <div class="modal-contenido">
-
-            <h2>Confirmar Registro</h2>
-
-            <div
-                id="modalResumen"
-                class="modal-resumen"
-            ></div>
-
-            <div class="modal-acciones">
-
-                <button
-                    type="button"
-                    id="btnModalVolver"
-                    class="btn-secundario"
-                >
-                    Volver
-                </button>
-
-                <button
-                    type="button"
-                    id="btnModalConfirmar"
-                    class="btn-principal"
-                >
-                    Confirmar
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         MODAL RESULTADO
-         ===================================================== -->
-
-    <div id="modalResultado" class="modal" hidden>
-
-        <div class="modal-contenido modal-exito">
-
-            <h2 id="modalResultadoTitulo">
-                Registro Exitoso
-            </h2>
-
-            <p
-                id="modalResultadoMensaje"
-                class="modal-mensaje"
-            ></p>
-
-            <button
-                type="button"
-                id="btnModalResultado"
-                class="btn-principal"
+            <a
+                href="particular.html"
+                class="menu-boton menu-particular"
             >
-                Aceptar
-            </button>
+                PARTICULAR
+            </a>
+
+            <a
+                href="empresa.html"
+                class="menu-boton menu-empresa"
+            >
+                EMPRESA
+            </a>
+
+            <a
+                href="registro-pacientes.html"
+                class="menu-boton menu-particular"
+            >
+                OFICINA
+            </a>
 
         </div>
 
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-    <script src="./js/app.js?v=20260908-3" defer></script>
+    </main>
 
 </body>
 
