@@ -21,10 +21,57 @@
     <link rel="stylesheet" href="./css/oxitrack-base.css">
     <link rel="stylesheet" href="./css/registro-pacientes.css">
 
+    <style>
+        html:not(.oficina-autorizada) body {
+            visibility: hidden;
+        }
+    </style>
+
 </head>
 
 
 <body>
+
+    <script>
+        (async function () {
+
+            try {
+
+                const respuesta = await fetch(
+                    "/api/oxitrack/?modo=perfilUsuario",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Accept": "application/json"
+                        },
+                        cache: "no-store"
+                    }
+                );
+
+                const datos = await respuesta.json();
+
+                if (
+                    !respuesta.ok ||
+                    datos.ok !== true ||
+                    !Array.isArray(datos.permisos) ||
+                    !datos.permisos.includes("OFICINA")
+                ) {
+                    window.location.replace("./menu.html");
+                    return;
+                }
+
+                document.documentElement.classList.add(
+                    "oficina-autorizada"
+                );
+
+            } catch (error) {
+
+                window.location.replace("./menu.html");
+
+            }
+
+        })();
+        </script>
 
     <main class="app-registro">
 
