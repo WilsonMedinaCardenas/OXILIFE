@@ -96,12 +96,49 @@
 
         </header>
 
+        <section
+            id="selectorTipoGestion"
+            class="registro-card"
+        >
+
+            <div class="form-seccion">
+
+                <h2>Gestión de Servicios</h2>
+
+                <p class="seccion-descripcion">
+                    Seleccione el tipo de cliente.
+                </p>
+
+                <div class="selector-tipo-paciente">
+
+                    <button
+                        type="button"
+                        id="btnGestionEmpresa"
+                        class="btn-selector"
+                    >
+                        EMPRESA
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnGestionParticular"
+                        class="btn-selector"
+                    >
+                        PARTICULAR
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
 
         <!-- =====================================================
              CONTENEDOR PRINCIPAL
         ====================================================== -->
 
-        <section class="registro-card">
+        <section id="moduloParticularOficina" class="registro-card" hidden>
 
 
             <form
@@ -1135,7 +1172,369 @@
 
         </section>
 
-                <!-- =====================================================
+        <!-- =====================================================
+            EMPRESA - OFICINA
+        ====================================================== -->
+
+        <section
+            id="moduloEmpresaOficina"
+            class="registro-card"
+            hidden
+        >
+
+            <form
+                id="formRegistroEmpresa"
+                autocomplete="off"
+                novalidate
+            >
+
+                <!-- =============================================
+                    EMPRESA
+                ============================================== -->
+
+                <section class="form-seccion">
+
+                    <h2>Empresa</h2>
+
+                    <div class="campo">
+
+                        <label for="inputBuscarEmpresa">
+                            Buscar empresa
+                        </label>
+
+                        <input
+                            type="text"
+                            id="inputBuscarEmpresa"
+                            placeholder="Nombre o RUT de la empresa"
+                            autocomplete="off"
+                        >
+
+                        <small class="campo-ayuda">
+                            Busque y seleccione una empresa registrada.
+                        </small>
+
+                    </div>
+
+                    <div
+                        id="resultadosBusquedaEmpresa"
+                        class="resultados-busqueda"
+                        hidden
+                    ></div>
+
+                </section>
+
+
+                <!-- =============================================
+                    EMPRESA SELECCIONADA
+                ============================================== -->
+
+                <section
+                    id="seccionEmpresaSeleccionada"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Empresa seleccionada</h2>
+
+                    <div class="paciente-card">
+
+                        <div class="dato-resumen">
+                            <span>Empresa</span>
+                            <strong id="empresaSeleccionadaNombre">-</strong>
+                        </div>
+
+                        <div class="dato-resumen">
+                            <span>RUT</span>
+                            <strong id="empresaSeleccionadaRut">-</strong>
+                        </div>
+
+                        <div class="dato-resumen">
+                            <span>Dirección</span>
+                            <strong id="empresaSeleccionadaDireccion">-</strong>
+                        </div>
+
+                        <div class="dato-resumen">
+                            <span>Comuna</span>
+                            <strong id="empresaSeleccionadaComuna">-</strong>
+                        </div>
+
+                    </div>
+
+                    <input
+                        type="hidden"
+                        id="empresaSeleccionadaId"
+                    >
+
+                </section>
+
+
+                <!-- =============================================
+                    SERVICIO EMPRESA
+                ============================================== -->
+
+                <section
+                    id="seccionServicioEmpresa"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Servicio</h2>
+
+                    <div class="campo">
+
+                        <label for="selectServicioEmpresa">
+                            Tipo de servicio
+                        </label>
+
+                        <select id="selectServicioEmpresa">
+
+                            <option value="">
+                                Seleccione un servicio
+                            </option>
+
+                            <option value="IMPLEMENTACION">
+                                IMPLEMENTACIÓN
+                            </option>
+
+                            <option value="RECARGA">
+                                RECARGA
+                            </option>
+
+                            <option value="RETIRO">
+                                RETIRO
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =============================================
+                    DATOS DEL SERVICIO
+                ============================================== -->
+
+                <section
+                    id="seccionDatosServicioEmpresa"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Datos del Servicio</h2>
+
+                    <div class="campo">
+
+                        <label for="selectGasEmpresa">
+                            Gas
+                        </label>
+
+                        <select id="selectGasEmpresa">
+
+                            <option value="">
+                                Seleccione un gas
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="selectCilindroEmpresa">
+                            Medida de cilindro
+                        </label>
+
+                        <select id="selectCilindroEmpresa">
+
+                            <option value="">
+                                Seleccione una medida
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="inputCantidadEmpresa">
+                            Cantidad
+                        </label>
+
+                        <input
+                            type="number"
+                            id="inputCantidadEmpresa"
+                            min="1"
+                            step="1"
+                            inputmode="numeric"
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="selectModalidadEmpresa">
+                            Modalidad
+                        </label>
+
+                        <select id="selectModalidadEmpresa">
+
+                            <option value="">
+                                Seleccione una modalidad
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =============================================
+                    PROGRAMACIÓN
+                ============================================== -->
+
+                <section
+                    id="seccionProgramacionEmpresa"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Programación del Servicio</h2>
+
+
+                    <div class="campo">
+
+                        <label for="inputFechaEmpresa">
+                            Fecha programada
+                        </label>
+
+                        <input
+                            type="date"
+                            id="inputFechaEmpresa"
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="selectOperarioEmpresa">
+                            Operario asignado
+                        </label>
+
+                        <select id="selectOperarioEmpresa">
+
+                            <option value="">
+                                Seleccione un operario
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="selectVentanaEmpresa">
+                            Ventana horaria
+                        </label>
+
+                        <select id="selectVentanaEmpresa">
+
+                            <option value="">
+                                Seleccione un horario
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <button
+                            type="button"
+                            id="btnAtencionInmediataEmpresa"
+                            class="btn-selector"
+                        >
+                            Atención inmediata
+                        </button>
+
+                        <input
+                            type="hidden"
+                            id="inputAtencionInmediataEmpresa"
+                            value="NO"
+                        >
+
+                    </div>
+
+                </section>
+
+
+                <!-- =============================================
+                    OBSERVACIONES
+                ============================================== -->
+
+                <section
+                    id="seccionObservacionesEmpresa"
+                    class="form-seccion"
+                    hidden
+                >
+
+                    <h2>Observaciones</h2>
+
+                    <div class="campo">
+
+                        <textarea
+                            id="inputObservacionesEmpresa"
+                            rows="4"
+                            maxlength="500"
+                            placeholder="Información adicional del servicio..."
+                        ></textarea>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =============================================
+                    REGISTRAR
+                ============================================== -->
+
+                <section
+                    id="seccionBotonEmpresa"
+                    class="acciones-formulario"
+                    hidden
+                >
+
+                    <button
+                        type="submit"
+                        id="btnRegistrarEmpresa"
+                        class="btn-principal"
+                    >
+                        Registrar servicio
+                    </button>
+
+                </section>
+
+
+                <div
+                    id="mensajeEmpresa"
+                    class="mensaje-registro"
+                    role="status"
+                    aria-live="polite"
+                    hidden
+                ></div>
+
+            </form>
+
+        </section>
+
+        <!-- =====================================================
              MODAL GESTIÓN DE SERVICIO
         ====================================================== -->
 
@@ -1390,6 +1789,7 @@
     ========================================================== -->
 
     <script src="./js/registro-pacientes.js?v=20260918-4" defer></script>
+    <script src="./js/registro-empresa.js?v=20260926-1" defer></script>
 
 
 </body>
