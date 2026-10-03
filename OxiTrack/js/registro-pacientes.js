@@ -26,6 +26,12 @@ let idSolicitudRegistro = "";
 // ELEMENTOS DOM
 // ==========================================================
 
+// SELECTOR OFICINA: EMPRESA / PARTICULAR
+
+const selectorTipoGestion = document.getElementById("selectorTipoGestion");
+const btnGestionEmpresa = document.getElementById("btnGestionEmpresa");
+const btnGestionParticular = document.getElementById("btnGestionParticular");
+const moduloParticularOficina = document.getElementById("moduloParticularOficina");
 const formRegistroPaciente = document.getElementById("formRegistroPaciente");
 const selectServicioRegistro = document.getElementById("selectServicioRegistro");
 
@@ -206,6 +212,25 @@ const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
 });
 
 // ==========================================================
+// SELECTOR OFICINA: EMPRESA / PARTICULAR
+// ==========================================================
+
+btnGestionParticular.addEventListener("click", function () {
+
+    ocultar(selectorTipoGestion);
+    mostrar(moduloParticularOficina);
+
+});
+
+
+btnGestionEmpresa.addEventListener("click", function () {
+
+    window.location.href = "./registro-empresas.html";
+
+});
+
+
+// ==========================================================
 // INICIALIZACIÓN
 // ==========================================================
 
@@ -217,6 +242,11 @@ document.addEventListener("DOMContentLoaded", function () {
     cargarCatalogoRegistro();
     cargarOperariosRegistro();
     selectVentanaServicio.disabled = true;
+
+    // Al entrar a OFICINA siempre mostramos primero
+    // el selector EMPRESA / PARTICULAR.
+    mostrar(selectorTipoGestion);
+    ocultar(moduloParticularOficina);
 
 });
 
