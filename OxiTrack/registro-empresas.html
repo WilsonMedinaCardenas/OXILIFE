@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta
+        name="description"
+        content="Registro de servicios Empresa - OxiTrack by Oxilife"
+    >
+
+    <title>Registro Empresas | OxiTrack by Oxilife</title>
+
+    <link rel="stylesheet" href="./css/oxitrack-base.css">
+    <link rel="stylesheet" href="./css/registro-pacientes.css">
+    <link rel="stylesheet" href="./css/registro-empresas.css">
+
+    <style>
+        html:not(.oficina-autorizada) body {
+            visibility: hidden;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<script>
+(async function () {
+
+    try {
+
+        const respuesta = await fetch(
+            "/api/oxitrack/?modo=perfilUsuario",
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                cache: "no-store"
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true ||
+            !Array.isArray(datos.permisos) ||
+            !datos.permisos.includes("OFICINA")
+        ) {
+            window.location.replace("./");
+            return;
+        }
+
+        document.documentElement.classList.add(
+            "oficina-autorizada"
+        );
+
+    } catch (error) {
+
+        window.location.replace("./");
+
+    }
+
+})();
+</script>
+
+
+<main class="app-registro">
+
+    <!-- =====================================================
+         ENCABEZADO
+    ====================================================== -->
+
+    <header class="registro-header">
+
+        <img
+            src="../assets/img/favicon.png"
+            alt="Oxilife"
+            class="registro-logo"
+        >
+
+        <h1>Registro Empresas</h1>
+
+        <p class="registro-subtitulo">
+            OxiTrack by Oxilife
+        </p>
+
+    </header>
+
+
+    <!-- =====================================================
+         FORMULARIO
+    ====================================================== -->
+
+    <section class="registro-card">
+
+        <form
+            id="formRegistroEmpresa"
+            autocomplete="off"
+            novalidate
+        >
+
+
+            <!-- =================================================
+                 SERVICIO
+            ================================================== -->
+
+            <section class="form-seccion">
+
+                <h2>Servicio</h2>
+
+                <div class="campo">
+
+                    <label for="selectServicioEmpresa">
+                        Tipo de servicio
+                    </label>
+
+                    <select
+                        id="selectServicioEmpresa"
+                        required
+                    >
+
+                        <option value="">
+                            Seleccione un servicio
+                        </option>
+
+                        <option value="IMPLEMENTACIÓN OXÍGENO">
+                            IMPLEMENTACIÓN OXÍGENO
+                        </option>
+
+                        <option value="RECARGA OXÍGENO">
+                            RECARGA OXÍGENO
+                        </option>
+
+                        <option value="RECARGA NITRÓGENO">
+                            RECARGA NITRÓGENO
+                        </option>
+
+                        <option value="RECARGA AIRE">
+                            RECARGA AIRE
+                        </option>
+
+                        <option value="RECARGA GASES">
+                            RECARGA GASES
+                        </option>
+
+                        <option value="RETIRO">
+                            RETIRO
+                        </option>
+
+                        <option value="VENTA">
+                            VENTA
+                        </option>
+
+                        <option value="VISITA TÉCNICA">
+                            VISITA TÉCNICA
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 GESTIÓN DE SERVICIOS
+            ================================================== -->
+
+            <section class="form-seccion">
+
+                <h2>Gestión de servicios</h2>
+
+                <p class="seccion-descripcion">
+                    Para servicios ya registrados.
+                </p>
+
+                <div class="acciones-gestion-empresa">
+
+                    <button
+                        type="button"
+                        id="btnReagendarEmpresa"
+                        class="btn-secundario-empresa"
+                    >
+                        Reagendar servicio
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnCancelarEmpresa"
+                        class="btn-secundario-empresa"
+                    >
+                        Cancelar servicio
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 EMPRESA
+            ================================================== -->
+
+            <section
+                id="seccionEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Empresa</h2>
+
+                <div class="campo">
+
+                    <label for="inputRutEmpresa">
+                        RUT empresa
+                    </label>
+
+                    <input
+                        type="text"
+                        id="inputRutEmpresa"
+                        placeholder="Ingrese RUT"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+                <button
+                    type="button"
+                    id="btnBuscarEmpresa"
+                    class="btn-principal"
+                >
+                    Buscar empresa
+                </button>
+
+                <div
+                    id="mensajeBusquedaEmpresa"
+                    class="mensaje-registro"
+                    hidden
+                ></div>
+
+            </section>
+
+
+            <!-- =================================================
+                 EMPRESA SELECCIONADA
+            ================================================== -->
+
+            <section
+                id="seccionEmpresaSeleccionada"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Empresa seleccionada</h2>
+
+                <div class="paciente-card">
+
+                    <div class="dato-resumen">
+                        <span>Empresa</span>
+                        <strong id="empresaNombre">-</strong>
+                    </div>
+
+                    <div class="dato-resumen">
+                        <span>RUT</span>
+                        <strong id="empresaRut">-</strong>
+                    </div>
+
+                    <div class="dato-resumen">
+                        <span>Modalidad</span>
+                        <strong id="empresaModalidad">-</strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 MODALIDAD MIXTA
+            ================================================== -->
+
+            <section
+                id="seccionModalidadMixta"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Destino del servicio</h2>
+
+                <p class="seccion-descripcion">
+                    Indique dónde se realizará el servicio.
+                </p>
+
+                <div class="selector-modalidad-empresa">
+
+                    <button
+                        type="button"
+                        id="btnDestinoEmpresa"
+                        class="btn-selector"
+                    >
+                        EMPRESA
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnDestinoPaciente"
+                        class="btn-selector"
+                    >
+                        PACIENTE
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 DATOS PACIENTE INDIRECTO
+            ================================================== -->
+
+            <section
+                id="seccionPacienteEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Paciente</h2>
+
+                <div class="campo">
+
+                    <label for="inputPacienteEmpresa">
+                        Nombre o código del paciente
+                    </label>
+
+                    <input
+                        type="text"
+                        id="inputPacienteEmpresa"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label for="inputDireccionPacienteEmpresa">
+                        Dirección
+                    </label>
+
+                    <input
+                        type="text"
+                        id="inputDireccionPacienteEmpresa"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label for="selectComunaPacienteEmpresa">
+                        Comuna
+                    </label>
+
+                    <select id="selectComunaPacienteEmpresa">
+
+                        <option value="">
+                            Seleccione una comuna
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 DIRECCIÓN EMPRESA DIRECTA
+            ================================================== -->
+
+            <section
+                id="seccionDireccionEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Dirección del servicio</h2>
+
+                <div class="paciente-card">
+
+                    <div class="dato-resumen">
+                        <span>Dirección</span>
+                        <strong id="empresaDireccion">-</strong>
+                    </div>
+
+                    <div class="dato-resumen">
+                        <span>Comuna</span>
+                        <strong id="empresaComuna">-</strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 DETALLE
+            ================================================== -->
+
+            <section
+                id="seccionDetalleEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Detalle del servicio</h2>
+
+                <div id="contenedorProductosEmpresa"></div>
+
+            </section>
+
+
+            <!-- =================================================
+                 TIPO IMPLEMENTACIÓN
+            ================================================== -->
+
+            <section
+                id="seccionTipoImplementacionEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Tipo de implementación</h2>
+
+                <div class="campo">
+
+                    <label for="selectTipoImplementacionEmpresa">
+                        Implementación
+                    </label>
+
+                    <select id="selectTipoImplementacionEmpresa">
+
+                        <option value="">
+                            Seleccione un tipo
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 PROGRAMACIÓN
+            ================================================== -->
+
+            <section
+                id="seccionProgramacionEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Programación del servicio</h2>
+
+                <div class="campo">
+
+                    <label for="inputFechaEmpresa">
+                        Fecha programada
+                    </label>
+
+                    <input
+                        type="date"
+                        id="inputFechaEmpresa"
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label for="selectOperarioEmpresa">
+                        Operario asignado
+                    </label>
+
+                    <select id="selectOperarioEmpresa">
+
+                        <option value="">
+                            Seleccione un operario
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="campo">
+
+                    <label for="selectVentanaEmpresa">
+                        Ventana horaria
+                    </label>
+
+                    <select
+                        id="selectVentanaEmpresa"
+                        disabled
+                    >
+
+                        <option value="">
+                            Seleccione fecha y operario
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 FLETE
+            ================================================== -->
+
+            <section
+                id="seccionFleteEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Flete</h2>
+
+                <p class="seccion-descripcion">
+                    ¿Este servicio contabiliza flete?
+                </p>
+
+                <div class="selector-modalidad-empresa">
+
+                    <button
+                        type="button"
+                        id="btnFleteSiEmpresa"
+                        class="btn-selector"
+                    >
+                        SÍ
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnFleteNoEmpresa"
+                        class="btn-selector"
+                    >
+                        NO
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 OBSERVACIONES
+            ================================================== -->
+
+            <section
+                id="seccionObservacionesEmpresa"
+                class="form-seccion"
+                hidden
+            >
+
+                <h2>Observaciones</h2>
+
+                <div class="campo">
+
+                    <textarea
+                        id="inputObservacionesEmpresa"
+                        rows="4"
+                        maxlength="500"
+                        placeholder="Información adicional del servicio..."
+                    ></textarea>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 BOTÓN
+            ================================================== -->
+
+            <section
+                id="seccionBotonEmpresa"
+                class="acciones-formulario"
+                hidden
+            >
+
+                <button
+                    type="submit"
+                    id="btnRegistrarEmpresa"
+                    class="btn-principal"
+                >
+                    Registrar servicio
+                </button>
+
+            </section>
+
+
+            <div
+                id="mensajeEmpresa"
+                class="mensaje-registro"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+
+        </form>
+
+    </section>
+
+
+    <!-- =====================================================
+         MODAL CONFIRMACIÓN
+    ====================================================== -->
+
+    <div
+        id="modalConfirmacionEmpresa"
+        class="modal"
+        hidden
+    >
+
+        <div class="modal-contenido">
+
+            <h2>Confirmar servicio</h2>
+
+            <div
+                id="resumenConfirmacionEmpresa"
+                class="modal-resumen"
+            ></div>
+
+            <div class="modal-acciones">
+
+                <button
+                    type="button"
+                    id="btnVolverConfirmacionEmpresa"
+                    class="btn-secundario"
+                >
+                    Volver
+                </button>
+
+                <button
+                    type="button"
+                    id="btnConfirmarEmpresa"
+                    class="btn-principal"
+                >
+                    Confirmar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         MODAL MARCHA BLANCA
+    ====================================================== -->
+
+    <div
+        id="modalExitoEmpresa"
+        class="modal"
+        hidden
+    >
+
+        <div class="modal-contenido modal-exito">
+
+            <h2>Formulario correcto</h2>
+
+            <p>
+                El frontend generó correctamente el servicio.
+                El registro definitivo en BLANCA se conectará
+                en la siguiente etapa.
+            </p>
+
+            <button
+                type="button"
+                id="btnNuevoServicioEmpresa"
+                class="btn-principal"
+            >
+                Nuevo servicio
+            </button>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<script src="./js/registro-empresas.js?v=20261001-1" defer></script>
+
+</body>
+</html>
