@@ -657,7 +657,7 @@ function crearGrupoProducto(producto) {
             menos.type = "button";
             menos.className = "btn-contador-empresa";
             menos.textContent = "−";
-            const cantidad = createElement("span");
+            const cantidad = document.createElement("span");
             cantidad.className = "cantidad-producto-empresa";
             cantidad.textContent = "0";
             cantidad.dataset.cantidad = "0";
