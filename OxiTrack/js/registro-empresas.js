@@ -31,145 +31,56 @@ let solicitudIdEmpresa = "";
 // DOM
 // ==========================================================
 
-const formRegistroEmpresa =
-    document.getElementById("formRegistroEmpresa");
-
-const selectServicioEmpresa =
-    document.getElementById("selectServicioEmpresa");
-
-const seccionEmpresa =
-    document.getElementById("seccionEmpresa");
-
-const inputRutEmpresa =
-    document.getElementById("inputRutEmpresa");
-
-const btnBuscarEmpresa =
-    document.getElementById("btnBuscarEmpresa");
-
-const mensajeBusquedaEmpresa =
-    document.getElementById("mensajeBusquedaEmpresa");
-
-const seccionEmpresaSeleccionada =
-    document.getElementById("seccionEmpresaSeleccionada");
-
-const empresaNombre =
-    document.getElementById("empresaNombre");
-
-const empresaRut =
-    document.getElementById("empresaRut");
-
-const empresaModalidad =
-    document.getElementById("empresaModalidad");
-
-const seccionModalidadMixta =
-    document.getElementById("seccionModalidadMixta");
-
-const btnDestinoEmpresa =
-    document.getElementById("btnDestinoEmpresa");
-
-const btnDestinoPaciente =
-    document.getElementById("btnDestinoPaciente");
-
-const seccionPacienteEmpresa =
-    document.getElementById("seccionPacienteEmpresa");
-
-const inputPacienteEmpresa =
-    document.getElementById("inputPacienteEmpresa");
-
-const inputDireccionPacienteEmpresa =
-    document.getElementById("inputDireccionPacienteEmpresa");
-
-const selectComunaPacienteEmpresa =
-    document.getElementById("selectComunaPacienteEmpresa");
-
-const seccionDireccionEmpresa =
-    document.getElementById("seccionDireccionEmpresa");
-
-const empresaDireccion =
-    document.getElementById("empresaDireccion");
-
-const empresaComuna =
-    document.getElementById("empresaComuna");
-
-const seccionDetalleEmpresa =
-    document.getElementById("seccionDetalleEmpresa");
-
-const contenedorProductosEmpresa =
-    document.getElementById("contenedorProductosEmpresa");
-
-const seccionTipoImplementacionEmpresa =
-    document.getElementById("seccionTipoImplementacionEmpresa");
-
-const selectTipoImplementacionEmpresa =
-    document.getElementById("selectTipoImplementacionEmpresa");
-
-const seccionProgramacionEmpresa =
-    document.getElementById("seccionProgramacionEmpresa");
-
-const inputFechaEmpresa =
-    document.getElementById("inputFechaEmpresa");
-
-const selectOperarioEmpresa =
-    document.getElementById("selectOperarioEmpresa");
-
-const selectVentanaEmpresa =
-    document.getElementById("selectVentanaEmpresa");
-
-const seccionFleteEmpresa =
-    document.getElementById("seccionFleteEmpresa");
-
-const btnFleteSiEmpresa =
-    document.getElementById("btnFleteSiEmpresa");
-
-const btnFleteNoEmpresa =
-    document.getElementById("btnFleteNoEmpresa");
-
-const seccionObservacionesEmpresa =
-    document.getElementById("seccionObservacionesEmpresa");
-
-const inputObservacionesEmpresa =
-    document.getElementById("inputObservacionesEmpresa");
-
-const seccionBotonEmpresa =
-    document.getElementById("seccionBotonEmpresa");
-
-const mensajeEmpresa =
-    document.getElementById("mensajeEmpresa");
-
-const modalConfirmacionEmpresa =
-    document.getElementById("modalConfirmacionEmpresa");
-
-const resumenConfirmacionEmpresa =
-    document.getElementById("resumenConfirmacionEmpresa");
-
-const btnVolverConfirmacionEmpresa =
-    document.getElementById("btnVolverConfirmacionEmpresa");
-
-const btnConfirmarEmpresa =
-    document.getElementById("btnConfirmarEmpresa");
-
-const modalExitoEmpresa =
-    document.getElementById("modalExitoEmpresa");
-
-const btnNuevoServicioEmpresa =
-    document.getElementById("btnNuevoServicioEmpresa");
-
-const btnReagendarEmpresa =
-    document.getElementById("btnReagendarEmpresa");
-
-const btnCancelarEmpresa =
-    document.getElementById("btnCancelarEmpresa");
+const formRegistroEmpresa = document.getElementById("formRegistroEmpresa");
+const selectServicioEmpresa = document.getElementById("selectServicioEmpresa");
+const seccionGestionEmpresa = document.getElementById("seccionGestionEmpresa");
+const seccionEmpresa = document.getElementById("seccionEmpresa");
+const inputRutEmpresa = document.getElementById("inputRutEmpresa");
+const btnBuscarEmpresa = document.getElementById("btnBuscarEmpresa");
+const mensajeBusquedaEmpresa = document.getElementById("mensajeBusquedaEmpresa");
+const seccionEmpresaSeleccionada = document.getElementById("seccionEmpresaSeleccionada");
+const empresaNombre = document.getElementById("empresaNombre");
+const empresaRut = document.getElementById("empresaRut");
+const empresaModalidad = document.getElementById("empresaModalidad");
+const seccionModalidadMixta = document.getElementById("seccionModalidadMixta");
+const btnDestinoEmpresa = document.getElementById("btnDestinoEmpresa");
+const btnDestinoPaciente = document.getElementById("btnDestinoPaciente");
+const seccionPacienteEmpresa = document.getElementById("seccionPacienteEmpresa");
+const inputPacienteEmpresa = document.getElementById("inputPacienteEmpresa");
+const inputDireccionPacienteEmpresa = document.getElementById("inputDireccionPacienteEmpresa");
+const selectComunaPacienteEmpresa = document.getElementById("selectComunaPacienteEmpresa");
+const seccionDireccionEmpresa = document.getElementById("seccionDireccionEmpresa");
+const empresaDireccion = document.getElementById("empresaDireccion");
+const empresaComuna = document.getElementById("empresaComuna");
+const seccionDetalleEmpresa = document.getElementById("seccionDetalleEmpresa");
+const contenedorProductosEmpresa = document.getElementById("contenedorProductosEmpresa");
+const seccionTipoImplementacionEmpresa = document.getElementById("seccionTipoImplementacionEmpresa");
+const selectTipoImplementacionEmpresa = document.getElementById("selectTipoImplementacionEmpresa");
+const seccionProgramacionEmpresa = document.getElementById("seccionProgramacionEmpresa");
+const inputFechaEmpresa = document.getElementById("inputFechaEmpresa");
+const selectOperarioEmpresa = document.getElementById("selectOperarioEmpresa");
+const selectVentanaEmpresa = document.getElementById("selectVentanaEmpresa");
+const seccionFleteEmpresa = document.getElementById("seccionFleteEmpresa");
+const btnFleteSiEmpresa = document.getElementById("btnFleteSiEmpresa");
+const btnFleteNoEmpresa = document.getElementById("btnFleteNoEmpresa");
+const seccionObservacionesEmpresa = document.getElementById("seccionObservacionesEmpresa");
+const inputObservacionesEmpresa = document.getElementById("inputObservacionesEmpresa");
+const seccionBotonEmpresa = document.getElementById("seccionBotonEmpresa");
+const mensajeEmpresa = document.getElementById("mensajeEmpresa");
+const modalConfirmacionEmpresa = document.getElementById("modalConfirmacionEmpresa");
+const resumenConfirmacionEmpresa = document.getElementById("resumenConfirmacionEmpresa");
+const btnVolverConfirmacionEmpresa = document.getElementById("btnVolverConfirmacionEmpresa");
+const btnConfirmarEmpresa = document.getElementById("btnConfirmarEmpresa");
+const modalExitoEmpresa = document.getElementById("modalExitoEmpresa");
+const btnNuevoServicioEmpresa = document.getElementById("btnNuevoServicioEmpresa");
+const btnReagendarEmpresa = document.getElementById("btnReagendarEmpresa");
+const btnCancelarEmpresa = document.getElementById("btnCancelarEmpresa");
 
 
 // ==========================================================
 // INICIO
-// ==========================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    inicializarRegistroEmpresa
-);
-
+// ========================================================== 
+ document.addEventListener("DOMContentLoaded",inicializarRegistroEmpresa);
 
 async function inicializarRegistroEmpresa() {
 
@@ -187,9 +98,7 @@ async function inicializarRegistroEmpresa() {
 // SERVICIO
 // ==========================================================
 
-selectServicioEmpresa.addEventListener(
-    "change",
-    function () {
+selectServicioEmpresa.addEventListener("change", function () {
 
         servicioEmpresaActual =
             normalizarTextoEmpresa(
@@ -201,15 +110,19 @@ selectServicioEmpresa.addEventListener(
         if (!servicioEmpresaActual) {
 
             ocultarEmpresa(seccionEmpresa);
-            return;
+            mostrarEmpresa(seccionGestionEmpresa);
 
+            return;
         }
 
-        mostrarEmpresa(seccionEmpresa);
+        // Si se eligió un servicio nuevo,
+        // desaparecen las gestiones de servicios existentes.
+        ocultarEmpresa(seccionGestionEmpresa);
 
+        // Y comienza inmediatamente la búsqueda de empresa.
+        mostrarEmpresa(seccionEmpresa);
     }
 );
-
 
 // ==========================================================
 // BUSCAR EMPRESA
@@ -726,83 +639,33 @@ function filtrarProductosPorServicio(
 
 function crearGrupoProducto(producto) {
 
-    const grupo =
-        document.createElement("div");
-
-    grupo.className =
-        "grupo-producto-empresa";
-
-
-    const titulo =
-        document.createElement("h3");
-
-    titulo.textContent =
-        producto.gas;
-
+    const grupo = document.createElement("div");
+    grupo.className = "grupo-producto-empresa";
+    const titulo = document.createElement("h3");
+    titulo.textContent = producto.gas;
     grupo.appendChild(titulo);
+    producto.medidas.forEach( function (medida) {
 
-
-    producto.medidas.forEach(
-        function (medida) {
-
-            const fila =
-                document.createElement("div");
-
-            fila.className =
-                "fila-producto-empresa";
-
-            fila.dataset.gas =
-                producto.gas;
-
-            fila.dataset.medida =
-                medida;
-
-
-            const nombre =
-                document.createElement("span");
-
-            nombre.className =
-                "nombre-medida-empresa";
-
-            nombre.textContent =
-                medida;
-
-
-            const menos =
-                document.createElement("button");
-
+            const fila = document.createElement("div");
+            fila.className = "fila-producto-empresa";
+            fila.dataset.gas = producto.gas;
+            fila.dataset.medida = medida;
+            const nombre = document.createElement("span");
+            nombre.className = "nombre-medida-empresa";
+            nombre.textContent = medida;
+            const menos = document.createElement("button");
             menos.type = "button";
-            menos.className =
-                "btn-contador-empresa";
-
+            menos.className = "btn-contador-empresa";
             menos.textContent = "−";
-
-
-            const cantidad =
-                document.createElement("span");
-
-            cantidad.className =
-                "cantidad-producto-empresa";
-
+            const cantidad = createElement("span");
+            cantidad.className = "cantidad-producto-empresa";
             cantidad.textContent = "0";
-
-            cantidad.dataset.cantidad =
-                "0";
-
-
-            const mas =
-                document.createElement("button");
-
+            cantidad.dataset.cantidad = "0";
+            const mas = document.createElement("button");
             mas.type = "button";
-            mas.className =
-                "btn-contador-empresa";
-
+            mas.className = "btn-contador-empresa";
             mas.textContent = "+";
-
-
-            menos.addEventListener(
-                "click",
-                function () {
+            menos.addEventListener("click", function () {
 
                     modificarCantidad(
                         cantidad,
@@ -1030,7 +893,7 @@ async function cargarOperariosEmpresa() {
 
 
                 const opcion =
-                    document.createElement(
+             document.createElement(
                         "option"
                     );
 
@@ -1260,7 +1123,7 @@ function cargarVentanasEmpresa(
 
 
         const option =
-            document.createElement(
+     document.createElement(
                 "option"
             );
 

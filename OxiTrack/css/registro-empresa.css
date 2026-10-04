@@ -4,19 +4,73 @@
    ========================================================== */
 
 
-.selector-modalidad-empresa,
+/* ==========================================================
+   SELECTORES DE DOS OPCIONES
+   MODALIDAD / FLETE
+   ========================================================== */
+
+.selector-modalidad-empresa {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+}
+
+.selector-modalidad-empresa button {
+    width: 100%;
+    min-height: 50px;
+
+    margin: 0;
+    padding: 12px 10px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #e9e9e9;
+    color: #333;
+
+    font-size: 16px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.selector-modalidad-empresa button.activo,
+.btn-selector.activo {
+    background: #611e63;
+    color: #fff;
+}
+
+
+/* ==========================================================
+   GESTIÓN
+   REAGENDAR / CANCELAR
+   ========================================================== */
+
 .acciones-gestion-empresa {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+
+    width: 100%;
+    margin-top: 12px;
 }
 
-
-.selector-modalidad-empresa button,
 .acciones-gestion-empresa button {
-    margin-top: 10px;
-}
+    width: 100%;
+    min-height: 50px;
 
+    margin: 0;
+    padding: 12px 8px;
+
+    border: none;
+    border-radius: 8px;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
 
 .btn-secundario-empresa {
     background: #777;
@@ -24,71 +78,138 @@
 }
 
 
-.btn-selector.activo {
-    background: #611e63;
-    color: #fff;
-}
-
+/* ==========================================================
+   GRUPO DE PRODUCTOS / GASES
+   ========================================================== */
 
 .grupo-producto-empresa {
-    margin-top: 18px;
+    margin-top: 16px;
     padding: 15px;
+
     border: 1px solid #e1e1e1;
     border-radius: 10px;
+
     background: #fafafa;
 }
 
 
+/* ==========================================================
+   NOMBRE DEL GAS
+   ========================================================== */
+
 .grupo-producto-empresa h3 {
-    margin-bottom: 15px;
+    margin: 0 0 14px 0;
+
     color: #611e63;
-    font-size: 17px;
+
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
 }
 
+
+/* ==========================================================
+   FILA DE PRESENTACIÓN
+
+   10M3    [-]    0    [+]
+   ========================================================== */
 
 .fila-producto-empresa {
     display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
 
+    grid-template-columns:
+        minmax(80px, 1fr)
+        44px
+        48px
+        44px;
+
+    align-items: center;
+
+    gap: 8px;
+
+    width: 100%;
+
+    margin-bottom: 10px;
+}
 
 .fila-producto-empresa:last-child {
     margin-bottom: 0;
 }
 
 
+/* ==========================================================
+   MEDIDA
+   ========================================================== */
+
 .nombre-medida-empresa {
+    min-width: 0;
+
+    font-size: 16px;
     font-weight: 700;
+
+    color: #333;
 }
 
+
+/* ==========================================================
+   BOTONES - / +
+   ========================================================== */
 
 .btn-contador-empresa {
-    width: 44px;
-    height: 44px;
-    margin: 0;
-    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
+    width: 44px !important;
+    min-width: 44px;
+    max-width: 44px;
+
+    height: 44px;
+    min-height: 44px;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: none;
     border-radius: 8px;
 
-    background: #611e63;
-    color: #fff;
+    background: #611e63 !important;
+    color: #ffffff !important;
 
-    font-size: 24px;
+    font-size: 25px;
+    line-height: 1;
     font-weight: 700;
+
+    cursor: pointer;
 }
 
+
+/* ==========================================================
+   CANTIDAD
+   ========================================================== */
 
 .cantidad-producto-empresa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     width: 48px;
+    min-width: 48px;
+
+    min-height: 44px;
+
     text-align: center;
 
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
+
+    color: #333;
 }
 
+
+/* ==========================================================
+   MENSAJES
+   ========================================================== */
 
 .mensaje-registro {
     margin-top: 15px;
@@ -99,12 +220,10 @@
     line-height: 1.4;
 }
 
-
 .mensaje-registro.error {
     background: #fdecec;
     color: #8a1f1f;
 }
-
 
 .mensaje-registro.exito {
     background: #edf8ef;
@@ -112,11 +231,55 @@
 }
 
 
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
 @media (max-width: 600px) {
+
+    /*
+       IMPORTANTE:
+       No convertimos estos selectores a una columna.
+       Deben seguir SI / NO y REAGENDAR / CANCELAR
+       uno al lado del otro incluso en móvil.
+    */
 
     .selector-modalidad-empresa,
     .acciones-gestion-empresa {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .selector-modalidad-empresa button,
+    .acciones-gestion-empresa button {
+        min-height: 48px;
+        padding: 10px 6px;
+        font-size: 14px;
+    }
+
+    .fila-producto-empresa {
+        grid-template-columns:
+            minmax(65px, 1fr)
+            42px
+            42px
+            42px;
+
+        gap: 6px;
+    }
+
+    .btn-contador-empresa {
+        width: 42px !important;
+        min-width: 42px;
+        max-width: 42px;
+
+        height: 42px;
+        min-height: 42px;
+    }
+
+    .cantidad-producto-empresa {
+        width: 42px;
+        min-width: 42px;
+        min-height: 42px;
     }
 
 }
