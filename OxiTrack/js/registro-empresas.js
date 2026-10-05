@@ -41,7 +41,6 @@ const mensajeBusquedaEmpresa = document.getElementById("mensajeBusquedaEmpresa")
 const seccionEmpresaSeleccionada = document.getElementById("seccionEmpresaSeleccionada");
 const empresaNombre = document.getElementById("empresaNombre");
 const empresaRut = document.getElementById("empresaRut");
-const empresaModalidad = document.getElementById("empresaModalidad");
 const seccionModalidadMixta = document.getElementById("seccionModalidadMixta");
 const btnDestinoEmpresa = document.getElementById("btnDestinoEmpresa");
 const btnDestinoPaciente = document.getElementById("btnDestinoPaciente");
@@ -89,7 +88,104 @@ async function inicializarRegistroEmpresa() {
     inputFechaEmpresa.min = hoy;
     inputFechaEmpresa.value = hoy;
 
-    await cargarOperariosEmpresa();
+    await Promise.all([
+        cargarServiciosEmpresa(),
+        cargarOperariosEmpresa()
+    ]);
+
+}
+
+// ==========================================================
+// SERVICIOS EMPRESA
+// CATÁLOGO DESDE BACKEND
+// ==========================================================
+
+async function cargarServiciosEmpresa() {
+
+    selectServicioEmpresa.disabled = true;
+
+    selectServicioEmpresa.innerHTML = `
+        <option value="">
+            Cargando servicios...
+        </option>
+    `;
+
+    try {
+
+        const respuesta = await fetch(
+            "/api/oxitrack/?modo=serviciosEmpresa",
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                cache: "no-store"
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true ||
+            !Array.isArray(datos.servicios)
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible cargar los servicios."
+            );
+
+        }
+
+        selectServicioEmpresa.innerHTML = `
+            <option value="">
+                Seleccione un servicio
+            </option>
+        `;
+
+        const servicios = [
+            ...new Set(
+                datos.servicios
+                    .map(function (servicio) {
+                        return String(servicio || "").trim();
+                    })
+                    .filter(Boolean)
+            )
+        ];
+
+        servicios.forEach(function (servicio) {
+
+            const option =
+                document.createElement("option");
+
+            option.value = servicio;
+            option.textContent = servicio;
+
+            selectServicioEmpresa.appendChild(
+                option
+            );
+
+        });
+
+        selectServicioEmpresa.disabled = false;
+
+    } catch (error) {
+
+        console.error(
+            "Error cargando servicios Empresa:",
+            error
+        );
+
+        selectServicioEmpresa.innerHTML = `
+            <option value="">
+                No fue posible cargar los servicios
+            </option>
+        `;
+
+        selectServicioEmpresa.disabled = true;
+
+    }
 
 }
 
@@ -240,9 +336,6 @@ function pintarEmpresaSeleccionada() {
         ocultarRutEmpresa(
             empresaSeleccionada.rut
         );
-
-    empresaModalidad.textContent =
-        empresaSeleccionada.modalidad || "-";
 
     empresaDireccion.textContent =
         empresaSeleccionada.direccion || "-";

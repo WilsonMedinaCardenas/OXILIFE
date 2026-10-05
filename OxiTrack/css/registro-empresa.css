@@ -503,3 +503,250 @@ button.btn-contador-empresa {
         font-size: 18px !important;
     }
 }
+
+/* ==========================================================
+   OXITRACK EMPRESA
+   LAYOUT DEFINITIVO FLETE + PRODUCTOS
+   ========================================================== */
+
+
+/* ==========================================================
+   FLETE
+   SÍ | NO
+   ========================================================== */
+
+#seccionFleteEmpresa .selector-flete-empresa {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
+
+    width: 100%;
+    margin-top: 12px;
+}
+
+#seccionFleteEmpresa .selector-flete-empresa .btn-flete-empresa {
+    flex: 1 1 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: auto;
+    min-width: 0;
+    height: 48px;
+    min-height: 48px;
+
+    margin: 0;
+    padding: 0 12px;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: #eeeeee;
+    color: #222222;
+
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+#seccionFleteEmpresa .selector-flete-empresa .btn-flete-empresa.activo {
+    background: #611e63;
+    color: #ffffff;
+}
+
+
+/* ==========================================================
+   CADA GAS
+   ========================================================== */
+
+#contenedorProductosEmpresa .grupo-producto-empresa {
+    display: block;
+
+    width: 100%;
+    margin: 0 0 24px 0;
+    padding: 0;
+}
+
+
+/* NOMBRE DEL GAS */
+
+#contenedorProductosEmpresa .grupo-producto-empresa > h3 {
+    display: block;
+
+    width: 100%;
+    margin: 0 0 12px 0;
+    padding: 0;
+
+    color: #611e63;
+
+    font-size: 17px;
+    font-weight: 700;
+
+    text-align: center;
+}
+
+
+/* ==========================================================
+   UNA MEDIDA = UNA FILA
+
+   10M3       −       0       +
+   ========================================================== */
+
+#contenedorProductosEmpresa .fila-producto-empresa {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    width: 100%;
+    min-height: 44px;
+
+    margin: 0 0 8px 0;
+    padding: 0;
+
+    gap: 8px;
+}
+
+
+/* MEDIDA */
+
+#contenedorProductosEmpresa
+.fila-producto-empresa
+.nombre-medida-empresa {
+
+    flex: 1 1 auto;
+
+    display: flex;
+    align-items: center;
+
+    width: auto;
+    min-width: 80px;
+
+    margin: 0;
+    padding: 0;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    line-height: 44px;
+}
+
+
+/* MENOS Y MÁS */
+
+#contenedorProductosEmpresa
+.fila-producto-empresa
+.btn-contador-empresa {
+
+    flex: 0 0 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: #eeeeee;
+    color: #222222;
+
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 600;
+
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+
+/* CONTADOR */
+
+#contenedorProductosEmpresa
+.fila-producto-empresa
+.cantidad-producto-empresa {
+
+    flex: 0 0 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+
+    height: 44px;
+
+    margin: 0;
+    padding: 0;
+
+    font-size: 17px;
+    font-weight: 600;
+
+    text-align: center;
+}
+
+
+/* ==========================================================
+   TELÉFONO
+   NO SE ROMPE LA FILA
+   ========================================================== */
+
+@media (max-width: 480px) {
+
+    #contenedorProductosEmpresa
+    .fila-producto-empresa {
+
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    #contenedorProductosEmpresa
+    .fila-producto-empresa
+    .nombre-medida-empresa {
+
+        min-width: 65px;
+        font-size: 15px;
+    }
+
+    #contenedorProductosEmpresa
+    .fila-producto-empresa
+    .btn-contador-empresa {
+
+        flex-basis: 42px;
+
+        width: 42px;
+        min-width: 42px;
+        max-width: 42px;
+
+        height: 42px;
+        min-height: 42px;
+        max-height: 42px;
+    }
+
+    #contenedorProductosEmpresa
+    .fila-producto-empresa
+    .cantidad-producto-empresa {
+
+        flex-basis: 34px;
+
+        width: 34px;
+        min-width: 34px;
+        max-width: 34px;
+    }
+}

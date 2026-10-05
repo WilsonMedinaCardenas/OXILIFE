@@ -123,46 +123,9 @@
                         Tipo de servicio
                     </label>
 
-                    <select
-                        id="selectServicioEmpresa"
-                        required
-                    >
+                    <select id="selectServicioEmpresa" name="servicio" required disabled>
 
-                        <option value="">
-                            Seleccione un servicio
-                        </option>
-
-                        <option value="IMPLEMENTACIÓN OXÍGENO">
-                            IMPLEMENTACIÓN OXÍGENO
-                        </option>
-
-                        <option value="RECARGA OXÍGENO">
-                            RECARGA OXÍGENO
-                        </option>
-
-                        <option value="RECARGA NITRÓGENO">
-                            RECARGA NITRÓGENO
-                        </option>
-
-                        <option value="RECARGA AIRE">
-                            RECARGA AIRE
-                        </option>
-
-                        <option value="RECARGA GASES">
-                            RECARGA GASES
-                        </option>
-
-                        <option value="RETIRO">
-                            RETIRO
-                        </option>
-
-                        <option value="VENTA">
-                            VENTA
-                        </option>
-
-                        <option value="VISITA TÉCNICA">
-                            VISITA TÉCNICA
-                        </option>
+                        <option value="">Cargando servicios...</option>
 
                     </select>
 
@@ -272,11 +235,6 @@
                     <div class="dato-resumen">
                         <span>RUT</span>
                         <strong id="empresaRut">-</strong>
-                    </div>
-
-                    <div class="dato-resumen">
-                        <span>Modalidad</span>
-                        <strong id="empresaModalidad">-</strong>
                     </div>
 
                 </div>
@@ -538,12 +496,12 @@
                     ¿Este servicio contabiliza flete?
                 </p>
 
-                <div class="selector-modalidad-empresa">
+                <div class="selector-flete-empresa">
 
                     <button
                         type="button"
                         id="btnFleteSiEmpresa"
-                        class="btn-selector"
+                        class="btn-flete-empresa"
                     >
                         SÍ
                     </button>
@@ -551,7 +509,7 @@
                     <button
                         type="button"
                         id="btnFleteNoEmpresa"
-                        class="btn-selector"
+                        class="btn-flete-empresa"
                     >
                         NO
                     </button>
@@ -700,7 +658,7 @@
 </main>
 
 
-<script src="./js/registro-empresas.js?v=20261001-6" defer></script>
+<script src="./js/registro-empresas.js?v=20261002-6" defer></script>
 
 </body>
 </html>
