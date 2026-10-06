@@ -484,24 +484,31 @@
                  FLETE
             ================================================== -->
 
-            <section
-                id="seccionFleteEmpresa"
-                class="form-seccion"
-                hidden
-            >
-
+            <section id="seccionFleteEmpresa" class="form-seccion" hidden>
                 <h2>Flete</h2>
 
                 <p class="seccion-descripcion">
                     ¿Este servicio contabiliza flete?
                 </p>
 
-                <div class="selector-flete-empresa">
-
+                <div
+                    id="selectorFleteEmpresa"
+                    style="
+                        display:grid;
+                        grid-template-columns:1fr 1fr;
+                        gap:12px;
+                        width:100%;
+                    "
+                >
                     <button
                         type="button"
                         id="btnFleteSiEmpresa"
-                        class="btn-flete-empresa"
+                        class="btn-selector"
+                        style="
+                            width:100%;
+                            margin:0;
+                            min-height:46px;
+                        "
                     >
                         SÍ
                     </button>
@@ -509,13 +516,16 @@
                     <button
                         type="button"
                         id="btnFleteNoEmpresa"
-                        class="btn-flete-empresa"
+                        class="btn-selector"
+                        style="
+                            width:100%;
+                            margin:0;
+                            min-height:46px;
+                        "
                     >
                         NO
                     </button>
-
                 </div>
-
             </section>
 
 
@@ -658,7 +668,7 @@
 </main>
 
 
-<script src="./js/registro-empresas.js?v=20261002-6" defer></script>
+<script src="./js/registro-empresas.js?v=20261002-7" defer></script>
 
 </body>
 </html>

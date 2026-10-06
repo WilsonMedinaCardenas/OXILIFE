@@ -750,3 +750,226 @@ button.btn-contador-empresa {
         max-width: 34px;
     }
 }
+
+/* ==========================================================
+   OXITRACK EMPRESA
+   OVERRIDE FINAL CONTADORES + FLETE
+   ========================================================== */
+
+
+/* ---------- FLETE ---------- */
+
+#seccionFleteEmpresa #selectorFleteEmpresa {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+#seccionFleteEmpresa #selectorFleteEmpresa > button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 46px !important;
+    min-height: 46px !important;
+
+    margin: 0 !important;
+    padding: 0 12px !important;
+
+    border-radius: 8px !important;
+}
+
+
+/* Estado normal */
+
+#seccionFleteEmpresa #selectorFleteEmpresa > button:not(.activo) {
+    background: #eeeeee !important;
+    color: #222222 !important;
+}
+
+
+/* Estado seleccionado */
+
+#seccionFleteEmpresa #selectorFleteEmpresa > button.activo {
+    background: #611e63 !important;
+    color: #ffffff !important;
+}
+
+
+/* ---------- GRUPO DE GAS ---------- */
+
+#contenedorProductosEmpresa .grupo-producto-empresa {
+    display: block !important;
+
+    width: 100% !important;
+
+    margin: 0 0 18px 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    background: transparent !important;
+}
+
+
+/* OXÍGENO / AIRE / NITRÓGENO */
+
+#contenedorProductosEmpresa .grupo-producto-empresa > h3 {
+    display: block !important;
+
+    width: 100% !important;
+
+    margin: 0 0 10px 0 !important;
+
+    color: #611e63 !important;
+
+    font-size: 17px !important;
+    font-weight: 700 !important;
+
+    text-align: center !important;
+}
+
+
+/* ==========================================================
+   UNA MEDIDA = UNA SOLA FILA
+
+   10M3    [-]    0    [+]
+   ========================================================== */
+
+#contenedorProductosEmpresa .fila-producto-empresa {
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(80px, 1fr)
+        42px
+        42px
+        42px !important;
+
+    grid-template-rows: 42px !important;
+
+    align-items: center !important;
+
+    column-gap: 8px !important;
+    row-gap: 0 !important;
+
+    width: 100% !important;
+
+    margin: 0 0 10px 0 !important;
+    padding: 0 !important;
+}
+
+
+/* MEDIDA */
+
+#contenedorProductosEmpresa .fila-producto-empresa > .nombre-medida-empresa {
+    display: flex !important;
+    align-items: center !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 42px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    font-size: 16px !important;
+    font-weight: 700 !important;
+
+    text-align: left !important;
+}
+
+
+/* BOTONES - Y + */
+
+#contenedorProductosEmpresa .fila-producto-empresa > .btn-contador-empresa {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    box-sizing: border-box !important;
+
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 8px !important;
+
+    background: #611e63 !important;
+    color: #ffffff !important;
+
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+
+    cursor: pointer !important;
+}
+
+
+/* CONTADOR */
+
+#contenedorProductosEmpresa .fila-producto-empresa > .cantidad-producto-empresa {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    box-sizing: border-box !important;
+
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    font-size: 18px !important;
+    font-weight: 700 !important;
+
+    text-align: center !important;
+}
+
+
+/* MÓVIL: SE CONSERVA EXACTAMENTE LA MISMA ESTRUCTURA */
+
+@media (max-width: 600px) {
+
+    #contenedorProductosEmpresa .fila-producto-empresa {
+        grid-template-columns:
+            minmax(68px, 1fr)
+            40px
+            40px
+            40px !important;
+
+        grid-template-rows: 40px !important;
+
+        column-gap: 6px !important;
+    }
+
+    #contenedorProductosEmpresa .fila-producto-empresa > .btn-contador-empresa,
+    #contenedorProductosEmpresa .fila-producto-empresa > .cantidad-producto-empresa {
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+    }
+}
