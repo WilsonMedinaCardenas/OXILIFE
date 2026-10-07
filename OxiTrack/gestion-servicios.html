@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta
+        name="description"
+        content="Gestión de servicios OxiTrack by Oxilife"
+    >
+
+    <title>Gestión de Servicios | OxiTrack by Oxilife</title>
+
+    <link rel="stylesheet" href="./css/oxitrack-base.css">
+    <link rel="stylesheet" href="./css/registro-pacientes.css">
+
+    <style>
+
+        html:not(.oficina-autorizada) body {
+            visibility: hidden;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<script>
+
+(async function () {
+
+    try {
+
+        const respuesta = await fetch(
+            "/api/oxitrack/?modo=perfilUsuario",
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                cache: "no-store"
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true ||
+            !Array.isArray(datos.permisos) ||
+            !datos.permisos.includes("OFICINA")
+        ) {
+
+            window.location.replace("./");
+            return;
+
+        }
+
+        document.documentElement.classList.add(
+            "oficina-autorizada"
+        );
+
+    } catch (error) {
+
+        window.location.replace("./");
+
+    }
+
+})();
+
+</script>
+
+
+<main class="app-registro">
+
+
+    <!-- =====================================================
+         ENCABEZADO
+    ====================================================== -->
+
+    <header class="registro-header">
+
+        <img
+            src="../assets/img/favicon.png"
+            alt="Oxilife"
+            class="registro-logo"
+        >
+
+        <h1>Gestión de Servicios</h1>
+
+        <p class="registro-subtitulo">
+            OxiTrack by Oxilife
+        </p>
+
+    </header>
+
+
+    <!-- =====================================================
+         SELECCIÓN
+    ====================================================== -->
+
+    <section class="registro-card">
+
+        <div class="form-seccion">
+
+            <p class="seccion-descripcion">
+                Seleccione el tipo de cliente.
+            </p>
+
+
+            <div class="selector-tipo-paciente">
+
+                <button
+                    type="button"
+                    id="btnGestionEmpresa"
+                    class="btn-selector"
+                >
+                    EMPRESA
+                </button>
+
+
+                <button
+                    type="button"
+                    id="btnGestionParticular"
+                    class="btn-selector"
+                >
+                    PARTICULAR
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+<script>
+
+document
+    .getElementById("btnGestionEmpresa")
+    .addEventListener("click", function () {
+
+        window.location.href =
+            "./registro-empresas.html";
+
+    });
+
+
+document
+    .getElementById("btnGestionParticular")
+    .addEventListener("click", function () {
+
+        window.location.href =
+            "./registro-pacientes.html";
+
+    });
+
+</script>
+
+
+</body>
+
+</html>
