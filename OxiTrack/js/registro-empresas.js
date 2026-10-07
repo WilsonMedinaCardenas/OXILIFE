@@ -734,67 +734,258 @@ function crearGrupoProducto(producto) {
 
     const grupo = document.createElement("div");
     grupo.className = "grupo-producto-empresa";
+
+    /*
+     * NOMBRE DEL GAS
+     * OXÍGENO / AIRE / NITRÓGENO / CO₂...
+     */
     const titulo = document.createElement("h3");
-    titulo.textContent = producto.gas;
+
+    titulo.textContent =
+        String(producto.gas || "").trim();
+
+    /*
+     * Dejamos el layout crítico directamente aquí.
+     * Así no depende del CSS general de botones.
+     */
+    titulo.style.cssText = `
+        display:block;
+        width:100%;
+        margin:0 0 10px 0;
+        padding:0;
+        color:#611e63;
+        font-size:17px;
+        font-weight:700;
+        text-align:center;
+    `;
+
     grupo.appendChild(titulo);
-    producto.medidas.forEach( function (medida) {
-
-            const fila = document.createElement("div");
-            fila.className = "fila-producto-empresa";
-            fila.dataset.gas = producto.gas;
-            fila.dataset.medida = medida;
-            const nombre = document.createElement("span");
-            nombre.className = "nombre-medida-empresa";
-            nombre.textContent = medida;
-            const menos = document.createElement("button");
-            menos.type = "button";
-            menos.className = "btn-contador-empresa";
-            menos.textContent = "−";
-            const cantidad = document.createElement("span");
-            cantidad.className = "cantidad-producto-empresa";
-            cantidad.textContent = "0";
-            cantidad.dataset.cantidad = "0";
-            const mas = document.createElement("button");
-            mas.type = "button";
-            mas.className = "btn-contador-empresa";
-            mas.textContent = "+";
-            menos.addEventListener("click", function () {
-
-                    modificarCantidad(
-                        cantidad,
-                        -1
-                    );
-
-                }
-            );
 
 
-            mas.addEventListener(
-                "click",
-                function () {
+    /*
+     * UNA FILA POR CADA MEDIDA
+     *
+     * 10M3     [-]   0   [+]
+     * 0.7M3    [-]   0   [+]
+     */
+    producto.medidas.forEach(function (medida) {
 
-                    modificarCantidad(
-                        cantidad,
-                        1
-                    );
+        const fila = document.createElement("div");
 
-                }
-            );
+        fila.className = "fila-producto-empresa";
+
+        fila.dataset.gas =
+            String(producto.gas || "").trim();
+
+        fila.dataset.medida =
+            String(medida || "").trim();
 
 
-            fila.append(
-                nombre,
-                menos,
-                cantidad,
-                mas
-            );
+        /*
+         * ESTE ES EL CAMBIO IMPORTANTE.
+         *
+         * La fila queda definida AQUÍ.
+         * Ya no dependemos de que otro CSS
+         * decida poner cada elemento debajo.
+         */
+        fila.style.cssText = `
+            display:grid;
+            grid-template-columns:minmax(80px, 1fr) 42px 42px 42px;
+            grid-template-rows:42px;
+            align-items:center;
+            column-gap:8px;
+            row-gap:0;
+            width:100%;
+            margin:0 0 10px 0;
+            padding:0;
+            box-sizing:border-box;
+        `;
 
-            grupo.appendChild(
-                fila
-            );
 
-        }
-    );
+        // =====================================================
+        // MEDIDA
+        // =====================================================
+
+        const nombre = document.createElement("span");
+
+        nombre.className =
+            "nombre-medida-empresa";
+
+        nombre.textContent =
+            String(medida || "").trim();
+
+        nombre.style.cssText = `
+            display:flex;
+            align-items:center;
+            width:auto;
+            min-width:0;
+            height:42px;
+            margin:0;
+            padding:0;
+            font-size:16px;
+            font-weight:700;
+            color:#333333;
+            text-align:left;
+            box-sizing:border-box;
+        `;
+
+
+        // =====================================================
+        // BOTÓN MENOS
+        // =====================================================
+
+        const menos =
+            document.createElement("button");
+
+        menos.type = "button";
+
+        menos.className =
+            "btn-contador-empresa";
+
+        menos.textContent = "−";
+
+        menos.style.cssText = `
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            width:42px;
+            min-width:42px;
+            max-width:42px;
+            height:42px;
+            min-height:42px;
+            max-height:42px;
+            margin:0;
+            padding:0;
+            border:0;
+            border-radius:8px;
+            background:#611e63;
+            color:#ffffff;
+            font-size:22px;
+            font-weight:700;
+            line-height:1;
+            cursor:pointer;
+            box-sizing:border-box;
+        `;
+
+
+        // =====================================================
+        // CONTADOR
+        // =====================================================
+
+        const cantidad =
+            document.createElement("span");
+
+        cantidad.className =
+            "cantidad-producto-empresa";
+
+        cantidad.textContent = "0";
+
+        cantidad.dataset.cantidad = "0";
+
+        cantidad.style.cssText = `
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            width:42px;
+            min-width:42px;
+            max-width:42px;
+            height:42px;
+            min-height:42px;
+            max-height:42px;
+            margin:0;
+            padding:0;
+            color:#333333;
+            font-size:18px;
+            font-weight:700;
+            text-align:center;
+            box-sizing:border-box;
+        `;
+
+
+        // =====================================================
+        // BOTÓN MÁS
+        // =====================================================
+
+        const mas =
+            document.createElement("button");
+
+        mas.type = "button";
+
+        mas.className =
+            "btn-contador-empresa";
+
+        mas.textContent = "+";
+
+        mas.style.cssText = `
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            width:42px;
+            min-width:42px;
+            max-width:42px;
+            height:42px;
+            min-height:42px;
+            max-height:42px;
+            margin:0;
+            padding:0;
+            border:0;
+            border-radius:8px;
+            background:#611e63;
+            color:#ffffff;
+            font-size:22px;
+            font-weight:700;
+            line-height:1;
+            cursor:pointer;
+            box-sizing:border-box;
+        `;
+
+
+        // =====================================================
+        // EVENTOS
+        // =====================================================
+
+        menos.addEventListener(
+            "click",
+            function () {
+
+                modificarCantidad(
+                    cantidad,
+                    -1
+                );
+
+            }
+        );
+
+
+        mas.addEventListener(
+            "click",
+            function () {
+
+                modificarCantidad(
+                    cantidad,
+                    1
+                );
+
+            }
+        );
+
+
+        /*
+         * ORDEN EXACTO DE IZQUIERDA A DERECHA:
+         *
+         * MEDIDA | MENOS | CONTADOR | MÁS
+         */
+        fila.append(
+            nombre,
+            menos,
+            cantidad,
+            mas
+        );
+
+
+        grupo.appendChild(fila);
+
+    });
 
 
     contenedorProductosEmpresa.appendChild(
