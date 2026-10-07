@@ -583,6 +583,169 @@
 
     </section>
 
+    <!-- =====================================================
+     MODAL GESTIÓN DE SERVICIO EMPRESA
+     REAGENDAR / CANCELAR
+    ====================================================== -->
+
+    <div
+        id="modalGestionServicioEmpresa"
+        class="modal"
+        hidden
+    >
+
+        <div class="modal-contenido">
+
+            <h2 id="tituloGestionServicioEmpresa">
+                Gestionar servicio
+            </h2>
+
+
+            <div class="campo">
+
+                <label for="inputBuscarGestionEmpresa">
+                    RUT, empresa o paciente
+                </label>
+
+                <input
+                    type="text"
+                    id="inputBuscarGestionEmpresa"
+                    placeholder="Ingrese RUT, empresa o paciente"
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <div
+                id="resultadosGestionServicioEmpresa"
+                class="resultados-busqueda"
+                hidden
+            ></div>
+
+
+            <div
+                id="detalleGestionServicioEmpresa"
+                hidden
+            >
+
+                <div id="resumenGestionServicioEmpresa"></div>
+
+
+                <div
+                    id="nuevaProgramacionGestionEmpresa"
+                    hidden
+                >
+
+                    <div class="campo">
+
+                        <label for="inputNuevaFechaGestionEmpresa">
+                            Nueva fecha
+                        </label>
+
+                        <input
+                            type="date"
+                            id="inputNuevaFechaGestionEmpresa"
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="selectNuevoOperarioGestionEmpresa">
+                            Operario asignado
+                        </label>
+
+                        <select id="selectNuevoOperarioGestionEmpresa">
+
+                            <option value="">
+                                Seleccione un operario
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="selectNuevaVentanaGestionEmpresa">
+                            Nueva ventana horaria
+                        </label>
+
+                        <select id="selectNuevaVentanaGestionEmpresa">
+
+                            <option value="">
+                                Seleccione un horario
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="btnAtencionInmediataGestionEmpresa"
+                        class="btn-atencion-inmediata"
+                    >
+                        Atención inmediata
+                    </button>
+
+
+                    <input
+                        type="hidden"
+                        id="inputAtencionInmediataGestionEmpresa"
+                        value="NO"
+                    >
+
+                </div>
+
+
+                <div class="modal-acciones">
+
+                    <button
+                        type="button"
+                        id="btnCerrarGestionServicioEmpresa"
+                        class="btn-secundario"
+                    >
+                        Volver
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="btnConfirmarGestionServicioEmpresa"
+                        class="btn-principal"
+                    >
+                        Confirmar
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="accionesCerrarGestionEmpresa"
+                class="modal-acciones"
+            >
+
+                <button
+                    type="button"
+                    id="btnCerrarGestionSinSeleccionEmpresa"
+                    class="btn-secundario"
+                >
+                    Cerrar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
 
     <!-- =====================================================
          MODAL CONFIRMACIÓN

@@ -75,6 +75,32 @@ const btnNuevoServicioEmpresa = document.getElementById("btnNuevoServicioEmpresa
 const btnReagendarEmpresa = document.getElementById("btnReagendarEmpresa");
 const btnCancelarEmpresa = document.getElementById("btnCancelarEmpresa");
 
+// ==========================================================
+// GESTIÓN SERVICIO EMPRESA
+// REAGENDAR / CANCELAR
+// ==========================================================
+
+const modalGestionServicioEmpresa = document.getElementById("modalGestionServicioEmpresa");
+const tituloGestionServicioEmpresa = document.getElementById("tituloGestionServicioEmpresa");
+const inputBuscarGestionEmpresa = document.getElementById("inputBuscarGestionEmpresa");
+const resultadosGestionServicioEmpresa = document.getElementById("resultadosGestionServicioEmpresa");
+const detalleGestionServicioEmpresa = document.getElementById("detalleGestionServicioEmpresa");
+const resumenGestionServicioEmpresa = document.getElementById("resumenGestionServicioEmpresa");
+const nuevaProgramacionGestionEmpresa = document.getElementById("nuevaProgramacionGestionEmpresa");
+const inputNuevaFechaGestionEmpresa = document.getElementById("inputNuevaFechaGestionEmpresa");
+const selectNuevoOperarioGestionEmpresa = document.getElementById("selectNuevoOperarioGestionEmpresa");
+const selectNuevaVentanaGestionEmpresa = document.getElementById("selectNuevaVentanaGestionEmpresa");
+const btnAtencionInmediataGestionEmpresa = document.getElementById();
+const inputAtencionInmediataGestionEmpresa = document.getElementById("inputAtencionInmediataGestionEmpresa");
+const btnCerrarGestionServicioEmpresa = document.getElementById("btnCerrarGestionServicioEmpresa");
+const btnCerrarGestionSinSeleccionEmpresa = document.getElementById("btnCerrarGestionSinSeleccionEmpresa");
+const btnConfirmarGestionServicioEmpresa = document.getElementById("btnConfirmarGestionServicioEmpresa");
+const accionesCerrarGestionEmpresa = document.getElementById();
+
+let tipoGestionActualEmpresa = "";
+let servicioGestionSeleccionadoEmpresa = null;
+let solicitudGestionIdEmpresa = "";
+let temporizadorBusquedaGestionEmpresa = null;
 
 // ==========================================================
 // INICIO
@@ -1883,34 +1909,980 @@ btnNuevoServicioEmpresa.addEventListener(
 
 
 // ==========================================================
-// GESTIONES
-// TODAVÍA NO CONECTADAS
+// GESTIÓN DE SERVICIOS EMPRESA
+// REAGENDAR / CANCELAR
+// FUENTE MARCHA BLANCA: BLANCA
+// ==========================================================
+
+function abrirGestionServicioEmpresa(tipo) {
+
+    tipoGestionActualEmpresa = tipo;
+
+    servicioGestionSeleccionadoEmpresa = null;
+
+    solicitudGestionIdEmpresa = "";
+
+    inputBuscarGestionEmpresa.value = "";
+
+    resultadosGestionServicioEmpresa.innerHTML = "";
+
+    ocultarEmpresa(
+        resultadosGestionServicioEmpresa
+    );
+
+    ocultarEmpresa(
+        detalleGestionServicioEmpresa
+    );
+
+    ocultarEmpresa(
+        nuevaProgramacionGestionEmpresa
+    );
+
+    mostrarEmpresa(
+        accionesCerrarGestionEmpresa
+    );
+
+
+    tituloGestionServicioEmpresa.textContent =
+        tipo === "REAGENDAR"
+            ? "Reagendar servicio"
+            : "Cancelar servicio";
+
+
+    mostrarEmpresa(
+        modalGestionServicioEmpresa
+    );
+
+
+    setTimeout(
+        function () {
+
+            inputBuscarGestionEmpresa.focus();
+
+        },
+        0
+    );
+
+}
+
+
+// ==========================================================
+// ABRIR REAGENDAR
 // ==========================================================
 
 btnReagendarEmpresa.addEventListener(
     "click",
     function () {
 
-        mostrarMensajeGeneral(
-            "Reagendamiento Empresa se conectará después de crear el registro Empresa en BLANCA.",
-            "error"
+        abrirGestionServicioEmpresa(
+            "REAGENDAR"
         );
 
     }
 );
 
+
+// ==========================================================
+// ABRIR CANCELAR
+// ==========================================================
 
 btnCancelarEmpresa.addEventListener(
     "click",
     function () {
 
-        mostrarMensajeGeneral(
-            "Cancelación Empresa se conectará después de crear el registro Empresa en BLANCA.",
-            "error"
+        abrirGestionServicioEmpresa(
+            "CANCELAR"
         );
 
     }
 );
+
+
+// ==========================================================
+// CERRAR MODAL
+// ==========================================================
+
+btnCerrarGestionServicioEmpresa.addEventListener(
+    "click",
+    function () {
+
+        ocultarEmpresa(
+            modalGestionServicioEmpresa
+        );
+
+    }
+);
+
+
+btnCerrarGestionSinSeleccionEmpresa.addEventListener(
+    "click",
+    function () {
+
+        ocultarEmpresa(
+            modalGestionServicioEmpresa
+        );
+
+    }
+);
+
+
+// ==========================================================
+// BUSCADOR
+// ==========================================================
+
+inputBuscarGestionEmpresa.addEventListener(
+    "input",
+    function () {
+
+        clearTimeout(
+            temporizadorBusquedaGestionEmpresa
+        );
+
+
+        const buscar =
+            inputBuscarGestionEmpresa
+                .value
+                .trim();
+
+
+        if (
+            buscar.length < 3
+        ) {
+
+            resultadosGestionServicioEmpresa.innerHTML =
+                "";
+
+            ocultarEmpresa(
+                resultadosGestionServicioEmpresa
+            );
+
+            return;
+
+        }
+
+
+        temporizadorBusquedaGestionEmpresa =
+            setTimeout(
+                function () {
+
+                    buscarServiciosGestionEmpresa(
+                        buscar
+                    );
+
+                },
+                350
+            );
+
+    }
+);
+
+
+// ==========================================================
+// BUSCAR SERVICIOS PENDIENTES
+// ==========================================================
+
+async function buscarServiciosGestionEmpresa(
+    buscar
+) {
+
+    try {
+
+        const respuesta =
+            await fetch(
+
+                "/api/oxitrack/" +
+
+                "?modo=buscarServiciosPendientesOficina" +
+
+                "&buscar=" +
+                encodeURIComponent(
+                    buscar
+                ) +
+
+                "&fuente=BLANCA",
+
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+
+                    cache: "no-store"
+                }
+
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible buscar servicios."
+            );
+
+        }
+
+
+        const servicios =
+            Array.isArray(
+                datos.servicios
+            )
+                ? datos.servicios
+                : [];
+
+
+        resultadosGestionServicioEmpresa.innerHTML =
+            "";
+
+
+        if (
+            !servicios.length
+        ) {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "resultado-busqueda-item";
+
+            item.textContent =
+                "No se encontraron servicios pendientes.";
+
+
+            resultadosGestionServicioEmpresa.appendChild(
+                item
+            );
+
+
+            mostrarEmpresa(
+                resultadosGestionServicioEmpresa
+            );
+
+            return;
+
+        }
+
+
+        servicios.forEach(
+            function (servicio) {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                item.className =
+                    "resultado-busqueda-item";
+
+
+                const nombreMostrar =
+                    servicio.paciente ||
+                    servicio.cliente ||
+                    servicio.nombre ||
+                    "";
+
+
+                item.textContent =
+                    nombreMostrar +
+                    " | " +
+                    (servicio.servicio || "") +
+                    " | " +
+                    formatearFechaGestionEmpresa(
+                        servicio.fechaProgramada
+                    ) +
+                    " | " +
+                    (servicio.ventanaHoraria || "");
+
+
+                item.addEventListener(
+                    "click",
+                    function () {
+
+                        seleccionarServicioGestionEmpresa(
+                            servicio
+                        );
+
+                    }
+                );
+
+
+                resultadosGestionServicioEmpresa.appendChild(
+                    item
+                );
+
+            }
+        );
+
+
+        mostrarEmpresa(
+            resultadosGestionServicioEmpresa
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Error gestión Empresa:",
+            error
+        );
+
+
+        mostrarMensajeGeneral(
+            error.message ||
+            "No fue posible buscar servicios.",
+            "error"
+        );
+
+    }
+
+}
+
+
+// ==========================================================
+// SELECCIONAR SERVICIO
+// ==========================================================
+
+function seleccionarServicioGestionEmpresa(
+    servicio
+) {
+
+    servicioGestionSeleccionadoEmpresa =
+        servicio;
+
+    solicitudGestionIdEmpresa = "";
+
+
+    ocultarEmpresa(
+        resultadosGestionServicioEmpresa
+    );
+
+    ocultarEmpresa(
+        accionesCerrarGestionEmpresa
+    );
+
+
+    const cliente =
+        servicio.cliente ||
+        servicio.nombre ||
+        "";
+
+    const paciente =
+        servicio.paciente ||
+        "";
+
+
+    resumenGestionServicioEmpresa.innerHTML =
+
+        datoResumen(
+            "ID",
+            servicio.id || ""
+        ) +
+
+        datoResumen(
+            "Empresa",
+            cliente
+        ) +
+
+        (
+            paciente
+                ? datoResumen(
+                    "Paciente",
+                    paciente
+                )
+                : ""
+        ) +
+
+        datoResumen(
+            "Servicio",
+            servicio.servicio || ""
+        ) +
+
+        datoResumen(
+            "Dirección",
+            servicio.direccion || ""
+        ) +
+
+        datoResumen(
+            "Comuna",
+            servicio.comuna || ""
+        ) +
+
+        datoResumen(
+            "Fecha actual",
+            formatearFechaGestionEmpresa(
+                servicio.fechaProgramada
+            )
+        ) +
+
+        datoResumen(
+            "Programación actual",
+            servicio.ventanaHoraria || ""
+        ) +
+
+        datoResumen(
+            "Operario actual",
+            servicio.operarioAsignado || ""
+        );
+
+
+    mostrarEmpresa(
+        detalleGestionServicioEmpresa
+    );
+
+
+    if (
+        tipoGestionActualEmpresa ===
+        "REAGENDAR"
+    ) {
+
+        mostrarEmpresa(
+            nuevaProgramacionGestionEmpresa
+        );
+
+
+        inputAtencionInmediataGestionEmpresa.value =
+            "NO";
+
+        btnAtencionInmediataGestionEmpresa
+            .classList
+            .remove(
+                "activo"
+            );
+
+
+        selectNuevaVentanaGestionEmpresa.disabled =
+            false;
+
+
+        const hoy =
+            obtenerFechaLocalEmpresa();
+
+
+        inputNuevaFechaGestionEmpresa.value =
+            hoy;
+
+        inputNuevaFechaGestionEmpresa.min =
+            hoy;
+
+
+        cargarOperariosGestionEmpresa(
+            servicio.operarioAsignado
+        );
+
+
+        actualizarDisponibilidadGestionEmpresa();
+
+
+        btnConfirmarGestionServicioEmpresa.textContent =
+            "Confirmar reagendamiento";
+
+
+    } else {
+
+        ocultarEmpresa(
+            nuevaProgramacionGestionEmpresa
+        );
+
+
+        btnConfirmarGestionServicioEmpresa.textContent =
+            "Confirmar cancelación";
+
+    }
+
+}
+
+
+// ==========================================================
+// OPERARIOS DEL MODAL
+// REUTILIZA LOS YA CARGADOS EN EMPRESA
+// ==========================================================
+
+function cargarOperariosGestionEmpresa(
+    operarioActual
+) {
+
+    selectNuevoOperarioGestionEmpresa.innerHTML =
+        selectOperarioEmpresa.innerHTML;
+
+
+    selectNuevoOperarioGestionEmpresa.value =
+        operarioActual || "";
+
+}
+
+
+// ==========================================================
+// CAMBIOS DE PROGRAMACIÓN
+// ==========================================================
+
+inputNuevaFechaGestionEmpresa.addEventListener(
+    "change",
+    actualizarDisponibilidadGestionEmpresa
+);
+
+
+selectNuevoOperarioGestionEmpresa.addEventListener(
+    "change",
+    actualizarDisponibilidadGestionEmpresa
+);
+
+
+// ==========================================================
+// ATENCIÓN INMEDIATA
+// ==========================================================
+
+btnAtencionInmediataGestionEmpresa.addEventListener(
+    "click",
+    function () {
+
+        const activa =
+            inputAtencionInmediataGestionEmpresa.value ===
+            "SI";
+
+
+        inputAtencionInmediataGestionEmpresa.value =
+            activa
+                ? "NO"
+                : "SI";
+
+
+        btnAtencionInmediataGestionEmpresa
+            .classList
+            .toggle(
+                "activo",
+                !activa
+            );
+
+
+        if (!activa) {
+
+            inputNuevaFechaGestionEmpresa.value =
+                obtenerFechaLocalEmpresa();
+
+
+            selectNuevaVentanaGestionEmpresa.innerHTML =
+                `
+                <option value="ATENCIÓN INMEDIATA">
+                    ATENCIÓN INMEDIATA
+                </option>
+                `;
+
+
+            selectNuevaVentanaGestionEmpresa.value =
+                "ATENCIÓN INMEDIATA";
+
+
+            selectNuevaVentanaGestionEmpresa.disabled =
+                true;
+
+
+        } else {
+
+            selectNuevaVentanaGestionEmpresa.disabled =
+                false;
+
+
+            actualizarDisponibilidadGestionEmpresa();
+
+        }
+
+    }
+);
+
+
+// ==========================================================
+// DISPONIBILIDAD GLOBAL PARA REAGENDAMIENTO
+// ==========================================================
+
+async function actualizarDisponibilidadGestionEmpresa() {
+
+    if (
+        tipoGestionActualEmpresa !==
+        "REAGENDAR"
+    ) {
+        return;
+    }
+
+
+    if (
+        inputAtencionInmediataGestionEmpresa.value ===
+        "SI"
+    ) {
+
+        inputNuevaFechaGestionEmpresa.value =
+            obtenerFechaLocalEmpresa();
+
+
+        selectNuevaVentanaGestionEmpresa.innerHTML =
+            `
+            <option value="ATENCIÓN INMEDIATA">
+                ATENCIÓN INMEDIATA
+            </option>
+            `;
+
+
+        selectNuevaVentanaGestionEmpresa.value =
+            "ATENCIÓN INMEDIATA";
+
+
+        selectNuevaVentanaGestionEmpresa.disabled =
+            true;
+
+
+        return;
+
+    }
+
+
+    const fecha =
+        inputNuevaFechaGestionEmpresa.value;
+
+
+    const operario =
+        selectNuevoOperarioGestionEmpresa
+            .value
+            .trim();
+
+
+    selectNuevaVentanaGestionEmpresa.innerHTML =
+        `
+        <option value="">
+            Seleccione un horario
+        </option>
+        `;
+
+
+    if (
+        !fecha ||
+        !operario
+    ) {
+        return;
+    }
+
+
+    try {
+
+        const respuesta =
+            await fetch(
+
+                "/api/oxitrack/" +
+
+                "?modo=disponibilidadAgenda" +
+
+                "&fechaProgramada=" +
+                encodeURIComponent(
+                    fecha
+                ) +
+
+                "&operarioAsignado=" +
+                encodeURIComponent(
+                    operario
+                ),
+
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+
+                    cache: "no-store"
+                }
+
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            datos.ok !== true
+        ) {
+
+            throw new Error(
+                datos.error ||
+                "No fue posible consultar la agenda."
+            );
+
+        }
+
+
+        cargarVentanasGestionEmpresa(
+            datos.ventanasOcupadas
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Error disponibilidad gestión Empresa:",
+            error
+        );
+
+
+        mostrarMensajeGeneral(
+            error.message ||
+            "No fue posible consultar la agenda.",
+            "error"
+        );
+
+    }
+
+}
+
+
+// ==========================================================
+// CONSTRUIR VENTANAS DEL MODAL
+// ==========================================================
+
+function cargarVentanasGestionEmpresa(
+    ventanasOcupadas = []
+) {
+
+    selectNuevaVentanaGestionEmpresa.innerHTML =
+        `
+        <option value="">
+            Seleccione un horario
+        </option>
+        `;
+
+
+    const ocupadas =
+        new Set(
+            Array.isArray(
+                ventanasOcupadas
+            )
+                ? ventanasOcupadas
+                : []
+        );
+
+
+    const hoy =
+        obtenerFechaLocalEmpresa();
+
+
+    const fecha =
+        inputNuevaFechaGestionEmpresa.value;
+
+
+    const ahora =
+        new Date();
+
+
+    const minutosActuales =
+        ahora.getHours() * 60 +
+        ahora.getMinutes();
+
+
+    for (
+        let minutos = 0;
+        minutos < 24 * 60;
+        minutos += 30
+    ) {
+
+        if (
+            fecha === hoy &&
+            minutos < minutosActuales
+        ) {
+            continue;
+        }
+
+
+        const inicio =
+            convertirMinutosEmpresa(
+                minutos
+            );
+
+
+        const fin =
+            convertirMinutosEmpresa(
+                (minutos + 60) %
+                (24 * 60)
+            );
+
+
+        const ventana =
+            `${inicio} - ${fin}`;
+
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value =
+            ventana;
+
+        option.textContent =
+            ventana;
+
+
+        if (
+            ocupadas.has(
+                ventana
+            )
+        ) {
+
+            option.disabled =
+                true;
+
+        }
+
+
+        selectNuevaVentanaGestionEmpresa.appendChild(
+            option
+        );
+
+    }
+
+}
+
+
+// ==========================================================
+// CONFIRMAR REAGENDAMIENTO / CANCELACIÓN
+// ==========================================================
+
+btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
+
+        if (!servicioGestionSeleccionadoEmpresa) {
+            return;
+        }
+
+
+        if (tipoGestionActualEmpresa === "REAGENDAR" &&
+            (
+                !inputNuevaFechaGestionEmpresa.value ||
+                !selectNuevoOperarioGestionEmpresa.value ||
+                !selectNuevaVentanaGestionEmpresa.value
+            )
+        ) {
+
+            mostrarMensajeGeneral(
+                "Debe seleccionar nueva fecha, operario y ventana horaria.",
+                "error"
+            );
+
+            return;
+
+        }
+
+
+        if (!solicitudGestionIdEmpresa) {
+
+            solicitudGestionIdEmpresa = generarIdSolicitudEmpresa();
+
+        }
+
+
+        btnConfirmarGestionServicioEmpresa.disabled = true;
+
+        try {
+
+            const payload = new FormData();
+
+            payload.append("tipoCliente","GESTION_SERVICIO_OFICINA");
+            // MUY IMPORTANTE:
+            // DURANTE MARCHA BLANCA
+            payload.append("fuente","BLANCA");
+            payload.append("accion",tipoGestionActualEmpresa);
+            payload.append("id",servicioGestionSeleccionadoEmpresa.id);
+            payload.append("solicitudGestionId",solicitudGestionIdEmpresa);
+
+            if (tipoGestionActualEmpresa === "REAGENDAR") {
+
+                payload.append("fechaProgramada",inputNuevaFechaGestionEmpresa.value);
+                payload.append("ventanaHoraria",inputAtencionInmediataGestionEmpresa.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestionEmpresa.value);
+                payload.append("operarioAsignado",selectNuevoOperarioGestionEmpresa.value);
+
+            }
+
+            const respuesta = await fetch("/api/oxitrack/", {method: "POST",body: payload});
+            const resultado = await respuesta.json();
+
+            if (!respuesta.ok || resultado.ok !== true) {
+
+                throw new Error(resultado.error || "No fue posible gestionar el servicio.");
+
+            }
+
+            ocultarEmpresa(modalGestionServicioEmpresa);
+            mostrarMensajeGeneral(tipoGestionActualEmpresa === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.", "exito");
+
+            servicioGestionSeleccionadoEmpresa = null;
+            solicitudGestionIdEmpresa = "";
+
+        } catch (error) {
+
+            console.error( "Error gestión servicio Empresa:",error);
+            mostrarMensajeGeneral(error.message || "No fue posible gestionar el servicio.", "error");
+
+        } finally {
+
+            btnConfirmarGestionServicioEmpresa.disabled = false;
+
+        }
+
+    }
+);
+
+
+// ==========================================================
+// FORMATO FECHA PARA EL MODAL
+// ==========================================================
+
+function formatearFechaGestionEmpresa(
+    valor
+) {
+
+    const texto =
+        String(
+            valor || ""
+        ).trim();
+
+
+    if (!texto) {
+        return "";
+    }
+
+
+    const partes =
+        texto.split("-");
+
+
+    if (
+        partes.length === 3
+    ) {
+
+        return (
+            partes[2] +
+            "/" +
+            partes[1] +
+            "/" +
+            partes[0]
+        );
+
+    }
+
+
+    return texto;
+
+}
 
 
 // ==========================================================
