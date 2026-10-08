@@ -90,12 +90,12 @@ const nuevaProgramacionGestionEmpresa = document.getElementById("nuevaProgramaci
 const inputNuevaFechaGestionEmpresa = document.getElementById("inputNuevaFechaGestionEmpresa");
 const selectNuevoOperarioGestionEmpresa = document.getElementById("selectNuevoOperarioGestionEmpresa");
 const selectNuevaVentanaGestionEmpresa = document.getElementById("selectNuevaVentanaGestionEmpresa");
-const btnAtencionInmediataGestionEmpresa = document.getElementById();
+const btnAtencionInmediataGestionEmpresa = document.getElementById("btnAtencionInmediataGestionEmpresa");
 const inputAtencionInmediataGestionEmpresa = document.getElementById("inputAtencionInmediataGestionEmpresa");
 const btnCerrarGestionServicioEmpresa = document.getElementById("btnCerrarGestionServicioEmpresa");
 const btnCerrarGestionSinSeleccionEmpresa = document.getElementById("btnCerrarGestionSinSeleccionEmpresa");
 const btnConfirmarGestionServicioEmpresa = document.getElementById("btnConfirmarGestionServicioEmpresa");
-const accionesCerrarGestionEmpresa = document.getElementById();
+const accionesCerrarGestionEmpresa = document.getElementById("accionesCerrarGestionEmpresa");
 
 let tipoGestionActualEmpresa = "";
 let servicioGestionSeleccionadoEmpresa = null;
