@@ -1444,9 +1444,7 @@ async function actualizarDisponibilidadEmpresa() {
 // VENTANAS
 // ==========================================================
 
-function cargarVentanasEmpresa(
-    ventanasOcupadas = []
-) {
+function cargarVentanasEmpresa( ventanasOcupadas = []) {
 
     selectVentanaEmpresa.innerHTML =
         `<option value="">
@@ -1454,125 +1452,56 @@ function cargarVentanasEmpresa(
         </option>`;
 
 
-    const ocupadas =
-        new Set(
-            Array.isArray(
-                ventanasOcupadas
-            )
-                ? ventanasOcupadas
-                : []
-        );
+    const ocupadas = new Set( Array.isArray(ventanasOcupadas) ? ventanasOcupadas : []);
+    const hoy = obtenerFechaLocalEmpresa();
+    const fecha = inputFechaEmpresa.value;
+    const ahora = new Date();
 
+    const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
 
-    const hoy =
-        obtenerFechaLocalEmpresa();
+    for (let minutos = 0; minutos < 24 * 60; minutos += 30) {
 
-    const fecha =
-        inputFechaEmpresa.value;
-
-    const ahora =
-        new Date();
-
-    const minutosActuales =
-        ahora.getHours() * 60 +
-        ahora.getMinutes();
-
-
-    for (
-        let minutos = 0;
-        minutos < 24 * 60;
-        minutos += 30
-    ) {
-
-        if (
-            fecha === hoy &&
-            minutos < minutosActuales
-        ) {
+        if (fecha === hoy && minutos < minutosActuales) {
             continue;
         }
 
+        const inicio = convertirMinutosEmpresa(minutos);
+        const fin = convertirMinutosEmpresa((minutos + 60) % (24 * 60));
+        const ventana = `${inicio} - ${fin}`;
+        const option = document.createElement("option");
 
-        const inicio =
-            convertirMinutosEmpresa(
-                minutos
-            );
+        option.value = ventana;
+        option.textContent = ventana;
 
-        const fin =
-            convertirMinutosEmpresa(
-                (minutos + 60) %
-                (24 * 60)
-            );
-
-
-        const ventana =
-            `${inicio} - ${fin}`;
-
-
-        const option =
-     document.createElement(
-                "option"
-            );
-
-        option.value =
-            ventana;
-
-        option.textContent =
-            ventana;
-
-
-        if (
-            ocupadas.has(
-                ventana
-            )
-        ) {
-
-            option.disabled =
-                true;
-
-            option.textContent +=
-                " — OCUPADO";
-
+        if (ocupadas.has(ventana)) {
+            option.disabled = true;
         }
 
-
-        selectVentanaEmpresa.appendChild(
-            option
-        );
+        selectVentanaEmpresa.appendChild(option);
 
     }
 
 }
 
-
 // ==========================================================
 // SUBMIT
 // ==========================================================
 
-formRegistroEmpresa.addEventListener(
-    "submit",
-    function (event) {
+formRegistroEmpresa.addEventListener("submit", function (event) {
 
         event.preventDefault();
-
         ocultarMensajeGeneral();
 
 
         try {
 
             validarFormularioEmpresa();
-
             pintarResumenConfirmacion();
-
-            mostrarEmpresa(
-                modalConfirmacionEmpresa
-            );
+            mostrarEmpresa(modalConfirmacionEmpresa);
 
         } catch (error) {
 
-            mostrarMensajeGeneral(
-                error.message,
-                "error"
-            );
+            mostrarMensajeGeneral(error.message, "error");
 
         }
 
