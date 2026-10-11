@@ -102,14 +102,40 @@ let servicioGestionSeleccionadoEmpresa = null;
 let solicitudGestionIdEmpresa = "";
 let temporizadorBusquedaGestionEmpresa = null;
 
+function configurarMayusculasEmpresa() {
+    const campos = [
+        inputPacienteEmpresa,
+        inputDireccionPacienteEmpresa,
+        inputObservacionesEmpresa
+    ];
+
+    campos.forEach(function(campo) {
+        if (!campo) return;
+
+        campo.style.textTransform = "uppercase";
+
+        campo.addEventListener("input", function() {
+            const inicio = campo.selectionStart;
+            const fin = campo.selectionEnd;
+
+            campo.value = campo.value.toLocaleUpperCase("es-CL");
+
+            if (inicio !== null && fin !== null) {
+                campo.setSelectionRange(inicio, fin);
+            }
+        });
+    });
+}
+
 // ==========================================================
 // INICIO
 // ========================================================== 
- document.addEventListener("DOMContentLoaded",inicializarRegistroEmpresa);
+document.addEventListener("DOMContentLoaded",inicializarRegistroEmpresa);
 
 async function inicializarRegistroEmpresa() {
 
     const hoy = obtenerFechaLocalEmpresa();
+    configurarMayusculasEmpresa();
 
     inputFechaEmpresa.min = hoy;
     inputFechaEmpresa.value = hoy;
@@ -1859,8 +1885,7 @@ btnConfirmarEmpresa.addEventListener(
 
             if (parrafo) {
                 parrafo.textContent =
-                    "El servicio fue registrado correctamente en BLANCA. " +
-                    "ID: " + datos.id;
+                    "El servicio fue registrado exitosamente: " + datos.id;
             }
 
             mostrarEmpresa(modalExitoEmpresa);
