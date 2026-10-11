@@ -13,7 +13,7 @@
 // SE ELIMINA AL CONECTAR CLIENTES CON EL BACKEND
 // ==========================================================
 
-const MARCHA_BLANCA_EMPRESA = true;
+const MARCHA_BLANCA_EMPRESA = false;
 
 
 // ==========================================================
@@ -116,7 +116,8 @@ async function inicializarRegistroEmpresa() {
 
     await Promise.all([
         cargarServiciosEmpresa(),
-        cargarOperariosEmpresa()
+        cargarOperariosEmpresa(),
+        cargarComunasEmpresa()
     ]);
 
 }
@@ -272,80 +273,78 @@ inputRutEmpresa.addEventListener(
 
 
 async function buscarEmpresa() {
-
     ocultarMensajeBusqueda();
 
-    const rut =
-        inputRutEmpresa.value.trim();
+    const rut = inputRutEmpresa.value.trim();
+
+    reiniciarEmpresaSeleccionada();
+    inputRutEmpresa.value = rut;
+    solicitudIdEmpresa = "";
 
     if (!rut) {
-
         mostrarMensajeBusqueda(
             "Ingrese el RUT de la empresa.",
             "error"
         );
-
         return;
-
     }
 
+    btnBuscarEmpresa.disabled = true;
+    btnBuscarEmpresa.textContent = "Buscando empresa...";
 
-    // ======================================================
-    // MARCHA BLANCA
-    // SOLO PARA PROBAR EL FRONTEND
-    // ======================================================
+    try {
+        const respuesta = await fetch(
+            "/api/oxitrack/?modo=buscarEmpresaRegistro&rut=" +
+            encodeURIComponent(rut),
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                cache: "no-store"
+            }
+        );
 
-    if (MARCHA_BLANCA_EMPRESA) {
+        const datos = await respuesta.json();
 
-        empresaSeleccionada = {
+        if (!respuesta.ok || datos.ok !== true || !datos.empresa) {
+            throw new Error(
+                datos.error || "No se encontró la empresa."
+            );
+        }
 
-            id: "PRUEBA-001",
+        empresaSeleccionada = datos.empresa;
 
-            nombre:
-                "EMPRESA MARCHA BLANCA",
+        const modalidad = normalizarTextoEmpresa(
+            empresaSeleccionada.modalidad
+        );
 
-            rut: rut,
-
-            email:
-                "prueba@empresa.cl",
-
-            direccion:
-                "DIRECCIÓN DE PRUEBA 123",
-
-            comuna:
-                "LAS CONDES",
-
-            estado:
-                "ACTIVO",
-
-            productos:
-                "OXÍGENO: 10M3, 0.7M3 | AIRE: 10M3",
-
-            modalidad:
-                "DIRECTO",
-
-            sheet:
-                "BLANCA"
-
-        };
+        if (!["DIRECTO", "INDIRECTO", "MIXTO"].includes(modalidad)) {
+            throw new Error(
+                "La empresa tiene una modalidad no reconocida: " +
+                modalidad
+            );
+        }
 
         pintarEmpresaSeleccionada();
 
-        return;
+        ocultarMensajeBusqueda();
 
+    } catch (error) {
+        empresaSeleccionada = null;
+
+        mostrarMensajeBusqueda(
+            error.message || "No fue posible consultar la empresa.",
+            "error"
+        );
+
+        console.error("Error búsqueda Empresa:", error);
+
+    } finally {
+        btnBuscarEmpresa.disabled = false;
+        btnBuscarEmpresa.textContent = "Buscar empresa";
     }
-
-
-    // ======================================================
-    // AQUÍ CONECTAREMOS EL GET REAL:
-    //
-    // modo=buscarEmpresaRegistro
-    //
-    // NO SE CREA TODAVÍA UNA RUTA FALSA.
-    // ======================================================
-
 }
-
 
 // ==========================================================
 // PINTAR EMPRESA
@@ -1237,6 +1236,57 @@ async function cargarOperariosEmpresa() {
 
 }
 
+async function cargarComunasEmpresa() {
+    selectComunaPacienteEmpresa.disabled = true;
+
+    selectComunaPacienteEmpresa.innerHTML =
+        '<option value="">Cargando comunas...</option>';
+
+    try {
+        const respuesta = await fetch(
+            "/api/oxitrack/?modo=catalogoRegistro",
+            {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                cache: "no-store"
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || datos.ok !== true ||
+            !Array.isArray(datos.comunas)) {
+            throw new Error(
+                datos.error || "No fue posible cargar las comunas."
+            );
+        }
+
+        selectComunaPacienteEmpresa.innerHTML =
+            '<option value="">Seleccione una comuna</option>';
+
+        datos.comunas.forEach(function (comuna) {
+            const nombre = String(comuna || "").trim();
+            if (!nombre) return;
+
+            const opcion = document.createElement("option");
+            opcion.value = nombre;
+            opcion.textContent = nombre;
+
+            selectComunaPacienteEmpresa.appendChild(opcion);
+        });
+
+        selectComunaPacienteEmpresa.disabled = false;
+
+    } catch (error) {
+        console.error("Error cargando comunas Empresa:", error);
+
+        selectComunaPacienteEmpresa.innerHTML =
+            '<option value="">No fue posible cargar las comunas</option>';
+
+        mostrarMensajeGeneral(error.message, "error");
+    }
+}
+
 
 // ==========================================================
 // FECHA / OPERARIO
@@ -1750,43 +1800,90 @@ btnVolverConfirmacionEmpresa.addEventListener(
 
 btnConfirmarEmpresa.addEventListener(
     "click",
-    function () {
+    async function () {
 
-        if (!solicitudIdEmpresa) {
+        if (btnConfirmarEmpresa.disabled) return;
 
-            solicitudIdEmpresa =
-                generarIdSolicitudEmpresa();
+        try {
+            validarFormularioEmpresa();
 
+            if (!solicitudIdEmpresa) {
+                solicitudIdEmpresa = generarIdSolicitudEmpresa();
+            }
+
+            const payload = construirPayloadEmpresa();
+
+            btnConfirmarEmpresa.disabled = true;
+            btnVolverConfirmacionEmpresa.disabled = true;
+            btnConfirmarEmpresa.textContent = "Registrando...";
+
+            const formData = new FormData();
+
+            Object.entries(payload).forEach(function ([clave, valor]) {
+                formData.append(
+                    clave,
+                    typeof valor === "object"
+                        ? JSON.stringify(valor)
+                        : String(valor ?? "")
+                );
+            });
+
+            const respuesta = await fetch(
+                "/api/oxitrack/",
+                {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok || datos.ok !== true) {
+                throw new Error(
+                    datos.error ||
+                    "No fue posible registrar el servicio."
+                );
+            }
+
+            ocultarEmpresa(modalConfirmacionEmpresa);
+
+            const titulo = modalExitoEmpresa.querySelector("h2");
+            const parrafo = modalExitoEmpresa.querySelector("p");
+
+            if (titulo) {
+                titulo.textContent = "Servicio registrado";
+            }
+
+            if (parrafo) {
+                parrafo.textContent =
+                    "El servicio fue registrado correctamente en BLANCA. " +
+                    "ID: " + datos.id;
+            }
+
+            mostrarEmpresa(modalExitoEmpresa);
+
+        } catch (error) {
+
+            console.error("Error registro Empresa:", error);
+
+            mostrarMensajeGeneral(
+                error.message || "Error al registrar el servicio.",
+                "error"
+            );
+
+            ocultarEmpresa(modalConfirmacionEmpresa);
+
+            // Se conserva solicitudIdEmpresa para un reintento seguro.
+
+        } finally {
+
+            btnConfirmarEmpresa.disabled = false;
+            btnVolverConfirmacionEmpresa.disabled = false;
+            btnConfirmarEmpresa.textContent = "Confirmar";
         }
-
-
-        const payload =
-            construirPayloadEmpresa();
-
-
-        console.log(
-            "PAYLOAD EMPRESA - MARCHA BLANCA",
-            payload
-        );
-
-
-        ocultarEmpresa(
-            modalConfirmacionEmpresa
-        );
-
-
-        mostrarEmpresa(
-            modalExitoEmpresa
-        );
-
-
-        // ==================================================
-        // EN LA SIGUIENTE ETAPA:
-        //
-        // ESTE payload SE ENVIARÁ AL WORKER
-        // Y SE GUARDARÁ EN BLANCA.
-        // ==================================================
-
     }
 );
 
@@ -1797,82 +1894,30 @@ btnConfirmarEmpresa.addEventListener(
 
 function construirPayloadEmpresa() {
 
-    const esPaciente =
-        destinoServicioEmpresa ===
-        "PACIENTE";
-
+    const esPaciente = destinoServicioEmpresa === "PACIENTE";
 
     return {
 
-        tipoCliente:
-            "REGISTRO_EMPRESA_OFICINA",
-
-        solicitudId:
-            solicitudIdEmpresa,
-
-        clienteId:
-            empresaSeleccionada.id,
-
-        cliente:
-            empresaSeleccionada.nombre,
-
-        rut:
-            empresaSeleccionada.rut,
-
-        email:
-            empresaSeleccionada.email,
-
-        modalidadServicio:
-            destinoServicioEmpresa,
-
-        paciente:
-            esPaciente
-                ? inputPacienteEmpresa.value.trim()
-                : "",
-
-        direccion:
-            esPaciente
-                ? inputDireccionPacienteEmpresa.value.trim()
-                : empresaSeleccionada.direccion,
-
-        comuna:
-            esPaciente
-                ? selectComunaPacienteEmpresa.value
-                : empresaSeleccionada.comuna,
-
-        servicio:
-            servicioEmpresaActual,
-
-        tipo:
-            servicioEmpresaActual.includes(
-                "IMPLEMENTACIÓN"
-            )
-                ? selectTipoImplementacionEmpresa.value
-                : "",
-
-        detalleSolicitado:
-            obtenerDetalleSolicitado(),
-
-        estado:
-            "PENDIENTE",
-
-        fechaProgramada:
-            inputFechaEmpresa.value,
-
-        ventanaHoraria:
-            selectVentanaEmpresa.value,
-
-        operarioAsignado:
-            selectOperarioEmpresa.value,
-
-        observaciones:
-            inputObservacionesEmpresa.value.trim(),
-
-        llevaFlete:
-            llevaFleteEmpresa,
-
-        sheet:
-            "BLANCA"
+        tipoCliente: "REGISTRO_EMPRESA_OFICINA",
+        solicitudId: solicitudIdEmpresa,
+        clienteId: empresaSeleccionada.id,
+        cliente: empresaSeleccionada.nombre,
+        rut: empresaSeleccionada.rut,
+        email: empresaSeleccionada.email,
+        modalidadDestino: destinoServicioEmpresa,
+        paciente: esPaciente ? inputPacienteEmpresa.value.trim() : "",
+        direccion: esPaciente ? inputDireccionPacienteEmpresa.value.trim() : empresaSeleccionada.direccion,
+        comuna: esPaciente ? selectComunaPacienteEmpresa.value : empresaSeleccionada.comuna,
+        servicio: servicioEmpresaActual,
+        tipo: servicioEmpresaActual.includes("IMPLEMENTACIÓN") ? selectTipoImplementacionEmpresa.value : "",
+        detalleSolicitado: servicioEmpresaActual.includes("IMPLEMENTACIÓN") ? selectTipoImplementacionEmpresa.value : JSON.stringify(obtenerDetalleSolicitado()),
+        estado: "PENDIENTE",
+        fechaProgramada: inputFechaEmpresa.value,
+        ventanaHoraria: selectVentanaEmpresa.value,
+        operarioAsignado: selectOperarioEmpresa.value,
+        observaciones: inputObservacionesEmpresa.value.trim(),
+        llevaFlete: llevaFleteEmpresa,
+        sheet:"BLANCA"
 
     };
 
