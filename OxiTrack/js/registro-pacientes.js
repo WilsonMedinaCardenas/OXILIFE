@@ -82,6 +82,69 @@ const pacienteSeleccionadoNombre = document.getElementById("pacienteSeleccionado
 const pacienteSeleccionadoDireccion = document.getElementById("pacienteSeleccionadoDireccion");
 const pacienteSeleccionadoComuna = document.getElementById("pacienteSeleccionadoComuna");
 
+const seccionDireccionAlternativa = document.getElementById("seccionDireccionAlternativa");
+const checkOtraDireccion = document.getElementById("checkOtraDireccion");
+const camposOtraDireccion = document.getElementById("camposOtraDireccion");
+const inputOtraDireccion = document.getElementById("inputOtraDireccion");
+const selectOtraComuna = document.getElementById("selectOtraComuna");
+
+function reiniciarDireccionAlternativa() {
+    checkOtraDireccion.checked = false;
+    inputOtraDireccion.value = "";
+    selectOtraComuna.value = "";
+    camposOtraDireccion.hidden = true;
+    seccionDireccionAlternativa.hidden = true;
+}
+
+function cargarComunasDireccionAlternativa() {
+    selectOtraComuna.innerHTML =
+        '<option value="">Seleccione una comuna</option>';
+
+    [...new Set(comunasDisponibles)].forEach(function(comuna) {
+        const opcion = document.createElement("option");
+        opcion.value = comuna;
+        opcion.textContent = comuna;
+        selectOtraComuna.appendChild(opcion);
+    });
+}
+
+function obtenerDireccionServicioParticular() {
+    if (
+        tipoPacienteActual === "REGISTRADO" &&
+        checkOtraDireccion.checked &&
+        servicioActual !== "RETIRO"
+    ) {
+        return {
+            direccion: inputOtraDireccion.value.trim().toUpperCase(),
+            comuna: selectOtraComuna.value.trim().toUpperCase(),
+            alternativa: true
+        };
+    }
+
+    return {
+        direccion: pacienteSeleccionado?.direccion || "",
+        comuna: pacienteSeleccionado?.comuna || "",
+        alternativa: false
+    };
+}
+
+checkOtraDireccion.addEventListener("change", function() {
+    camposOtraDireccion.hidden = !this.checked;
+
+    if (this.checked) {
+        cargarComunasDireccionAlternativa();
+        inputOtraDireccion.focus();
+    } else {
+        inputOtraDireccion.value = "";
+        selectOtraComuna.value = "";
+    }
+});
+
+inputOtraDireccion.addEventListener("input", function() {
+    this.value = this.value.toUpperCase();
+});
+
+
 // DATOS PACIENTE NUEVO
 
 const seccionDatosPaciente = document.getElementById("seccionDatosPaciente");
@@ -2235,39 +2298,21 @@ btnCancelarRegistro.addEventListener("click", function () {
 // TODAVÍA NO SE ENVÍA AL BACKEND.
 // ==========================================================
 
-btnConfirmarRegistro.addEventListener(
-    "click",
-    async function () {
+btnConfirmarRegistro.addEventListener("click", async function () {
 
         ocultarMensaje();
 
 
-        if (!idSolicitudRegistro) {
-
-            idSolicitudRegistro =
-                typeof crypto.randomUUID === "function"
-                    ? crypto.randomUUID()
-                    : (
-                        Date.now().toString(36) +
-                        "-" +
-                        Math.random()
-                            .toString(36)
-                            .slice(2)
-                    );
-
+        if (!idSolicitudRegistro) { idSolicitudRegistro = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : (
+            Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
         }
 
-
         btnConfirmarRegistro.disabled = true;
-
-        btnConfirmarRegistro.textContent =
-            "Registrando...";
-
+        btnConfirmarRegistro.textContent = "Registrando...";
 
         try {
 
             validarFormulario();
-
 
             const payload = new FormData();
             payload.append("tipoCliente","REGISTRO_OFICINA");
@@ -2279,6 +2324,17 @@ btnConfirmarRegistro.addEventListener(
             payload.append("ventanaHoraria", inputAtencionInmediata.value === "SI" ? "ATENCIÓN INMEDIATA" : selectVentanaServicio.value);
             payload.append("atencionInmediata", inputAtencionInmediata.value);
             payload.append("operarioAsignado", selectOperarioAsignado.value);
+
+            // DIRECCIÓN ALTERNATIVA - PACIENTE REGISTRADO
+            if (tipoPacienteActual === "REGISTRADO" && servicioActual !== "RETIRO") {
+                const destino = obtenerDireccionServicioParticular();
+
+                if (destino.alternativa) {
+                    payload.append("usarOtraDireccion", "SI");
+                    payload.append("direccionAlternativa", destino.direccion);
+                    payload.append("comunaAlternativa", destino.comuna);
+                }
+            }
 
 
             // ==================================================
@@ -2625,12 +2681,10 @@ function validarFormulario() {
 
     if (tipoPacienteActual === "REGISTRADO") {
 
-        if (!pacienteSeleccionadoId.value) {
-
-            throw new Error(
-                "Debe buscar y seleccionar un paciente registrado."
-            );
-
+        if (!pacienteSeleccionadoId.value) { throw new Error("Debe buscar y seleccionar un paciente registrado.");}
+        if (servicioActual !== "RETIRO" && checkOtraDireccion.checked) {
+            if (!inputOtraDireccion.value.trim()) {throw new Error("Debe ingresar la nueva dirección de entrega.");}
+            if (!selectOtraComuna.value.trim()) {throw new Error("Debe seleccionar la comuna de la nueva dirección.");}
         }
 
     }
@@ -2884,27 +2938,10 @@ function construirResumen() {
     // PACIENTE
     // ------------------------------------------------------
 
-    if (servicioActual === "RETIRO") {
-
-        html += crearFilaResumen(
-            "Paciente",
-            pacienteSeleccionadoNombre.textContent.trim()
-        );
-
+    if (servicioActual === "RETIRO") {html += crearFilaResumen("Paciente", pacienteSeleccionadoNombre.textContent.trim());
     } else {
-
-        html += crearFilaResumen(
-            "Paciente",
-            tipoPacienteActual === "NUEVO"
-                ? inputNombrePaciente.value.trim()
-                : pacienteSeleccionadoNombre.textContent.trim()
-        );
-
-        html += crearFilaResumen(
-            "Tipo paciente",
-            tipoPacienteActual
-        );
-
+        html += crearFilaResumen("Paciente", tipoPacienteActual === "NUEVO" ? inputNombrePaciente.value.trim() : pacienteSeleccionadoNombre.textContent.trim());
+        html += crearFilaResumen( "Tipo paciente", tipoPacienteActual);
     }
 
 
@@ -2914,30 +2951,11 @@ function construirResumen() {
 
     if (tipoPacienteActual === "NUEVO") {
 
-        html += crearFilaResumen(
-            "RUT",
-            inputRutPaciente.value.trim()
-        );
-
-        html += crearFilaResumen(
-            "Teléfono",
-            inputTelefonoPaciente.value.trim()
-        );
-
-        html += crearFilaResumen(
-            "Email",
-            inputEmailPaciente.value.trim()
-        );
-
-        html += crearFilaResumen(
-            "Dirección",
-            inputDireccionPaciente.value.trim()
-        );
-
-        html += crearFilaResumen(
-            "Comuna",
-            comunaSeleccionada.value.trim()
-        );
+        html += crearFilaResumen("RUT", inputRutPaciente.value.trim());
+        html += crearFilaResumen("Teléfono", inputTelefonoPaciente.value.trim());
+        html += crearFilaResumen( "Email", inputEmailPaciente.value.trim());
+        html += crearFilaResumen( "Dirección", inputDireccionPaciente.value.trim());
+        html += crearFilaResumen( "Comuna", comunaSeleccionada.value.trim());
 
     }
 
@@ -2946,46 +2964,23 @@ function construirResumen() {
     // PACIENTE REGISTRADO
     // ------------------------------------------------------
 
-    if (
-        tipoPacienteActual === "REGISTRADO" ||
-        servicioActual === "RETIRO"
-    ) {
+    if (tipoPacienteActual === "REGISTRADO" || servicioActual === "RETIRO") {
 
-        html += crearFilaResumen(
-            "Dirección",
-            pacienteSeleccionadoDireccion.textContent.trim()
-        );
-
-        html += crearFilaResumen(
-            "Comuna",
-            pacienteSeleccionadoComuna.textContent.trim()
-        );
+        const destino = obtenerDireccionServicioParticular();
+        html += crearFilaResumen("Dirección del servicio", destino.direccion);
+        html += crearFilaResumen("Comuna del servicio", destino.comuna);
 
     }
-
 
     // ------------------------------------------------------
     // IMPLEMENTACIÓN
     // ------------------------------------------------------
 
-    if (servicioActual === "IMPLEMENTACIÓN") {
+    if (servicioActual === "IMPLEMENTACIÓN") {html += crearFilaResumen("Tipo implementación", textoOpcionSeleccionada(selectTipoImplementacion));
 
-        html += crearFilaResumen(
-            "Tipo implementación",
-            textoOpcionSeleccionada(
-                selectTipoImplementacion
-            )
-        );
-
-        html += crearFilaResumen(
-            "Ciclo",
-            textoOpcionSeleccionada(
-                selectCicloImplementacion
-            )
-        );
+        html += crearFilaResumen("Ciclo", textoOpcionSeleccionada(selectCicloImplementacion));
 
     }
-
 
     // ------------------------------------------------------
     // RECARGA
@@ -2993,39 +2988,20 @@ function construirResumen() {
 
     if (servicioActual === "RECARGA") {
 
-        const cilindro =
-            tipoPacienteActual === "NUEVO"
-                ? textoOpcionSeleccionada(
-                    selectCilindroRecargaNuevo
-                )
-                : obtenerCilindroRegistradoSeleccionado();
-
-        html += crearFilaResumen(
-            "Cilindro",
-            cilindro
-        );
+        const cilindro = tipoPacienteActual === "NUEVO" ? textoOpcionSeleccionada(selectCilindroRecargaNuevo) : obtenerCilindroRegistradoSeleccionado();
+        html += crearFilaResumen("Cilindro", cilindro);
 
     }
-
 
     // ------------------------------------------------------
     // RETIRO
     // ------------------------------------------------------
 
-    if (servicioActual === "RETIRO") {
+    if (servicioActual === "RETIRO") {html += crearFilaResumen( "ID implementación origen", inputRetiroIdOrigen.value);
 
-        html += crearFilaResumen(
-            "ID implementación origen",
-            inputRetiroIdOrigen.value
-        );
-
-        html += crearFilaResumen(
-            "Tipo implementación",
-            retiroTipoOrigen.textContent.trim()
-        );
+        html += crearFilaResumen( "Tipo implementación", retiroTipoOrigen.textContent.trim());
 
     }
-
 
     // ------------------------------------------------------
     // FLETE
@@ -3553,33 +3529,15 @@ function escaparHtml(valor) {
 function seleccionarPacienteRegistrado(paciente) {
 
     pacienteSeleccionado = paciente;
-
-
-    pacienteSeleccionadoId.value =
-        String(paciente.id || "").trim();
-
-
-    pacienteSeleccionadoNombre.textContent =
-        paciente.nombreMostrar ||
-        paciente.nombre ||
-        "-";
-
-
-    pacienteSeleccionadoDireccion.textContent =
-        paciente.direccion ||
-        "-";
-
-
-    pacienteSeleccionadoComuna.textContent =
-        paciente.comuna ||
-        "-";
-
+    pacienteSeleccionadoId.value = String(paciente.id || "").trim();
+    pacienteSeleccionadoNombre.textContent = paciente.nombreMostrar || paciente.nombre || "-";
+    pacienteSeleccionadoDireccion.textContent = paciente.direccion || "-";
+    pacienteSeleccionadoComuna.textContent = paciente.comuna || "-";
 
     mostrar(pacienteSeleccionadoCard);
-
-
+    reiniciarDireccionAlternativa();
+    if (servicioActual !== "RETIRO") {seccionDireccionAlternativa.hidden = false;}
     resultadosBusquedaPaciente.innerHTML = "";
-
     ocultar(resultadosBusquedaPaciente);
 
 

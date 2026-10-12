@@ -447,6 +447,59 @@
 
                 </section>
 
+                                
+                <!-- DIRECCIÓN ALTERNATIVA PARA PACIENTE REGISTRADO -->
+                <section
+                    id="seccionDireccionAlternativa"
+                    class="form-seccion"
+                    hidden
+                >
+                    <h2>Dirección del servicio</h2>
+
+                    <div class="campo">
+                        <label for="checkOtraDireccion">
+                            <input
+                                type="checkbox"
+                                id="checkOtraDireccion"
+                            >
+                            Realizar este servicio en otra dirección
+                        </label>
+                    </div>
+
+                    <div id="camposOtraDireccion" hidden>
+                        <div class="campo">
+                            <label for="inputOtraDireccion">
+                                Nueva dirección de entrega
+                            </label>
+
+                            <input
+                                type="text"
+                                id="inputOtraDireccion"
+                                maxlength="200"
+                                autocomplete="off"
+                                placeholder="Calle, número, departamento..."
+                            >
+                        </div>
+
+                        <div class="campo">
+                            <label for="selectOtraComuna">
+                                Comuna de entrega
+                            </label>
+
+                            <select id="selectOtraComuna">
+                                <option value="">Seleccione una comuna</option>
+                            </select>
+                        </div>
+
+                        <small>
+                            Esta dirección se utilizará solamente para
+                            el servicio actual. No modifica la ficha
+                            original del paciente.
+                        </small>
+                    </div>
+                </section>
+
+
 
                 <!-- =================================================
                      DATOS DEL PACIENTE NUEVO
