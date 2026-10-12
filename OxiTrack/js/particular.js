@@ -1424,22 +1424,101 @@ async function cargarElementos(tipo) {
 
 }
 
+let cilindrosRecargaActual = [];
+
+function pintarRecargaAgendada(detalle) {
+    const entregados = document.getElementById("listaRecargaEntregados");
+    const retirados = document.getElementById("listaRecargaRetirados");
+    const seccion = document.getElementById("seccionRecargaDinamica");
+    const antiguos = document.getElementById("seccionCilindros");
+
+    if (!entregados || !retirados || !seccion) return;
+
+    const datos = typeof detalle === "string" ? JSON.parse(detalle) : detalle;
+    if (!Array.isArray(datos) || !datos.length) throw new Error("La recarga no tiene cilindros agendados.");
+
+    cilindrosRecargaActual = datos.map(item => ({
+        elemento:String(item.elemento || "").trim(),
+        gas:String(item.gas || "OXÍGENO").trim(),
+        entregados:Number(item.cantidad),
+        retirados:0
+    }));
+
+    if (cilindrosRecargaActual.some(item => !item.elemento || !Number.isInteger(item.entregados) || item.entregados < 1)) {
+        throw new Error("El detalle de recarga contiene cilindros o cantidades inválidas.");
+    }
+
+    function crearFilas(contenedor, campo) {
+        contenedor.replaceChildren();
+
+        cilindrosRecargaActual.forEach((item, index) => {
+            const fila = document.createElement("div");
+            fila.className = "elemento-fila";
+
+            const nombre = document.createElement("label");
+            nombre.className = "elemento-nombre";
+            nombre.textContent = `${item.gas} — ${item.elemento}`;
+
+            const contador = document.createElement("div");
+            contador.className = "contador elemento-contador";
+
+            const menos = document.createElement("button");
+            menos.type = "button";
+            menos.textContent = "−";
+
+            const cantidad = document.createElement("input");
+            cantidad.readOnly = true;
+            cantidad.value = String(item[campo]);
+
+            const mas = document.createElement("button");
+            mas.type = "button";
+            mas.textContent = "+";
+
+            menos.addEventListener("click", () => {
+                item[campo] = Math.max(0, item[campo] - 1);
+                cantidad.value = String(item[campo]);
+            });
+
+            mas.addEventListener("click", () => {
+                item[campo]++;
+                cantidad.value = String(item[campo]);
+            });
+
+            contador.append(menos, cantidad, mas);
+            fila.append(nombre, contador);
+            contenedor.appendChild(fila);
+        });
+    }
+
+    crearFilas(entregados, "entregados");
+    crearFilas(retirados, "retirados");
+
+    if (antiguos) antiguos.hidden = true;
+    seccion.hidden = false;
+}
+
+function obtenerRecargaRealizada() {
+    return cilindrosRecargaActual.map(item => ({
+        elemento:item.elemento,
+        gas:item.gas,
+        entregados:item.entregados,
+        retirados:item.retirados
+    }));
+}
+
+
 function cargarElementosRetiro(elementosOrigen) {
+
     const seccion = document.getElementById("seccionElementos");
     const lista = document.getElementById("listaElementos");
-
     elementosDisponibles = [];
     lista.innerHTML = "";
     seccion.hidden = true;
 
     try {
-        const elementos = typeof elementosOrigen === "string"
-            ? JSON.parse(elementosOrigen)
-            : elementosOrigen;
+        const elementos = typeof elementosOrigen === "string" ? JSON.parse(elementosOrigen) : elementosOrigen;
 
-        if (!Array.isArray(elementos) || elementos.length === 0) {
-            throw new Error("El retiro no contiene elementos de origen.");
-        }
+        if (!Array.isArray(elementos) || elementos.length === 0) {throw new Error("El retiro no contiene elementos de origen.");}
 
         elementosDisponibles = elementos.map(item => ({
             elemento: String(item.elemento || "").trim(),
@@ -1451,7 +1530,6 @@ function cargarElementosRetiro(elementosOrigen) {
         elementosDisponibles.forEach((elemento, index) => {
             const fila = document.createElement("div");
             fila.className = "elemento-fila";
-
             fila.innerHTML = `
                 <label class="elemento-nombre">${elemento.elemento}</label>
 
@@ -1464,10 +1542,7 @@ function cargarElementosRetiro(elementosOrigen) {
             lista.appendChild(fila);
         });
 
-        lista.querySelectorAll(".btn-elemento-retiro-menos").forEach(btn => {
-            btn.addEventListener("click", () => disminuirCantidadRetiro(Number(btn.dataset.index)));
-        });
-
+        lista.querySelectorAll(".btn-elemento-retiro-menos").forEach(btn => {btn.addEventListener("click", () => disminuirCantidadRetiro(Number(btn.dataset.index)));});
         seccion.hidden = false;
 
     } catch (error) {

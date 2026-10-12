@@ -176,6 +176,11 @@ const seccionRecargaRegistrado = document.getElementById("seccionRecargaRegistra
 const listaCilindrosPaciente = document.getElementById("listaCilindrosPaciente");
 const seccionRecargaNuevo = document.getElementById("seccionRecargaNuevo");
 const selectCilindroRecargaNuevo = document.getElementById("selectCilindroRecargaNuevo");
+const seccionDetalleRecargaMultiple = document.getElementById("seccionDetalleRecargaMultiple");
+const filasRecargaMultiple = document.getElementById("filasRecargaMultiple");
+const btnAgregarMedidaRecarga = document.getElementById("btnAgregarMedidaRecarga");
+let catalogoCilindrosRecarga = [];
+let cilindrosPacienteRecarga = [];
 
 // RETIRO
 
@@ -567,10 +572,7 @@ async function cargarCatalogoRegistro() {
 
     try {
 
-        const respuesta =
-            await fetch(
-                "/api/oxitrack/?modo=catalogoRegistro",
-                {
+        const respuesta = await fetch("/api/oxitrack/?modo=catalogoRegistro", {
                     method: "GET",
                     headers: {
                         "Accept": "application/json"
@@ -579,39 +581,17 @@ async function cargarCatalogoRegistro() {
                 }
             );
 
+        const datos = await respuesta.json();
 
-        const datos =
-            await respuesta.json();
-
-
-        if (
-            !respuesta.ok ||
-            datos.ok !== true
-        ) {
-
-            throw new Error(
-                datos.error ||
-                "No fue posible obtener el catálogo de registro."
-            );
-
+        if (!respuesta.ok || datos.ok !== true) {
+            throw new Error(datos.error || "No fue posible obtener el catálogo de registro.");
         }
 
-
-        // ------------------------------------------------------
+        // -----------------------------------------------------
         // COMUNAS
         // ------------------------------------------------------
 
-        comunasDisponibles =
-            Array.isArray(datos.comunas)
-                ? [...new Set(
-                    datos.comunas
-                        .map(function (comuna) {
-                            return String(comuna || "").trim();
-                        })
-                        .filter(Boolean)
-                )]
-                : [];
-
+        comunasDisponibles = Array.isArray(datos.comunas) ? [...new Set(datos.comunas.map(function (comuna) {return String(comuna || "").trim();}).filter(Boolean))] : [];
 
         // ------------------------------------------------------
         // TIPOS IMPLEMENTACIÓN
@@ -623,26 +603,15 @@ async function cargarCatalogoRegistro() {
             </option>`;
 
 
-        const tiposImplementacion =
-            Array.isArray(datos.tiposImplementacion)
-                ? [...new Set(datos.tiposImplementacion)]
-                : [];
+        const tiposImplementacion = Array.isArray(datos.tiposImplementacion) ? [...new Set(datos.tiposImplementacion)] : [];
 
 
         tiposImplementacion.forEach(function (tipo) {
-
-            const valor =
-                String(tipo || "").trim();
-
+            const valor = String(tipo || "").trim();
             if (!valor) return;
-
-
-            const opcion =
-                document.createElement("option");
-
+            const opcion = document.createElement("option");
             opcion.value = valor;
             opcion.textContent = valor;
-
             selectTipoImplementacion.appendChild(opcion);
 
         });
@@ -657,27 +626,14 @@ async function cargarCatalogoRegistro() {
                 Seleccione un cilindro
             </option>`;
 
-
-        const cilindrosRecarga =
-            Array.isArray(datos.cilindrosRecarga)
-                ? [...new Set(datos.cilindrosRecarga)]
-                : [];
-
-
+        const cilindrosRecarga = Array.isArray(datos.cilindrosRecarga) ? [...new Set(datos.cilindrosRecarga)] : [];
+        catalogoCilindrosRecarga = cilindrosRecarga.map(x => String(x || "").trim()).filter(Boolean);
         cilindrosRecarga.forEach(function (cilindro) {
-
-            const valor =
-                String(cilindro || "").trim();
-
+            const valor = String(cilindro || "").trim();
             if (!valor) return;
-
-
-            const opcion =
-                document.createElement("option");
-
+            const opcion = document.createElement("option");
             opcion.value = valor;
             opcion.textContent = valor;
-
             selectCilindroRecargaNuevo.appendChild(opcion);
 
         });
@@ -685,16 +641,8 @@ async function cargarCatalogoRegistro() {
 
     } catch (error) {
 
-        console.error(
-            "Error al cargar catálogo de registro:",
-            error
-        );
-
-
-        mostrarError(
-            "No fue posible cargar los datos necesarios para registrar servicios."
-        );
-
+        console.error("Error al cargar catálogo de registro:",error);
+        mostrarError("No fue posible cargar los datos necesarios para registrar servicios.");
     }
 
 }
@@ -909,16 +857,9 @@ selectServicioRegistro.addEventListener("change", function () {
 btnPacienteNuevo.addEventListener("click", function () {
 
     tipoPacienteActual = "NUEVO";
-
-    activarBoton(
-        btnPacienteNuevo,
-        btnPacienteRegistrado
-    );
-
+    activarBoton(btnPacienteNuevo,btnPacienteRegistrado);
     limpiarPacienteRegistrado();
-
     ocultar(seccionBusquedaPaciente);
-
     mostrar(seccionDatosPaciente);
 
 
@@ -929,15 +870,10 @@ btnPacienteNuevo.addEventListener("click", function () {
     if (servicioActual === "IMPLEMENTACIÓN") {
 
         mostrar(seccionImplementacion);
-
         ocultar(seccionRecargaNuevo);
-
         ocultar(seccionRecargaRegistrado);
-
         ocultar(seccionVenta);
-
         mostrar(seccionFlete);
-
         return;
     }
 
@@ -949,15 +885,10 @@ btnPacienteNuevo.addEventListener("click", function () {
     if (servicioActual === "RECARGA") {
 
         ocultar(seccionImplementacion);
-
-        mostrar(seccionRecargaNuevo);
-
+        iniciarDetalleRecargaMultiple();
         ocultar(seccionRecargaRegistrado);
-
         ocultar(seccionVenta);
-
         mostrar(seccionFlete);
-
         return;
     }
 
@@ -969,13 +900,9 @@ btnPacienteNuevo.addEventListener("click", function () {
     if (servicioActual === "VENTA") {
 
         ocultar(seccionImplementacion);
-
         ocultar(seccionRecargaNuevo);
-
         ocultar(seccionRecargaRegistrado);
-
         mostrar(seccionVenta);
-
         mostrar(seccionFlete);
 
     }
@@ -990,18 +917,10 @@ btnPacienteNuevo.addEventListener("click", function () {
 btnPacienteRegistrado.addEventListener("click", function () {
 
     tipoPacienteActual = "REGISTRADO";
-
-    activarBoton(
-        btnPacienteRegistrado,
-        btnPacienteNuevo
-    );
-
+    activarBoton(btnPacienteRegistrado,btnPacienteNuevo);
     limpiarPacienteNuevo();
-
     ocultar(seccionDatosPaciente);
-
     mostrar(seccionBusquedaPaciente);
-
 
     // ------------------------------------------------------
     // IMPLEMENTACIÓN
@@ -1026,7 +945,7 @@ btnPacienteRegistrado.addEventListener("click", function () {
 
         ocultar(seccionImplementacion);
         ocultar(seccionRecargaNuevo);
-        mostrar(seccionRecargaRegistrado);
+        iniciarDetalleRecargaMultiple();
         ocultar(seccionVenta);
         mostrar(seccionFlete);
         return;
@@ -2382,38 +2301,19 @@ btnConfirmarRegistro.addEventListener("click", async function () {
             // RECARGA
             // ==================================================
 
-            if (
-                servicioActual === "RECARGA"
-            ) {
+            if (servicioActual === "RECARGA") {
 
-                const cilindro =
-                    tipoPacienteActual === "NUEVO"
-                        ? selectCilindroRecargaNuevo.value
-                        : obtenerCilindroRegistradoSeleccionado();
-
-
-                payload.append(
-                    "tipo",
-                    cilindro
-                );
+                const detalleRecarga = obtenerDetalleRecargaMultiple();
+                payload.append("tipo", detalleRecarga[0].elemento);
+                payload.append("detalleRecarga", JSON.stringify(detalleRecarga));
 
             }
-
 
             // ==================================================
             // RETIRO
             // ==================================================
 
-            if (
-                servicioActual === "RETIRO"
-            ) {
-
-                payload.append(
-                    "idOrigen",
-                    inputRetiroIdOrigen.value
-                );
-
-            }
+            if (servicioActual === "RETIRO") {payload.append("idOrigen",inputRetiroIdOrigen.value);}
 
 
             // ==================================================
@@ -2724,43 +2624,16 @@ function validarFormulario() {
     // RECARGA NUEVO
     // ------------------------------------------------------
 
-    if (
-        servicioActual === "RECARGA" &&
-        tipoPacienteActual === "NUEVO"
-    ) {
-
-        if (!selectCilindroRecargaNuevo.value) {
-
-            throw new Error(
-                "Debe seleccionar el cilindro que se va a recargar."
-            );
-
-        }
-
-    }
-
+    if (servicioActual === "RECARGA" && tipoPacienteActual === "NUEVO") {obtenerDetalleRecargaMultiple();}
 
     // ------------------------------------------------------
     // RECARGA REGISTRADO
     // ------------------------------------------------------
 
-    if (
-        servicioActual === "RECARGA" &&
-        tipoPacienteActual === "REGISTRADO"
-    ) {
-
-        const cilindro = obtenerCilindroRegistradoSeleccionado();
-
-        if (!cilindro) {
-
-            throw new Error(
-                "Debe seleccionar el cilindro que se va a recargar."
-            );
-
-        }
-
+    if (servicioActual === "RECARGA" && tipoPacienteActual === "REGISTRADO") {
+        const cilindro = obtenerDetalleRecargaMultiple();
+        if (!cilindro) {throw new Error("Debe seleccionar el cilindro que se va a recargar.");}
     }
-
 
     // ------------------------------------------------------
     // FLETE
@@ -2992,10 +2865,8 @@ function construirResumen() {
     // ------------------------------------------------------
 
     if (servicioActual === "RECARGA") {
-
-        const cilindro = tipoPacienteActual === "NUEVO" ? textoOpcionSeleccionada(selectCilindroRecargaNuevo) : obtenerCilindroRegistradoSeleccionado();
-        html += crearFilaResumen("Cilindro", cilindro);
-
+        const detalle = obtenerDetalleRecargaMultiple();
+        html += crearFilaResumen("Cilindros", detalle.map(x => `${x.cantidad} × ${x.elemento}`).join("; "));
     }
 
     // ------------------------------------------------------
@@ -3085,9 +2956,7 @@ function crearFilaResumen(titulo, valor) {
 function reiniciarFormularioCompleto() {
 
     formRegistroPaciente.reset();
-
     configurarFechaServicio();
-
     servicioActual = "";
     tipoPacienteActual = "";
     pacienteSeleccionado = null;
@@ -3103,6 +2972,8 @@ function reiniciarFormularioCompleto() {
     ocultar(seccionImplementacion);
     ocultar(seccionRecargaRegistrado);
     ocultar(seccionRecargaNuevo);
+    ocultar(seccionDetalleRecargaMultiple);
+    filasRecargaMultiple.innerHTML = "";
     ocultar(seccionRetiro);
     ocultar(seccionVenta);
     ocultar(seccionFlete);
@@ -3144,6 +3015,8 @@ function reiniciarFlujoServicio() {
     ocultar(seccionImplementacion);
     ocultar(seccionRecargaRegistrado);
     ocultar(seccionRecargaNuevo);
+    ocultar(seccionDetalleRecargaMultiple);
+    filasRecargaMultiple.innerHTML = "";
     ocultar(seccionRetiro);
     ocultar(seccionVenta);
     ocultar(seccionFlete);
@@ -3564,11 +3437,7 @@ function seleccionarPacienteRegistrado(paciente) {
     // ------------------------------------------------------
 
     if (servicioActual === "RECARGA") {
-
-        cargarCilindrosPacienteRegistrado(
-            paciente.cilindros || []
-        );
-
+        cargarCilindrosPacienteRegistrado(paciente.cilindros || []);
     }
 
 }
@@ -3643,6 +3512,91 @@ function cargarOrigenRetiroPaciente(paciente) {
 
 }
 
+function opcionesMedidasRecarga() {
+    return [...new Set([...cilindrosPacienteRecarga, ...catalogoCilindrosRecarga].map(x => String(x || "").trim()).filter(Boolean))];
+}
+
+function agregarFilaMedidaRecarga(medida = "", cantidad = 1) {
+    const fila = document.createElement("div");
+    fila.className = "campo fila-medida-recarga";
+    fila.style.cssText = "display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin-bottom:12px";
+
+    const bloque = document.createElement("div");
+    bloque.style.cssText = "flex:2;min-width:170px";
+
+    const etiqueta = document.createElement("label");
+    etiqueta.textContent = "Medida de cilindro";
+
+    const select = document.createElement("select");
+    select.className = "medida-recarga";
+    select.appendChild(new Option("Seleccione una medida", ""));
+    opcionesMedidasRecarga().forEach(x => select.appendChild(new Option(x, x)));
+    if (medida && !opcionesMedidasRecarga().includes(medida)) select.appendChild(new Option(medida, medida));
+    select.value = medida;
+    bloque.append(etiqueta, select);
+
+    const cantidadBloque = document.createElement("div");
+    cantidadBloque.style.cssText = "flex:1;min-width:95px";
+
+    const cantidadLabel = document.createElement("label");
+    cantidadLabel.textContent = "Cantidad";
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "1";
+    input.max = "999";
+    input.step = "1";
+    input.inputMode = "numeric";
+    input.className = "cantidad-recarga";
+    input.value = String(cantidad);
+    cantidadBloque.append(cantidadLabel, input);
+
+    const eliminar = document.createElement("button");
+    eliminar.type = "button";
+    eliminar.className = "btn-selector";
+    eliminar.textContent = "Quitar";
+    eliminar.addEventListener("click", () => {
+        fila.remove();
+        if (!filasRecargaMultiple.children.length) agregarFilaMedidaRecarga();
+    });
+
+    fila.append(bloque, cantidadBloque, eliminar);
+    filasRecargaMultiple.appendChild(fila);
+}
+
+function iniciarDetalleRecargaMultiple() {
+    filasRecargaMultiple.innerHTML = "";
+    const primera = tipoPacienteActual === "REGISTRADO" ? (cilindrosPacienteRecarga[0] || "") : "";
+    agregarFilaMedidaRecarga(primera, 1);
+    mostrar(seccionDetalleRecargaMultiple);
+    ocultar(seccionRecargaNuevo);
+    ocultar(seccionRecargaRegistrado);
+}
+
+function obtenerDetalleRecargaMultiple() {
+    const filas = [...filasRecargaMultiple.querySelectorAll(".fila-medida-recarga")];
+    if (!filas.length) throw new Error("Agregue al menos una medida de cilindro.");
+
+    const totales = new Map();
+
+    for (const fila of filas) {
+        const elemento = fila.querySelector(".medida-recarga").value.trim();
+        const valor = fila.querySelector(".cantidad-recarga").value.trim();
+        const cantidad = Number(valor);
+
+        if (!elemento) throw new Error("Seleccione la medida de todos los cilindros.");
+        if (!/^\d+$/.test(valor) || !Number.isSafeInteger(cantidad) || cantidad < 1 || cantidad > 999) {
+            throw new Error("La cantidad debe ser un número entero entre 1 y 999.");
+        }
+
+        totales.set(elemento, (totales.get(elemento) || 0) + cantidad);
+        if (totales.get(elemento) > 999) throw new Error("Cantidad excesiva para " + elemento);
+    }
+
+    return [...totales].map(([elemento, cantidad]) => ({elemento, cantidad, recarga:true}));
+}
+
+btnAgregarMedidaRecarga.addEventListener("click", () => agregarFilaMedidaRecarga());
 
 // ==========================================================
 // CARGAR CILINDROS RECARGA REGISTRADO
@@ -3651,57 +3605,26 @@ function cargarOrigenRetiroPaciente(paciente) {
 function cargarCilindrosPacienteRegistrado(cilindros) {
 
     listaCilindrosPaciente.innerHTML = "";
-
-
+    cilindrosPacienteRecarga = [...new Set(cilindros.map(c => typeof c === "string" ? c : c.elemento).filter(Boolean))];
+    if (servicioActual === "RECARGA" && tipoPacienteActual === "REGISTRADO") iniciarDetalleRecargaMultiple();
     cilindros.forEach(function (cilindro, index) {
 
-        const nombre =
-            typeof cilindro === "string"
-                ? cilindro
-                : cilindro.elemento;
-
-
+        const nombre = typeof cilindro === "string" ? cilindro : cilindro.elemento;
         if (!nombre) return;
-
-
-        const contenedor =
-            document.createElement("div");
-
+        const contenedor = document.createElement("div");
         contenedor.className = "opcion-servicio";
-
-
-        const label =
-            document.createElement("label");
-
-
-        const radio =
-            document.createElement("input");
-
+        const label = document.createElement("label");
+        const radio = document.createElement("input");
         radio.type = "radio";
-
         radio.name = "cilindroPaciente";
-
         radio.value = nombre;
-
-        radio.id =
-            "cilindroPaciente_" + index;
-
-
-        const texto =
-            document.createElement("span");
-
+        radio.id = "cilindroPaciente_" + index;
+        const texto = document.createElement("span");
         texto.textContent = nombre;
-
-
         label.appendChild(radio);
-
         label.appendChild(texto);
-
         contenedor.appendChild(label);
-
-        listaCilindrosPaciente.appendChild(
-            contenedor
-        );
+        listaCilindrosPaciente.appendChild(contenedor);
 
     });
 
