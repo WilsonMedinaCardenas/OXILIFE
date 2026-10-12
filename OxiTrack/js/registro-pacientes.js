@@ -2326,12 +2326,13 @@ btnConfirmarRegistro.addEventListener("click", async function () {
             payload.append("atencionInmediata", inputAtencionInmediata.value);
             payload.append("operarioAsignado", selectOperarioAsignado.value);
 
-            // DIRECCIÓN ALTERNATIVA - PACIENTE REGISTRADO
+            // DIRECCIÓN EFECTIVA DEL SERVICIO - PACIENTE REGISTRADO
             if (tipoPacienteActual === "REGISTRADO" && servicioActual !== "RETIRO") {
                 const destino = obtenerDireccionServicioParticular();
-
+                payload.append("direccionServicio", destino.direccion);
+                payload.append("comunaServicio", destino.comuna);
+                payload.append("usarOtraDireccion", destino.alternativa ? "SI" : "NO");
                 if (destino.alternativa) {
-                    payload.append("usarOtraDireccion", "SI");
                     payload.append("direccionAlternativa", destino.direccion);
                     payload.append("comunaAlternativa", destino.comuna);
                 }

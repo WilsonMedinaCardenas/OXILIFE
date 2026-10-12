@@ -973,3 +973,7 @@ button.btn-contador-empresa {
         max-height: 40px !important;
     }
 }
+
+.campo-direccion-check label{display:flex;align-items:center;justify-content:flex-start;gap:12px;cursor:pointer;font-weight:500;}
+.campo-direccion-check input[type="checkbox"]{width:18px;height:18px;min-width:18px;margin:0;flex:none;accent-color:#611e63;}
+.campo-direccion-check span{display:inline;}
