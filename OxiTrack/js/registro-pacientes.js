@@ -2548,9 +2548,21 @@ btnConfirmarRegistro.addEventListener("click", async function () {
 
 btnNuevoRegistro.addEventListener("click", function () {
 
+    // Cerrar confirmación de servicio registrado
     ocultarModal(modalRegistroExitoso);
 
+    // Limpiar todos los datos del registro anterior
     reiniciarFormularioCompleto();
+
+    // Salir del formulario Particular
+    ocultar(moduloParticularOficina);
+
+    // Mostrar nuevamente el selector
+    // EMPRESA / PARTICULAR
+    mostrar(selectorTipoGestion);
+
+    // Volver al comienzo de la página
+    window.scrollTo({top: 0, behavior: "smooth"});
 
 });
 
@@ -3113,6 +3125,7 @@ function reiniciarFormularioCompleto() {
     ocultarMensaje();
     limpiarBotones();
     limpiarValoresInternos();
+    reiniciarDireccionAlternativa();
     inputAtencionInmediata.value = "NO";
     btnAtencionInmediata.classList.remove("activo");
 
@@ -3153,6 +3166,7 @@ function reiniciarFlujoServicio() {
     limpiarPacienteRegistrado();
     limpiarDetalleFlete();
     limpiarBotones();
+    reiniciarDireccionAlternativa();
     inputAtencionInmediata.value = "NO";
     btnAtencionInmediata.classList.remove("activo");
 
