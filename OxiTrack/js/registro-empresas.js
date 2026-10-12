@@ -48,6 +48,84 @@ const seccionPacienteEmpresa = document.getElementById("seccionPacienteEmpresa")
 const inputPacienteEmpresa = document.getElementById("inputPacienteEmpresa");
 const inputDireccionPacienteEmpresa = document.getElementById("inputDireccionPacienteEmpresa");
 const selectComunaPacienteEmpresa = document.getElementById("selectComunaPacienteEmpresa");
+const seccionDireccionAlternativaEmpresa = document.getElementById("seccionDireccionAlternativaEmpresa");
+const checkOtraDireccionEmpresa = document.getElementById("checkOtraDireccionEmpresa");
+const camposOtraDireccionEmpresa = document.getElementById("camposOtraDireccionEmpresa");
+const inputOtraDireccionEmpresa = document.getElementById("inputOtraDireccionEmpresa");
+const selectOtraComunaEmpresa = document.getElementById("selectOtraComunaEmpresa");
+
+function reiniciarDireccionAlternativaEmpresa() {
+    checkOtraDireccionEmpresa.checked = false;
+    inputOtraDireccionEmpresa.value = "";
+    selectOtraComunaEmpresa.value = "";
+    camposOtraDireccionEmpresa.hidden = true;
+    seccionDireccionAlternativaEmpresa.hidden = true;
+}
+
+function actualizarDireccionAlternativaEmpresa() {
+    // Disponible tanto para EMPRESA como para PACIENTE.
+    const disponible = !!empresaSeleccionada && ["EMPRESA", "PACIENTE"].includes(destinoServicioEmpresa);
+    seccionDireccionAlternativaEmpresa.hidden = !disponible;
+    if (!disponible) {checkOtraDireccionEmpresa.checked = false; camposOtraDireccionEmpresa.hidden = true;}
+}
+
+function cargarComunasAlternativasEmpresa() {
+    selectOtraComunaEmpresa.innerHTML = '<option value="">Seleccione una comuna</option>';
+
+    // Reutiliza el catálogo que ya cargó Oficina Empresa.
+    Array.from(selectComunaPacienteEmpresa.options).forEach(function(opcion) {
+        if (!opcion.value || opcion.disabled) return;
+
+        const copia = document.createElement("option");
+        copia.value = opcion.value;
+        copia.textContent = opcion.textContent; 
+        selectOtraComunaEmpresa.appendChild(copia);
+    });
+}
+
+checkOtraDireccionEmpresa.addEventListener("change", function() {
+    camposOtraDireccionEmpresa.hidden = !this.checked;
+
+    if (this.checked) {
+        cargarComunasAlternativasEmpresa();
+        inputOtraDireccionEmpresa.focus();
+    } else {
+        inputOtraDireccionEmpresa.value = "";
+        selectOtraComunaEmpresa.value = "";
+    }
+});
+
+inputOtraDireccionEmpresa.addEventListener("input", function() {
+    this.value = this.value.toUpperCase();
+});
+
+function obtenerDestinoFinalEmpresa() {
+    const esPaciente = destinoServicioEmpresa === "PACIENTE";
+
+    if (checkOtraDireccionEmpresa.checked) {
+        const direccion = inputOtraDireccionEmpresa.value.trim().toUpperCase();
+        const comuna = selectOtraComunaEmpresa.value.trim().toUpperCase();
+
+        if (!direccion || !comuna) {
+            throw new Error(
+                "Complete la dirección y comuna alternativa del servicio."
+            );
+        }
+
+        return { direccion, comuna, alternativa: true };
+    }
+
+    return {
+        direccion: esPaciente
+            ? inputDireccionPacienteEmpresa.value.trim()
+            : empresaSeleccionada.direccion,
+        comuna: esPaciente
+            ? selectComunaPacienteEmpresa.value
+            : empresaSeleccionada.comuna,
+        alternativa: false
+    };
+}
+
 const seccionDireccionEmpresa = document.getElementById("seccionDireccionEmpresa");
 const empresaDireccion = document.getElementById("empresaDireccion");
 const empresaComuna = document.getElementById("empresaComuna");
@@ -1515,101 +1593,33 @@ formRegistroEmpresa.addEventListener("submit", function (event) {
 
 function validarFormularioEmpresa() {
 
-    if (!servicioEmpresaActual) {
-
-        throw new Error(
-            "Seleccione un servicio."
-        );
-
-    }
-
-
-    if (!empresaSeleccionada) {
-
-        throw new Error(
-            "Debe seleccionar una empresa."
-        );
-
-    }
-
-
-    if (!destinoServicioEmpresa) {
-
-        throw new Error(
-            "Debe indicar si el servicio corresponde a la empresa o a un paciente."
-        );
-
-    }
-
-
-    if (
-        destinoServicioEmpresa ===
-        "PACIENTE"
-    ) {
-
+    if (!servicioEmpresaActual) { throw new Error("Seleccione un servicio.");}
+    if (!empresaSeleccionada) {throw new Error("Debe seleccionar una empresa.");}
+    if (!destinoServicioEmpresa) {throw new Error("Debe indicar si el servicio corresponde a la empresa o a un paciente.");}
+    if (destinoServicioEmpresa === "PACIENTE") {
         if (
             !inputPacienteEmpresa.value.trim() ||
             !inputDireccionPacienteEmpresa.value.trim() ||
             !selectComunaPacienteEmpresa.value
-        ) {
-
-            throw new Error(
-                "Complete los datos del paciente."
-            );
-
-        }
+        ) {throw new Error("Complete los datos del paciente.");}
 
     }
-
-
-    if (
-        servicioEmpresaActual.includes(
-            "RECARGA"
-        ) &&
-        !obtenerDetalleSolicitado().length
-    ) {
-
-        throw new Error(
-            "Indique al menos una cantidad para la recarga."
-        );
-
+    if (servicioEmpresaActual.includes("RECARGA") && !obtenerDetalleSolicitado().length) {
+        throw new Error("Indique al menos una cantidad para la recarga.");
     }
 
-
-    if (
-        servicioEmpresaActual.includes(
-            "IMPLEMENTACIÓN"
-        ) &&
-        !selectTipoImplementacionEmpresa.value
-    ) {
-
-        throw new Error(
-            "Seleccione el tipo de implementación."
-        );
-
+    if (servicioEmpresaActual.includes("IMPLEMENTACIÓN") && !selectTipoImplementacionEmpresa.value) {
+        throw new Error( "Seleccione el tipo de implementación.");
     }
-
-
     if (
         !inputFechaEmpresa.value ||
         !selectOperarioEmpresa.value ||
         !selectVentanaEmpresa.value
-    ) {
+    ) {throw new Error("Complete la programación del servicio.");}
 
-        throw new Error(
-            "Complete la programación del servicio."
-        );
+    if (!llevaFleteEmpresa) {throw new Error( "Indique si el servicio contabiliza flete.");}
 
-    }
-
-
-    if (!llevaFleteEmpresa) {
-
-        throw new Error(
-            "Indique si el servicio contabiliza flete."
-        );
-
-    }
+    obtenerDestinoFinalEmpresa();
 
 }
 
@@ -1620,118 +1630,30 @@ function validarFormularioEmpresa() {
 
 function pintarResumenConfirmacion() {
 
-    const detalle =
-        obtenerDetalleSolicitado();
+    const detalle = obtenerDetalleSolicitado();
+    const destinoFinal = obtenerDestinoFinalEmpresa();
+    const direccion = destinoFinal.direccion;
+    const comuna = destinoFinal.comuna;
+    const paciente = destinoServicioEmpresa === "PACIENTE" ? inputPacienteEmpresa.value.trim() : "";
+    let detalleTexto = detalle.map(function (item) {
+            return (item.gas + " " + item.medida + " × " + item.cantidad);}).join("<br>");
 
-
-    const direccion =
-        destinoServicioEmpresa ===
-        "PACIENTE"
-            ? inputDireccionPacienteEmpresa.value.trim()
-            : empresaSeleccionada.direccion;
-
-
-    const comuna =
-        destinoServicioEmpresa ===
-        "PACIENTE"
-            ? selectComunaPacienteEmpresa.value
-            : empresaSeleccionada.comuna;
-
-
-    const paciente =
-        destinoServicioEmpresa ===
-        "PACIENTE"
-            ? inputPacienteEmpresa.value.trim()
-            : "";
-
-
-    let detalleTexto =
-        detalle
-            .map(function (item) {
-
-                return (
-                    item.gas +
-                    " " +
-                    item.medida +
-                    " × " +
-                    item.cantidad
-                );
-
-            })
-            .join("<br>");
-
-
-    if (
-        servicioEmpresaActual.includes(
-            "IMPLEMENTACIÓN"
-        )
-    ) {
-
-        detalleTexto =
-            selectTipoImplementacionEmpresa.value;
-
+    if (servicioEmpresaActual.includes("IMPLEMENTACIÓN")) {
+        detalleTexto = selectTipoImplementacionEmpresa.value;
     }
-
 
     resumenConfirmacionEmpresa.innerHTML = `
 
-        ${datoResumen(
-            "Servicio",
-            servicioEmpresaActual
-        )}
-
-        ${datoResumen(
-            "Cliente",
-            empresaSeleccionada.nombre
-        )}
-
-        ${paciente
-            ? datoResumen(
-                "Paciente",
-                paciente
-            )
-            : ""
-        }
-
-        ${datoResumen(
-            "Dirección",
-            direccion
-        )}
-
-        ${datoResumen(
-            "Comuna",
-            comuna
-        )}
-
-        ${detalleTexto
-            ? datoResumen(
-                "Detalle",
-                detalleTexto,
-                true
-            )
-            : ""
-        }
-
-        ${datoResumen(
-            "Fecha",
-            inputFechaEmpresa.value
-        )}
-
-        ${datoResumen(
-            "Ventana",
-            selectVentanaEmpresa.value
-        )}
-
-        ${datoResumen(
-            "Operario",
-            selectOperarioEmpresa.value
-        )}
-
-        ${datoResumen(
-            "Flete",
-            llevaFleteEmpresa
-        )}
-
+        ${datoResumen("Servicio", servicioEmpresaActual)}
+        ${datoResumen("Cliente", empresaSeleccionada.nombre)}
+        ${paciente ? datoResumen( "Paciente", paciente) : ""}
+        ${datoResumen( "Dirección", direccion)}
+        ${datoResumen( "Comuna", comuna)}
+        ${detalleTexto ? datoResumen( "Detalle", detalleTexto, true) : ""}
+        ${datoResumen( "Fecha", inputFechaEmpresa.value)}
+        ${datoResumen( "Ventana", selectVentanaEmpresa.value)}
+        ${datoResumen( "Operario", selectOperarioEmpresa.value)}
+        ${datoResumen( "Flete", llevaFleteEmpresa)}
     `;
 
 }
@@ -1741,46 +1663,31 @@ function pintarResumenConfirmacion() {
 // CONFIRMACIÓN
 // ==========================================================
 
-btnVolverConfirmacionEmpresa.addEventListener(
-    "click",
-    function () {
+btnVolverConfirmacionEmpresa.addEventListener("click", function () {
 
-        ocultarEmpresa(
-            modalConfirmacionEmpresa
-        );
+        ocultarEmpresa(modalConfirmacionEmpresa);
 
     }
 );
 
 
-btnConfirmarEmpresa.addEventListener(
-    "click",
-    async function () {
+btnConfirmarEmpresa.addEventListener("click", async function () {
 
         if (btnConfirmarEmpresa.disabled) return;
 
-        try {
+        try { 
+            
             validarFormularioEmpresa();
 
-            if (!solicitudIdEmpresa) {
-                solicitudIdEmpresa = generarIdSolicitudEmpresa();
-            }
-
+            if (!solicitudIdEmpresa) {solicitudIdEmpresa = generarIdSolicitudEmpresa();}
             const payload = construirPayloadEmpresa();
-
             btnConfirmarEmpresa.disabled = true;
             btnVolverConfirmacionEmpresa.disabled = true;
             btnConfirmarEmpresa.textContent = "Registrando...";
-
             const formData = new FormData();
 
             Object.entries(payload).forEach(function ([clave, valor]) {
-                formData.append(
-                    clave,
-                    typeof valor === "object"
-                        ? JSON.stringify(valor)
-                        : String(valor ?? "")
-                );
+                formData.append(clave, typeof valor === "object" ? JSON.stringify(valor) : String(valor ?? ""));
             });
 
             const respuesta = await fetch(
@@ -1848,6 +1755,7 @@ btnConfirmarEmpresa.addEventListener(
 
 function construirPayloadEmpresa() {
 
+    const destinoFinal = obtenerDestinoFinalEmpresa();
     const esPaciente = destinoServicioEmpresa === "PACIENTE";
 
     return {
@@ -1859,9 +1767,10 @@ function construirPayloadEmpresa() {
         rut: empresaSeleccionada.rut,
         email: empresaSeleccionada.email,
         modalidadDestino: destinoServicioEmpresa,
+        direccion: destinoFinal.direccion,
+        comuna: destinoFinal.comuna,
+        direccionAlternativa: destinoFinal.alternativa,
         paciente: esPaciente ? inputPacienteEmpresa.value.trim() : "",
-        direccion: esPaciente ? inputDireccionPacienteEmpresa.value.trim() : empresaSeleccionada.direccion,
-        comuna: esPaciente ? selectComunaPacienteEmpresa.value : empresaSeleccionada.comuna,
         servicio: servicioEmpresaActual,
         tipo: servicioEmpresaActual.includes("IMPLEMENTACIÓN") ? selectTipoImplementacionEmpresa.value : "",
         detalleSolicitado: servicioEmpresaActual.includes("IMPLEMENTACIÓN") ? selectTipoImplementacionEmpresa.value : JSON.stringify(obtenerDetalleSolicitado()),
@@ -1882,26 +1791,10 @@ function construirPayloadEmpresa() {
 // NUEVO SERVICIO
 // ==========================================================
 
-btnNuevoServicioEmpresa.addEventListener(
-    "click",
-    function () {
+btnNuevoServicioEmpresa.addEventListener("click", function () {
 
-        ocultarEmpresa(
-            modalExitoEmpresa
-        );
-
-        formRegistroEmpresa.reset();
-
-        reiniciarEmpresaSeleccionada();
-
-        solicitudIdEmpresa = "";
-
-        servicioEmpresaActual = "";
-
-        llevaFleteEmpresa = "";
-
-        inputFechaEmpresa.value =
-            obtenerFechaLocalEmpresa();
+        ocultarEmpresa(modalExitoEmpresa);
+        window.location.assign("./");
 
     }
 );
@@ -2946,30 +2839,16 @@ function reiniciarEmpresaSeleccionada() {
     empresaSeleccionada = null;
     destinoServicioEmpresa = "";
     llevaFleteEmpresa = "";
-
     inputRutEmpresa.value = "";
-
     inputPacienteEmpresa.value = "";
-
     inputDireccionPacienteEmpresa.value = "";
-
     selectComunaPacienteEmpresa.value = "";
-
+    reiniciarDireccionAlternativaEmpresa();
     inputObservacionesEmpresa.value = "";
-
-    contenedorProductosEmpresa.innerHTML =
-        "";
-
+    contenedorProductosEmpresa.innerHTML = "";
     limpiarBotonesDestino();
-
-    btnFleteSiEmpresa.classList.remove(
-        "activo"
-    );
-
-    btnFleteNoEmpresa.classList.remove(
-        "activo"
-    );
-
+    btnFleteSiEmpresa.classList.remove("activo");
+    btnFleteNoEmpresa.classList.remove("activo");
 
     [
         seccionEmpresaSeleccionada,
@@ -2983,12 +2862,9 @@ function reiniciarEmpresaSeleccionada() {
         seccionObservacionesEmpresa,
         seccionBotonEmpresa
 
-    ].forEach(
-        ocultarEmpresa
-    );
+    ].forEach(ocultarEmpresa);
 
 }
-
 
 // ==========================================================
 // UTILIDADES
@@ -2996,45 +2872,29 @@ function reiniciarEmpresaSeleccionada() {
 
 function mostrarEmpresa(elemento) {
 
-    if (elemento) {
-        elemento.hidden = false;
-    }
+    if (elemento) {elemento.hidden = false;}
 
 }
 
 
 function ocultarEmpresa(elemento) {
 
-    if (elemento) {
-        elemento.hidden = true;
-    }
+    if (elemento) {elemento.hidden = true;}
 
 }
 
 
 function limpiarBotonesDestino() {
 
-    btnDestinoEmpresa.classList.remove(
-        "activo"
-    );
-
-    btnDestinoPaciente.classList.remove(
-        "activo"
-    );
+    btnDestinoEmpresa.classList.remove("activo");
+    btnDestinoPaciente.classList.remove("activo");
 
 }
 
 
 function normalizarTextoEmpresa(valor) {
 
-    return String(valor || "")
-        .trim()
-        .toUpperCase()
-        .normalize("NFD")
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
+    return String(valor || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace("OXIGENO", "OXÍGENO")
         .replace("NITROGENO", "NITRÓGENO")
         .replace("IMPLEMENTACION", "IMPLEMENTACIÓN");
@@ -3044,55 +2904,24 @@ function normalizarTextoEmpresa(valor) {
 
 function obtenerFechaLocalEmpresa() {
 
-    const ahora =
-        new Date();
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset();
+    const local = new Date( ahora.getTime() - offset * 60000);
 
-    const offset =
-        ahora.getTimezoneOffset();
-
-    const local =
-        new Date(
-            ahora.getTime() -
-            offset * 60000
-        );
-
-    return local
-        .toISOString()
-        .slice(0, 10);
+    return local.toISOString().slice(0, 10);
 
 }
 
 
-function convertirMinutosEmpresa(
-    total
-) {
+function convertirMinutosEmpresa(total) {
 
-    const minutosDia =
-        ((total % 1440) + 1440) %
-        1440;
+    const minutosDia = ((total % 1440) + 1440) % 1440;
+    const horas = Math.floor(minutosDia / 60);
+    const minutos = minutosDia % 60;
 
-    const horas =
-        Math.floor(
-            minutosDia / 60
-        );
-
-    const minutos =
-        minutosDia % 60;
-
-    return (
-        String(horas).padStart(
-            2,
-            "0"
-        ) +
-        ":" +
-        String(minutos).padStart(
-            2,
-            "0"
-        )
-    );
+    return (String(horas).padStart(2, "0") + ":" + String(minutos).padStart(2, "0"));
 
 }
-
 
 function generarIdSolicitudEmpresa() {
 

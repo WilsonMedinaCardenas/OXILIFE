@@ -28,9 +28,6 @@ let idSolicitudRegistro = "";
 
 // SELECTOR OFICINA: EMPRESA / PARTICULAR
 
-const selectorTipoGestion = document.getElementById("selectorTipoGestion");
-const btnGestionEmpresa = document.getElementById("btnGestionEmpresa");
-const btnGestionParticular = document.getElementById("btnGestionParticular");
 const moduloParticularOficina = document.getElementById("moduloParticularOficina");
 const formRegistroPaciente = document.getElementById("formRegistroPaciente");
 const selectServicioRegistro = document.getElementById("selectServicioRegistro");
@@ -275,23 +272,6 @@ const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
 });
 
 // ==========================================================
-// SELECTOR OFICINA: EMPRESA / PARTICULAR
-// ==========================================================
-
-btnGestionParticular.addEventListener("click", function () {
-
-    ocultar(selectorTipoGestion);
-    mostrar(moduloParticularOficina);
-
-});
-
-btnGestionEmpresa.addEventListener("click", function () {
-
-    window.location.href = "./registro-empresas.html";
-
-});
-
-// ==========================================================
 // INICIALIZACIÓN
 // ==========================================================
 
@@ -303,12 +283,6 @@ document.addEventListener("DOMContentLoaded", function () {
     cargarCatalogoRegistro();
     cargarOperariosRegistro();
     selectVentanaServicio.disabled = true;
-
-    // Mostrar pantalla principal de Gestión de Servicios
-    mostrar(selectorTipoGestion);
-
-    // Mantener Particular oculto hasta seleccionarlo
-    ocultar(moduloParticularOficina);
 
 });
 
@@ -2575,24 +2549,15 @@ btnConfirmarRegistro.addEventListener("click", async function () {
 
 btnNuevoRegistro.addEventListener("click", function () {
 
-    // Cerrar confirmación de servicio registrado
     ocultarModal(modalRegistroExitoso);
 
-    // Limpiar todos los datos del registro anterior
+    // El formulario queda limpio para una próxima entrada.
     reiniciarFormularioCompleto();
 
-    // Salir del formulario Particular
-    ocultar(moduloParticularOficina);
-
-    // Mostrar nuevamente el selector
-    // EMPRESA / PARTICULAR
-    mostrar(selectorTipoGestion);
-
-    // Volver al comienzo de la página
-    window.scrollTo({top: 0, behavior: "smooth"});
+    // Regresar a la pantalla principal de Gestión de Servicios.
+    window.location.assign("./");
 
 });
-
 
 // ==========================================================
 // VALIDAR FORMULARIO

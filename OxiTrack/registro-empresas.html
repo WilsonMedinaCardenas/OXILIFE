@@ -339,11 +339,7 @@
                  DIRECCIÓN EMPRESA DIRECTA
             ================================================== -->
 
-            <section
-                id="seccionDireccionEmpresa"
-                class="form-seccion"
-                hidden
-            >
+            <section id="seccionDireccionEmpresa" class="form-seccion" hidden>
 
                 <h2>Dirección del servicio</h2>
 
@@ -361,6 +357,50 @@
 
                 </div>
 
+            </section>
+
+            <!-- DIRECCIÓN ALTERNATIVA - TODAS LAS MODALIDADES -->
+            <section id="seccionDireccionAlternativaEmpresa" class="form-seccion" hidden>
+
+                <h2>Dirección del servicio</h2>
+
+                <label>
+                    <input type="checkbox" id="checkOtraDireccionEmpresa">
+                    Realizar este servicio en otra dirección
+                </label>
+
+                <div id="camposOtraDireccionEmpresa" hidden>
+
+                    <div class="campo">
+                        <label for="inputOtraDireccionEmpresa">
+                            Nueva dirección de entrega
+                        </label>
+
+                        <input
+                            type="text"
+                            id="inputOtraDireccionEmpresa"
+                            maxlength="200"
+                            autocomplete="off"
+                            placeholder="Calle, número, local o sucursal"
+                        >
+                    </div>
+
+                    <div class="campo">
+                        <label for="selectOtraComunaEmpresa">
+                            Comuna de entrega
+                        </label>
+
+                        <select id="selectOtraComunaEmpresa">
+                            <option value="">Seleccione una comuna</option>
+                        </select>
+                    </div>
+
+                    <small>
+                        La dirección alternativa se utilizará únicamente
+                        para este servicio. No modifica los datos de CLIENTES.
+                    </small>
+
+                </div>
             </section>
 
 
