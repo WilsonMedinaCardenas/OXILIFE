@@ -505,63 +505,27 @@ function pintarEmpresaSeleccionada() {
 
 function procesarModalidadEmpresa() {
 
-    const modalidad =
-        normalizarTextoEmpresa(
-            empresaSeleccionada.modalidad
-        );
-
+    const modalidad = normalizarTextoEmpresa(empresaSeleccionada.modalidad);
     destinoServicioEmpresa = "";
-
-    ocultarEmpresa(
-        seccionModalidadMixta
-    );
-
-    ocultarEmpresa(
-        seccionPacienteEmpresa
-    );
-
-    ocultarEmpresa(
-        seccionDireccionEmpresa
-    );
-
+    ocultarEmpresa(seccionModalidadMixta);
+    ocultarEmpresa(seccionPacienteEmpresa);
+    ocultarEmpresa(seccionDireccionEmpresa);
     limpiarBotonesDestino();
+    actualizarDireccionAlternativaEmpresa();
 
-
-    if (modalidad === "DIRECTO") {
-
-        destinoServicioEmpresa =
-            "EMPRESA";
-
-        mostrarEmpresa(
-            seccionDireccionEmpresa
-        );
-
+    if (modalidad === "DIRECTO") {destinoServicioEmpresa = "EMPRESA";
+        mostrarEmpresa(seccionDireccionEmpresa);
+        actualizarDireccionAlternativaEmpresa();
         return;
-
     }
 
-
-    if (modalidad === "INDIRECTO") {
-
-        destinoServicioEmpresa =
-            "PACIENTE";
-
-        mostrarEmpresa(
-            seccionPacienteEmpresa
-        );
-
+    if (modalidad === "INDIRECTO") {destinoServicioEmpresa = "PACIENTE";
+        mostrarEmpresa(seccionPacienteEmpresa);
+        actualizarDireccionAlternativaEmpresa();
         return;
-
     }
 
-
-    if (modalidad === "MIXTO") {
-
-        mostrarEmpresa(
-            seccionModalidadMixta
-        );
-
-    }
+    if (modalidad === "MIXTO") {mostrarEmpresa(seccionModalidadMixta);}
 
 }
 
@@ -570,56 +534,24 @@ function procesarModalidadEmpresa() {
 // MIXTO
 // ==========================================================
 
-btnDestinoEmpresa.addEventListener(
-    "click",
-    function () {
-
-        destinoServicioEmpresa =
-            "EMPRESA";
-
-        btnDestinoEmpresa.classList.add(
-            "activo"
-        );
-
-        btnDestinoPaciente.classList.remove(
-            "activo"
-        );
-
-        ocultarEmpresa(
-            seccionPacienteEmpresa
-        );
-
-        mostrarEmpresa(
-            seccionDireccionEmpresa
-        );
-
+btnDestinoEmpresa.addEventListener("click",function () {
+        destinoServicioEmpresa = "EMPRESA";
+        btnDestinoEmpresa.classList.add("activo");
+        btnDestinoPaciente.classList.remove("activo");
+        ocultarEmpresa(seccionPacienteEmpresa);
+        mostrarEmpresa(seccionDireccionEmpresa);
+        actualizarDireccionAlternativaEmpresa();
     }
 );
 
 
-btnDestinoPaciente.addEventListener(
-    "click",
-    function () {
-
-        destinoServicioEmpresa =
-            "PACIENTE";
-
-        btnDestinoPaciente.classList.add(
-            "activo"
-        );
-
-        btnDestinoEmpresa.classList.remove(
-            "activo"
-        );
-
-        ocultarEmpresa(
-            seccionDireccionEmpresa
-        );
-
-        mostrarEmpresa(
-            seccionPacienteEmpresa
-        );
-
+btnDestinoPaciente.addEventListener("click",function () {
+        destinoServicioEmpresa = "PACIENTE";
+        btnDestinoPaciente.classList.add("activo");
+        btnDestinoEmpresa.classList.remove("activo");
+        ocultarEmpresa(seccionDireccionEmpresa);
+        mostrarEmpresa(seccionPacienteEmpresa);
+        actualizarDireccionAlternativaEmpresa();
     }
 );
 
@@ -1597,12 +1529,10 @@ function validarFormularioEmpresa() {
     if (!empresaSeleccionada) {throw new Error("Debe seleccionar una empresa.");}
     if (!destinoServicioEmpresa) {throw new Error("Debe indicar si el servicio corresponde a la empresa o a un paciente.");}
     if (destinoServicioEmpresa === "PACIENTE") {
-        if (
-            !inputPacienteEmpresa.value.trim() ||
-            !inputDireccionPacienteEmpresa.value.trim() ||
-            !selectComunaPacienteEmpresa.value
-        ) {throw new Error("Complete los datos del paciente.");}
-
+        if (!inputPacienteEmpresa.value.trim()) throw new Error("Indique el paciente.");
+        if (!checkOtraDireccionEmpresa.checked && (!inputDireccionPacienteEmpresa.value.trim() || !selectComunaPacienteEmpresa.value)) {
+            throw new Error("Complete la dirección y comuna del paciente.");
+        }
     }
     if (servicioEmpresaActual.includes("RECARGA") && !obtenerDetalleSolicitado().length) {
         throw new Error("Indique al menos una cantidad para la recarga.");
