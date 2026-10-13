@@ -692,9 +692,9 @@
 .fila-medida-recarga{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .fila-medida-recarga .medida-recarga{flex:1;min-width:0;width:100%;height:48px;}
 .contador-recarga{display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;height:48px;}
-.contador-recarga .cantidad-recarga{display:block;box-sizing:border-box;width:42px;min-width:42px;height:48px;min-height:48px;margin:0;padding:0;text-align:center;line-height:48px;vertical-align:middle;border:0;background:transparent;font-size:18px;font-weight:700;appearance:textfield;-moz-appearance:textfield;}
+.contador-recarga .cantidad-recarga{display:block;box-sizing:border-box;width:42px;min-width:42px;height:48px;min-height:48px;margin:0;padding:0;text-align:center;line-height:48px;border:0;background:transparent;font-size:18px;font-weight:700;appearance:textfield;-moz-appearance:textfield;}
 .contador-recarga .cantidad-recarga::-webkit-inner-spin-button,.contador-recarga .cantidad-recarga::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
-.btn-contador-recarga{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:44px;height:48px;min-height:48px;margin:0;padding:0;flex-shrink:0;border:0;border-radius:10px;background:#611e63;color:#fff;font-family:Arial,sans-serif;font-size:27px;font-weight:700;line-height:1;vertical-align:middle;cursor:pointer;}
+.btn-contador-recarga{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:44px;height:48px;min-height:48px;margin:0;padding:0;flex-shrink:0;border:0;border-radius:10px;background:#611e63;color:#fff;font-family:Arial,sans-serif;font-size:27px;font-weight:700;line-height:1;cursor:pointer;}
 .btn-quitar-recarga{width:30px;height:42px;flex-shrink:0;border:0;background:transparent;color:#a33140;font-size:26px;cursor:pointer;}
 #btnAgregarMedidaRecarga{width:100%;background:#611e63;color:#fff;border-color:#611e63;margin-top:8px;}
 @media(max-width:480px){
