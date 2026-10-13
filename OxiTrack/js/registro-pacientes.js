@@ -3518,14 +3518,7 @@ function opcionesMedidasRecarga() {
 
 function agregarFilaMedidaRecarga(medida = "", cantidad = 1) {
     const fila = document.createElement("div");
-    fila.className = "campo fila-medida-recarga";
-    fila.style.cssText = "display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin-bottom:12px";
-
-    const bloque = document.createElement("div");
-    bloque.style.cssText = "flex:2;min-width:170px";
-
-    const etiqueta = document.createElement("label");
-    etiqueta.textContent = "Medida de cilindro";
+    fila.className = "fila-medida-recarga";
 
     const select = document.createElement("select");
     select.className = "medida-recarga";
@@ -3533,13 +3526,16 @@ function agregarFilaMedidaRecarga(medida = "", cantidad = 1) {
     opcionesMedidasRecarga().forEach(x => select.appendChild(new Option(x, x)));
     if (medida && !opcionesMedidasRecarga().includes(medida)) select.appendChild(new Option(medida, medida));
     select.value = medida;
-    bloque.append(etiqueta, select);
+    select.setAttribute("aria-label", "Medida del cilindro");
 
-    const cantidadBloque = document.createElement("div");
-    cantidadBloque.style.cssText = "flex:1;min-width:95px";
+    const contador = document.createElement("div");
+    contador.className = "contador-recarga";
 
-    const cantidadLabel = document.createElement("label");
-    cantidadLabel.textContent = "Cantidad";
+    const menos = document.createElement("button");
+    menos.type = "button";
+    menos.className = "btn-contador-recarga";
+    menos.textContent = "−";
+    menos.setAttribute("aria-label", "Restar cilindro");
 
     const input = document.createElement("input");
     input.type = "number";
@@ -3549,18 +3545,37 @@ function agregarFilaMedidaRecarga(medida = "", cantidad = 1) {
     input.inputMode = "numeric";
     input.className = "cantidad-recarga";
     input.value = String(cantidad);
-    cantidadBloque.append(cantidadLabel, input);
+    input.setAttribute("aria-label", "Cantidad de cilindros");
+
+    const mas = document.createElement("button");
+    mas.type = "button";
+    mas.className = "btn-contador-recarga";
+    mas.textContent = "+";
+    mas.setAttribute("aria-label", "Sumar cilindro");
+
+    menos.addEventListener("click", () => {
+        const actual = Number(input.value) || 1;
+        input.value = String(Math.max(1, actual - 1));
+    });
+
+    mas.addEventListener("click", () => {
+        const actual = Number(input.value) || 0;
+        input.value = String(Math.min(999, actual + 1));
+    });
 
     const eliminar = document.createElement("button");
     eliminar.type = "button";
-    eliminar.className = "btn-selector";
-    eliminar.textContent = "Quitar";
+    eliminar.className = "btn-quitar-recarga";
+    eliminar.textContent = "×";
+    eliminar.title = "Eliminar esta medida";
+    eliminar.setAttribute("aria-label", "Eliminar esta medida");
     eliminar.addEventListener("click", () => {
         fila.remove();
         if (!filasRecargaMultiple.children.length) agregarFilaMedidaRecarga();
     });
 
-    fila.append(bloque, cantidadBloque, eliminar);
+    contador.append(menos, input, mas);
+    fila.append(select, contador, eliminar);
     filasRecargaMultiple.appendChild(fila);
 }
 

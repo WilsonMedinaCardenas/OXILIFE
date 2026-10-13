@@ -686,3 +686,22 @@
 #seccionDireccionAlternativa[hidden] {
     display: none !important;
 }
+
+/* RECARGA MÚLTIPLE — OFICINA PARTICULAR */
+.titulo-gas-recarga{text-align:center;color:#611e63;font-size:18px;font-weight:700;margin:12px 0 18px;}
+.fila-medida-recarga{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.fila-medida-recarga .medida-recarga{flex:1;min-width:0;width:100%;height:48px;}
+.contador-recarga{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.contador-recarga .cantidad-recarga{width:42px;min-width:42px;height:48px;padding:0 2px;text-align:center;border:0;background:transparent;font-size:18px;font-weight:700;appearance:textfield;-moz-appearance:textfield;}
+.contador-recarga .cantidad-recarga::-webkit-inner-spin-button,.contador-recarga .cantidad-recarga::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.btn-contador-recarga{width:44px;height:48px;flex-shrink:0;border:0;border-radius:10px;background:#611e63;color:#fff;font-size:27px;font-weight:700;cursor:pointer;}
+.btn-quitar-recarga{width:30px;height:42px;flex-shrink:0;border:0;background:transparent;color:#a33140;font-size:26px;cursor:pointer;}
+#btnAgregarMedidaRecarga{width:100%;background:#611e63;color:#fff;border-color:#611e63;margin-top:8px;}
+@media(max-width:480px){
+    .fila-medida-recarga{gap:5px;}
+    .btn-contador-recarga{width:35px;height:44px;font-size:23px;}
+    .contador-recarga{gap:2px;}
+    .contador-recarga .cantidad-recarga{width:30px;min-width:30px;height:44px;font-size:16px;}
+    .btn-quitar-recarga{width:24px;font-size:23px;}
+    .fila-medida-recarga .medida-recarga{font-size:13px;padding:0 5px;height:44px;}
+}
