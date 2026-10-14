@@ -153,6 +153,7 @@ const inputNombrePaciente = document.getElementById("inputNombrePaciente");
 const inputRutPaciente = document.getElementById("inputRutPaciente");
 const inputTelefonoPaciente = document.getElementById("inputTelefonoPaciente");
 const inputEmailPaciente = document.getElementById("inputEmailPaciente");
+inputEmailPaciente.addEventListener("input",()=>{inputEmailPaciente.value=inputEmailPaciente.value.toLowerCase();});
 const inputDireccionPaciente = document.getElementById("inputDireccionPaciente");
 const inputComunaPaciente = document.getElementById("inputComunaPaciente");
 const resultadosComunas = document.getElementById("resultadosComunas");
@@ -2269,7 +2270,7 @@ btnConfirmarRegistro.addEventListener("click", async function () {
                 payload.append("nombre", inputNombrePaciente.value.trim());
                 payload.append("rut", inputRutPaciente.value.trim());
                 payload.append("telefono", inputTelefonoPaciente.value.trim());
-                payload.append("email", inputEmailPaciente.value.trim());
+                payload.append("email",inputEmailPaciente.value.trim().toLowerCase());
                 payload.append("direccion", inputDireccionPaciente.value.trim());
                 payload.append("comuna", comunaSeleccionada.value.trim());
 
