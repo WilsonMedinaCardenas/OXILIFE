@@ -38,6 +38,7 @@ const seccionEmpresa = document.getElementById("seccionEmpresa");
 const inputRutEmpresa = document.getElementById("inputRutEmpresa");
 const btnBuscarEmpresa = document.getElementById("btnBuscarEmpresa");
 const mensajeBusquedaEmpresa = document.getElementById("mensajeBusquedaEmpresa");
+const resultadosBusquedaEmpresa = document.getElementById("resultadosBusquedaEmpresa");
 const seccionEmpresaSeleccionada = document.getElementById("seccionEmpresaSeleccionada");
 const empresaNombre = document.getElementById("empresaNombre");
 const empresaRut = document.getElementById("empresaRut");
@@ -377,77 +378,85 @@ inputRutEmpresa.addEventListener(
 
 
 async function buscarEmpresa() {
-    ocultarMensajeBusqueda();
+  ocultarMensajeBusqueda();
+  const buscar = inputRutEmpresa.value.trim();
 
-    const rut = inputRutEmpresa.value.trim();
+  reiniciarEmpresaSeleccionada();
+  inputRutEmpresa.value = buscar;
+  solicitudIdEmpresa = "";
+  resultadosBusquedaEmpresa.replaceChildren();
+  resultadosBusquedaEmpresa.hidden = true;
 
-    reiniciarEmpresaSeleccionada();
-    inputRutEmpresa.value = rut;
-    solicitudIdEmpresa = "";
+  if (buscar.replace(/[^0-9kK]/g,"").length < 5) {
+    mostrarMensajeBusqueda("Ingrese al menos 5 caracteres del RUT o teléfono.","error");
+    return;
+  }
 
-    if (!rut) {
-        mostrarMensajeBusqueda(
-            "Ingrese el RUT de la empresa.",
-            "error"
-        );
-        return;
+  btnBuscarEmpresa.disabled = true;
+  btnBuscarEmpresa.textContent = "Buscando empresa...";
+
+  try {
+    const respuesta = await fetch("/api/oxitrack/?modo=buscarCoincidenciasEmpresa&buscar=" + encodeURIComponent(buscar),{
+      method:"GET",headers:{"Accept":"application/json"},cache:"no-store"
+    });
+
+    const datos = await respuesta.json();
+    if (!respuesta.ok || datos.ok !== true) throw new Error(datos.error || "No fue posible buscar empresas.");
+
+    const coincidencias = Array.isArray(datos.coincidencias) ? datos.coincidencias : [];
+    if (!coincidencias.length) {
+      mostrarMensajeBusqueda("No se encontraron empresas con ese RUT o teléfono.","error");
+      return;
     }
 
-    btnBuscarEmpresa.disabled = true;
-    btnBuscarEmpresa.textContent = "Buscando empresa...";
+    coincidencias.forEach(function(empresa) {
+      const boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "btn-selector";
+      boton.style.cssText = "display:block;width:100%;margin:0 0 8px;text-align:left;white-space:normal;padding:12px;";
+      boton.textContent = empresa.nombreCorto + " — " + empresa.rutCorto;
+      boton.addEventListener("click",function() {seleccionarEmpresaEncontrada(empresa.id);});
+      resultadosBusquedaEmpresa.appendChild(boton);
+    });
 
-    try {
-        const respuesta = await fetch(
-            "/api/oxitrack/?modo=buscarEmpresaRegistro&rut=" +
-            encodeURIComponent(rut),
-            {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json"
-                },
-                cache: "no-store"
-            }
-        );
+    resultadosBusquedaEmpresa.hidden = false;
+  } catch (error) {
+    mostrarMensajeBusqueda(error.message || "No fue posible buscar empresas.","error");
+    console.error("Error búsqueda Empresa:",error);
+  } finally {
+    btnBuscarEmpresa.disabled = false;
+    btnBuscarEmpresa.textContent = "Buscar empresa";
+  }
+}
 
-        const datos = await respuesta.json();
+async function seleccionarEmpresaEncontrada(id) {
+  resultadosBusquedaEmpresa.querySelectorAll("button").forEach(function(boton) {boton.disabled = true;});
+  ocultarMensajeBusqueda();
 
-        if (!respuesta.ok || datos.ok !== true || !datos.empresa) {
-            throw new Error(
-                datos.error || "No se encontró la empresa."
-            );
-        }
+  try {
+    const respuesta = await fetch("/api/oxitrack/?modo=seleccionarEmpresaRegistro&id=" + encodeURIComponent(id),{
+      method:"GET",headers:{"Accept":"application/json"},cache:"no-store"
+    });
 
-        empresaSeleccionada = datos.empresa;
-
-        const modalidad = normalizarTextoEmpresa(
-            empresaSeleccionada.modalidad
-        );
-
-        if (!["DIRECTO", "INDIRECTO", "MIXTO"].includes(modalidad)) {
-            throw new Error(
-                "La empresa tiene una modalidad no reconocida: " +
-                modalidad
-            );
-        }
-
-        pintarEmpresaSeleccionada();
-
-        ocultarMensajeBusqueda();
-
-    } catch (error) {
-        empresaSeleccionada = null;
-
-        mostrarMensajeBusqueda(
-            error.message || "No fue posible consultar la empresa.",
-            "error"
-        );
-
-        console.error("Error búsqueda Empresa:", error);
-
-    } finally {
-        btnBuscarEmpresa.disabled = false;
-        btnBuscarEmpresa.textContent = "Buscar empresa";
+    const datos = await respuesta.json();
+    if (!respuesta.ok || datos.ok !== true || !datos.empresa) {
+      throw new Error(datos.error || "No fue posible seleccionar la empresa.");
     }
+
+    const modalidad = normalizarTextoEmpresa(datos.empresa.modalidad);
+    if (!["DIRECTO","INDIRECTO","MIXTO"].includes(modalidad)) {
+      throw new Error("La empresa tiene una modalidad no reconocida: " + modalidad);
+    }
+
+    empresaSeleccionada = datos.empresa;
+    resultadosBusquedaEmpresa.replaceChildren();
+    resultadosBusquedaEmpresa.hidden = true;
+    pintarEmpresaSeleccionada();
+  } catch (error) {
+    empresaSeleccionada = null;
+    mostrarMensajeBusqueda(error.message || "No fue posible seleccionar la empresa.","error");
+    resultadosBusquedaEmpresa.querySelectorAll("button").forEach(function(boton) {boton.disabled = false;});
+  }
 }
 
 // ==========================================================
@@ -2767,6 +2776,8 @@ function cargarTiposImplementacionPrueba() {
 function reiniciarEmpresaSeleccionada() {
 
     empresaSeleccionada = null;
+    resultadosBusquedaEmpresa.replaceChildren();
+    resultadosBusquedaEmpresa.hidden = true;
     destinoServicioEmpresa = "";
     llevaFleteEmpresa = "";
     inputRutEmpresa.value = "";

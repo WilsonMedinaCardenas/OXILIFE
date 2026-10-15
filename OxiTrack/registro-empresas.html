@@ -178,32 +178,13 @@
 
                 <div class="campo">
 
-                    <label for="inputRutEmpresa">
-                        RUT empresa
-                    </label>
-
-                    <input
-                        type="text"
-                        id="inputRutEmpresa"
-                        placeholder="Ingrese RUT"
-                        autocomplete="off"
-                    >
+                    <label for="inputRutEmpresa">RUT o teléfono de la empresa</label>
+                    <input type="text" id="inputRutEmpresa" placeholder="Ingrese al menos 5 dígitos" autocomplete="off">
 
                 </div>
-
-                <button
-                    type="button"
-                    id="btnBuscarEmpresa"
-                    class="btn-principal"
-                >
-                    Buscar empresa
-                </button>
-
-                <div
-                    id="mensajeBusquedaEmpresa"
-                    class="mensaje-registro"
-                    hidden
-                ></div>
+                <button type="button" id="btnBuscarEmpresa" class="btn-principal">Buscar empresa</button>
+                <div id="mensajeBusquedaEmpresa" class="mensaje-registro" hidden></div>
+                <div id="resultadosBusquedaEmpresa" class="resultados-busqueda" hidden></div>
 
             </section>
 
@@ -865,7 +846,7 @@
 </main>
 
 
-<script src="./js/registro-empresas.js?v=20261007-9" defer></script>
+<script src="./js/registro-empresas.js?v=20261011-9" defer></script>
 
 </body> 
 </html>
