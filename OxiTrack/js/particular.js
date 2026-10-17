@@ -411,104 +411,26 @@ async function eliminarEnvioOfflineParticular(envioId) {
 
 function construirPayloadParticular(registro) {
 
-    const payload =
-        new FormData();
+    const payload = new FormData();
 
+    payload.append("tipoCliente","PARTICULAR");
+    payload.append("envioId",registro.envioId);
+    payload.append("servicio",registro.servicio);
+    payload.append("pacienteId",registro.pacienteId);
+    payload.append("elementos",registro.elementos);
+    payload.append("recargaRealizada",registro.recargaRealizada || "[]");
+    payload.append("paciente",registro.paciente);
+    payload.append("entrega07", registro.entrega07);
+    payload.append("entrega10", registro.entrega10);
+    payload.append("retiro07",registro.retiro07);
+    payload.append("retiro10",registro.retiro10);
+    payload.append("observaciones",registro.observaciones);
+    payload.append("gps",registro.gps);
+    payload.append("dispositivo",registro.dispositivo);
+    payload.append("firma",registro.firma,"firma.png");
 
-    payload.append(
-        "tipoCliente",
-        "PARTICULAR"
-    );
-
-    payload.append(
-        "envioId",
-        registro.envioId
-    );
-
-    payload.append(
-        "servicio",
-        registro.servicio
-    );
-
-    payload.append(
-        "pacienteId",
-        registro.pacienteId
-    );
-
-    payload.append(
-        "elementos",
-        registro.elementos
-    );
-
-    payload.append(
-        "paciente",
-        registro.paciente
-    );
-
-    payload.append(
-        "entrega07",
-        registro.entrega07
-    );
-
-    payload.append(
-        "entrega10",
-        registro.entrega10
-    );
-
-    payload.append(
-        "retiro07",
-        registro.retiro07
-    );
-
-    payload.append(
-        "retiro10",
-        registro.retiro10
-    );
-
-    payload.append(
-        "observaciones",
-        registro.observaciones
-    );
-
-    payload.append(
-        "gps",
-        registro.gps
-    );
-
-    payload.append(
-        "dispositivo",
-        registro.dispositivo
-    );
-
-    payload.append(
-        "firma",
-        registro.firma,
-        "firma.png"
-    );
-
-
-    if (registro.foto) {
-
-        payload.append(
-            "foto",
-            registro.foto,
-            "foto-servicio-1.jpg"
-        );
-
-    }
-
-
-    if (registro.foto2) {
-
-        payload.append(
-            "foto2",
-            registro.foto2,
-            "foto-servicio-2.jpg"
-        );
-
-    }
-
-
+    if (registro.foto) {payload.append("foto",registro.foto,"foto-servicio-1.jpg");}
+    if (registro.foto2) {payload.append("foto2", registro.foto2,"foto-servicio-2.jpg");}
     return payload;
 
 }
@@ -818,19 +740,28 @@ document.addEventListener("DOMContentLoaded", async () => {
         const servicio = selectServicio.value.trim().toLowerCase();
         const esImplementacion = servicio.includes("implement");
         const esRetiro = servicio.includes("retiro");
+        const esRecarga = servicio.includes("recarga");
         const seccionCilindros = document.getElementById("seccionCilindros");
 
         if (paciente && esImplementacion && paciente.tipo) {
             await cargarElementos(paciente.tipo);
-
+        } else if (paciente && esRecarga) {
+            limpiarElementos();
+            if (paciente.detalleRecarga) {
+                try {
+                    pintarRecargaAgendada(paciente.detalleRecarga);
+                } catch (error) {
+                    console.error("Recarga programada inválida:",error);
+                    alert("No fue posible interpretar los cilindros programados. Informe a Oficina.");
+                }
+            } else {
+                alert("Esta recarga no tiene medidas programadas. Informe a Oficina.");
+            }
         } else if (paciente && esRetiro && paciente.elementosOrigen) {
             if (seccionCilindros) seccionCilindros.hidden = true;
             cargarElementosRetiro(paciente.elementosOrigen);
-
         } else {
             limpiarElementos();
-
-            // Respaldo para retiros antiguos que todavía no tengan ID ORIGEN.
             if (esRetiro && seccionCilindros) seccionCilindros.hidden = false;
         }
     });
@@ -1748,7 +1679,7 @@ function actualizarVistaSegunServicio(servicio) {
     const esRecarga = valor.includes("recarga");
     const esRetiro = valor.includes("retiro");
     const esCitaTecnica = valor.includes("cita técnica");
-    const mostrarCilindros = esRecarga || esRetiro;
+    const mostrarCilindros = esRetiro;
     const mostrarFotos = !esRetiro;
 
     const seccionCilindros = document.getElementById("seccionCilindros");
@@ -2002,19 +1933,11 @@ function capturarUbicacionGps() {
 
 async function confirmarEnvioParticular(datos) {
 
-    const servicio =
-        String(datos.servicio || "").toUpperCase();
-
-    const esImplementacion =
-        servicio.includes("IMPLEMENT");
-
-    const esVenta =
-        servicio.includes("VENTA");
-
-    const esRetiro =
-        servicio.includes("RETIRO");
-
-
+    const servicio = String(datos.servicio || "").toUpperCase();
+    const esImplementacion = servicio.includes("IMPLEMENT");
+    const esVenta = servicio.includes("VENTA");
+    const esRetiro = servicio.includes("RETIRO");
+    const esRecarga = servicio.includes("RECARGA");
     let contenido = `
         <div class="modal-seccion">
             <strong>Paciente:</strong>
@@ -2032,18 +1955,10 @@ async function confirmarEnvioParticular(datos) {
     // IMPLEMENTACIÓN
     // ======================================================
 
-    if (
-        esImplementacion &&
-        Array.isArray(datos.elementos)
-    ) {
-
+    if (esImplementacion && Array.isArray(datos.elementos)) {
         let elementosHtml = "";
-
         datos.elementos.forEach(item => {
-
-            elementosHtml +=
-                `<span>${item.cantidad} × ${item.elemento}</span>`;
-
+            elementosHtml += `<span>${item.cantidad} × ${item.elemento}</span>`;
         });
 
 
@@ -2091,7 +2006,8 @@ async function confirmarEnvioParticular(datos) {
 
     } else if (
         !esImplementacion &&
-        !esVenta
+        !esVenta &&
+        !esRecarga
     ) {
 
         contenido += `
@@ -2108,6 +2024,20 @@ async function confirmarEnvioParticular(datos) {
             </div>
         `;
 
+    }
+
+    if (esRecarga && Array.isArray(datos.recargaRealizada)) {
+        const detalle = datos.recargaRealizada.map(item =>
+            `${item.gas} — ${item.elemento}: ` +
+            `${item.entregados} entregados, ${item.retirados} retirados`
+        );
+
+        contenido += `
+            <div class="modal-seccion">
+                <strong>Recarga realizada:</strong>
+                ${detalle.map(texto => `<span>${texto}</span>`).join("")}
+            </div>
+        `;
     }
 
 
@@ -2167,31 +2097,21 @@ function inicializarFormulario() {
         const servicio = document.getElementById("servicioParticular").value.trim();
         const pacienteId = document.getElementById("pacienteId").value.trim();
         const pacienteSelect = document.getElementById("pacienteParticular");
-        const pacienteNombre =
-            pacienteSelect.options[pacienteSelect.selectedIndex]?.textContent?.trim() || "";      
-        const pacienteActual = pacientesDisponibles.find(
-            item => String(item.id) === String(pacienteId)
-        );
+        const pacienteNombre = pacienteSelect.options[pacienteSelect.selectedIndex]?.textContent?.trim() || "";      
+        const pacienteActual = pacientesDisponibles.find(item => String(item.id) === String(pacienteId));
         const e07 = document.getElementById("e07").value;
         const e10 = document.getElementById("e10").value;
         const r07 = document.getElementById("r07").value;
         const r10 = document.getElementById("r10").value;
-        const observaciones =
-            document.getElementById("obs").value.trim().toUpperCase();
+        const observaciones = document.getElementById("obs").value.trim().toUpperCase();
 
-        if (!servicio) {
-            alert("Debe seleccionar un servicio.");
-            return;
-        }
-
-        if (!pacienteId) {
-            alert("Debe seleccionar un paciente válido.");
-            return;
-        }
+        if (!servicio) {alert("Debe seleccionar un servicio."); return;}
+        if (!pacienteId) {alert("Debe seleccionar un paciente válido.");return;}
 
         const servicioNormalizado = servicio.toLowerCase();
         const esImplementacion = servicioNormalizado.includes("implement");
         const esRetiro = servicioNormalizado.includes("retiro");
+        const esRecarga = servicioNormalizado.includes("recarga");
         const esVisitaTecnica = servicioNormalizado.includes("visita técnica") || servicioNormalizado.includes("visita tecnica");
         const retiroConOrigen = esRetiro && pacienteActual && pacienteActual.idOrigen && pacienteActual.elementosOrigen;
         const requiereFoto = esImplementacion || servicioNormalizado.includes("recarga") || servicioNormalizado.includes("venta");
@@ -2211,12 +2131,24 @@ function inicializarFormulario() {
             return;
         }
 
-        const elementosSeleccionados =
-            esImplementacion
-                ? obtenerElementosSeleccionados()
-                : retiroConOrigen
-                    ? obtenerElementosRetiro()
-                    : [];
+        const recargaRealizada = esRecarga ? obtenerRecargaRealizada() : [];
+
+        if (esRecarga && recargaRealizada.length === 0) {
+            alert("No se cargaron los cilindros programados para esta recarga.");
+            return;
+        }
+
+        if (esRecarga && recargaRealizada.some(item =>
+            !item.elemento ||
+            !Number.isInteger(item.entregados) ||
+            !Number.isInteger(item.retirados) ||
+            item.entregados < 0 ||
+            item.retirados < 0
+        )) {
+            alert("Las cantidades de recarga no son válidas.");
+            return;
+        }
+        const elementosSeleccionados = esImplementacion ? obtenerElementosSeleccionados() : retiroConOrigen ? obtenerElementosRetiro() : [];
 
         if (esImplementacion && elementosSeleccionados.length === 0) {
             alert("Debe registrar al menos un elemento entregado en la implementación.");
@@ -2232,6 +2164,7 @@ function inicializarFormulario() {
             servicio,
             paciente: pacienteNombre,
             elementos: elementosSeleccionados,
+            recargaRealizada,
             e07,
             e10,
             r07,
@@ -2256,6 +2189,7 @@ function inicializarFormulario() {
                 servicio:servicio,
                 pacienteId:pacienteId,
                 elementos:JSON.stringify(elementosSeleccionados),
+                recargaRealizada:JSON.stringify(recargaRealizada),
                 paciente:pacienteNombre,
                 entrega07:e07,
                 entrega10:e10,
@@ -2276,16 +2210,8 @@ function inicializarFormulario() {
             // ANTES DE INTENTAR CUALQUIER ENVÍO
             // ======================================================
 
-            await guardarEnvioOfflineParticular(
-                registroParticular
-            );
-
-
-            console.log(
-                "Registro Particular protegido en IndexedDB:",
-                registroParticular.envioId
-            );
-
+            await guardarEnvioOfflineParticular(registroParticular);
+            console.log("Registro Particular protegido en IndexedDB:",registroParticular.envioId);
 
             // ======================================================
             // SIN CONEXIÓN SEGÚN EL NAVEGADOR
