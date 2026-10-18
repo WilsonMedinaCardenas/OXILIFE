@@ -2385,8 +2385,26 @@ btnConfirmarRegistro.addEventListener("click", async function () {
                 );
 
 
-            const resultado =
-                await respuesta.json();
+            const textoRespuesta = await respuesta.text();
+
+            let resultado;
+
+            try {
+                resultado = JSON.parse(textoRespuesta);
+            } catch (error) {
+                console.error("RESPUESTA NO JSON DEL WORKER", {
+                    status: respuesta.status,
+                    url: respuesta.url,
+                    contentType: respuesta.headers.get("content-type"),
+                    respuesta: textoRespuesta.slice(0, 1500)
+                });
+
+                throw new Error(
+                    "El servidor devolvió una página HTML en vez de JSON. " +
+                    "Código HTTP: " + respuesta.status +
+                    ". Revisa la consola F12 para ver el origen."
+                );
+            }
 
 
             if (
