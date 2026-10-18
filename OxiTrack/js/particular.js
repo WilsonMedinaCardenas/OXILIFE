@@ -731,12 +731,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     selectPaciente.addEventListener("change", async () => {
-        const paciente = pacientesDisponibles.find(
-            item => String(item.id) === String(selectPaciente.value)
-        );
-
+        const paciente = pacientesDisponibles.find(item => String(item.id) === String(selectPaciente.value));
         inputPacienteId.value = paciente ? paciente.id : "";
-
         const servicio = selectServicio.value.trim().toLowerCase();
         const esImplementacion = servicio.includes("implement");
         const esRetiro = servicio.includes("retiro");
@@ -746,12 +742,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (paciente && esImplementacion && paciente.tipo) {
             await cargarElementos(paciente.tipo);
         } else if (paciente && esRecarga) {
+
             limpiarElementos();
+
+            // Ocultar definitivamente los contadores genéricos
+            // para esta recarga.
+            if (seccionCilindros) {seccionCilindros.hidden = true;}
             if (paciente.detalleRecarga) {
-                try {
-                    pintarRecargaAgendada(paciente.detalleRecarga);
+                try {pintarRecargaAgendada(paciente.detalleRecarga);
                 } catch (error) {
-                    console.error("Recarga programada inválida:",error);
+                    console.error("Recarga programada inválida:", error);
                     alert("No fue posible interpretar los cilindros programados. Informe a Oficina.");
                 }
             } else {
@@ -1679,13 +1679,26 @@ function actualizarVistaSegunServicio(servicio) {
     const esRecarga = valor.includes("recarga");
     const esRetiro = valor.includes("retiro");
     const esCitaTecnica = valor.includes("cita técnica");
-    const mostrarCilindros = esRetiro;
+    const pacienteSeleccionado = Boolean(
+    document.getElementById("pacienteParticular")?.value);
+    const mostrarCilindros = esRetiro && pacienteSeleccionado;
     const mostrarFotos = !esRetiro;
 
     const seccionCilindros = document.getElementById("seccionCilindros");
     const seccionFotos = document.getElementById("seccionFotos");
 
     if (seccionCilindros) seccionCilindros.hidden = !mostrarCilindros;
+
+    // La recarga dinámica se muestra únicamente después
+    // de seleccionar un paciente con detalle programado.
+    const seccionRecarga = document.getElementById("seccionRecargaDinamica");
+    if (seccionRecarga) {seccionRecarga.hidden = true;}
+    cilindrosRecargaActual = [];
+    const listaEntregados = document.getElementById("listaRecargaEntregados");
+    const listaRetirados = document.getElementById("listaRecargaRetirados");
+
+    if (listaEntregados) listaEntregados.replaceChildren();
+    if (listaRetirados) listaRetirados.replaceChildren();
     if (seccionFotos) seccionFotos.hidden = !mostrarFotos;
 
     if (!esImplementacion) limpiarElementos();

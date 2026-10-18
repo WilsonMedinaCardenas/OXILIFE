@@ -124,36 +124,17 @@
                  ENTREGADOS
                  ================================================== --> 
 
-            <div id="seccionCilindros">
+            <div id="seccionCilindros" hidden>
 
-                <div class="titulo">
-                    ENTREGADOS
-                </div>
-
-
-                <label>
-                    Cilindros 0.7 m³
-                </label>
-
+                <div class="titulo">ENTREGADOS</div>
+                <label>Cilindros 0.7 m³</label>
                 <div class="contador">
-
-                    <button
-                        type="button"
-                        onclick="disminuir('e07')"
-                    >
+                    <button type="button" onclick="disminuir('e07')">
                         −
                     </button>
 
-                    <input
-                        id="e07"
-                        value="0"
-                        readonly
-                    >
-
-                    <button
-                        type="button"
-                        onclick="aumentar('e07')"
-                    >
+                    <input id="e07" value="0" readonly>
+                    <button type="button" onclick="aumentar('e07')">
                         +
                     </button>
 
@@ -449,7 +430,7 @@
 
 
     <!-- JS EXCLUSIVO PARA PARTICULARES -->
-    <script src="./js/particular.js?v=20260913-3"></script>
+    <script src="./js/particular.js?v=20260913-4"></script>
 
     <script>
         if ("serviceWorker" in navigator) {
