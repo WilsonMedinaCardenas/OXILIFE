@@ -38,27 +38,62 @@ const seccionFechaServicio = document.getElementById("seccionFechaServicio");
 const inputFechaServicio = document.getElementById("inputFechaServicio");
 const selectVentanaServicio = document.getElementById("selectVentanaServicio");
 const selectOperarioAsignado = document.getElementById("selectOperarioAsignado");
-const btnAtencionInmediata =document.getElementById("btnAtencionInmediata");
-const inputAtencionInmediata =document.getElementById("inputAtencionInmediata");
-const seccionGestionServicio =document.getElementById("seccionGestionServicio");
-const btnAbrirReagendar =document.getElementById("btnAbrirReagendar");
-const btnAbrirCancelarServicio =document.getElementById("btnAbrirCancelarServicio");
-const modalGestionServicio =document.getElementById("modalGestionServicio");
-const tituloGestionServicio =document.getElementById("tituloGestionServicio");
-const inputBuscarGestion =document.getElementById("inputBuscarGestion");
-const resultadosGestionServicio =document.getElementById("resultadosGestionServicio");
-const detalleGestionServicio =document.getElementById("detalleGestionServicio");
-const resumenGestionServicio =document.getElementById("resumenGestionServicio");
-const nuevaProgramacionGestion =document.getElementById("nuevaProgramacionGestion");
-const inputNuevaFechaGestion =document.getElementById("inputNuevaFechaGestion");
-const selectNuevoOperarioGestion =document.getElementById("selectNuevoOperarioGestion");
-const selectNuevaVentanaGestion =document.getElementById("selectNuevaVentanaGestion");
-const btnAtencionInmediataGestion =document.getElementById("btnAtencionInmediataGestion");
-const inputAtencionInmediataGestion =document.getElementById("inputAtencionInmediataGestion");
-const btnCerrarGestionServicio =document.getElementById("btnCerrarGestionServicio");
-const btnCerrarGestionSinSeleccion =document.getElementById("btnCerrarGestionSinSeleccion");
-const btnConfirmarGestionServicio =document.getElementById("btnConfirmarGestionServicio");
-const accionesCerrarGestion =document.getElementById("accionesCerrarGestion");
+const btnAtencionInmediata = document.getElementById("btnAtencionInmediata");
+const inputAtencionInmediata = document.getElementById("inputAtencionInmediata");
+const seccionGestionServicio = document.getElementById("seccionGestionServicio");
+const btnAbrirReagendar = document.getElementById("btnAbrirReagendar");
+const btnAbrirCancelarServicio = document.getElementById("btnAbrirCancelarServicio");
+const modalGestionServicio = document.getElementById("modalGestionServicio");
+const tituloGestionServicio = document.getElementById("tituloGestionServicio");
+const inputBuscarGestion = document.getElementById("inputBuscarGestion");
+const resultadosGestionServicio = document.getElementById("resultadosGestionServicio");
+const detalleGestionServicio = document.getElementById("detalleGestionServicio");
+const resumenGestionServicio = document.getElementById("resumenGestionServicio");
+const nuevaProgramacionGestion = document.getElementById("nuevaProgramacionGestion");
+const inputNuevaFechaGestion = document.getElementById("inputNuevaFechaGestion");
+const selectNuevoOperarioGestion = document.getElementById("selectNuevoOperarioGestion");
+const selectNuevaVentanaGestion = document.getElementById("selectNuevaVentanaGestion");
+const btnAtencionInmediataGestion = document.getElementById("btnAtencionInmediataGestion");
+const inputAtencionInmediataGestion = document.getElementById("inputAtencionInmediataGestion");
+const btnCerrarGestionServicio = document.getElementById("btnCerrarGestionServicio");
+const btnCerrarGestionSinSeleccion = document.getElementById("btnCerrarGestionSinSeleccion");
+const btnConfirmarGestionServicio = document.getElementById("btnConfirmarGestionServicio");
+const checkOtraDireccionReagendar = document.getElementById("checkOtraDireccionReagendar");
+const camposOtraDireccionReagendar = document.getElementById("camposOtraDireccionReagendar");
+const direccionReagendar = document.getElementById("direccionReagendar");
+const comunaReagendar = document.getElementById("comunaReagendar");
+const fleteReagendar = document.getElementById("fleteReagendar");
+const detalleFleteReagendar = document.getElementById("detalleFleteReagendar");
+const horarioFleteReagendar = document.getElementById("horarioFleteReagendar");
+const convenioReagendar = document.getElementById("convenioReagendar");
+fleteReagendar.addEventListener("change", function () {
+    const llevaFlete = this.value === "SI";
+    detalleFleteReagendar.hidden = !llevaFlete;
+    if (!llevaFlete) {horarioFleteReagendar.value = "";convenioReagendar.value = "";}
+});
+
+function cargarComunasReagendamiento() {
+    comunaReagendar.innerHTML = '<option value="">Seleccione una comuna</option>';
+    [...new Set(comunasDisponibles)].forEach(function (comuna) {
+        const opcion = document.createElement("option");
+        opcion.value = comuna;
+        opcion.textContent = comuna;
+        comunaReagendar.appendChild(opcion);
+    });
+}
+
+checkOtraDireccionReagendar.addEventListener("change", function () {
+    if (this.checked) {cargarComunasReagendamiento();direccionReagendar.focus();}
+});
+
+direccionReagendar.addEventListener("input", function () {
+    this.value = this.value.toUpperCase();
+});
+checkOtraDireccionReagendar.addEventListener("change", () => {
+    camposOtraDireccionReagendar.hidden = !checkOtraDireccionReagendar.checked;
+    if (!checkOtraDireccionReagendar.checked) {direccionReagendar.value = ""; comunaReagendar.value = "";}
+});
+const accionesCerrarGestion = document.getElementById("accionesCerrarGestion");
 
 let tipoGestionActual = "";
 let servicioGestionSeleccionado = null;
@@ -1974,20 +2009,10 @@ async function actualizarDisponibilidadGestion() {
 }
 
 
-btnConfirmarGestionServicio.addEventListener(
-    "click",
-    async function () {
+btnConfirmarGestionServicio.addEventListener("click", async function () {
 
-        if (
-            !servicioGestionSeleccionado
-        ) {
-            return;
-        }
-
-
-        if (
-            tipoGestionActual ===
-            "REAGENDAR" &&
+        if (!servicioGestionSeleccionado) {return;}
+        if (tipoGestionActual === "REAGENDAR" &&
             (
                 !inputNuevaFechaGestion.value ||
                 !selectNuevoOperarioGestion.value ||
@@ -1995,145 +2020,55 @@ btnConfirmarGestionServicio.addEventListener(
             )
         ) {
 
-            mostrarError(
-                "Debe seleccionar nueva fecha, operario y ventana horaria."
-            );
-
+            mostrarError("Debe seleccionar nueva fecha, operario y ventana horaria.");
             return;
-
         }
-
-
         if (!solicitudGestionId) {
-
-            solicitudGestionId =
-                typeof crypto.randomUUID ===
-                "function"
-                    ? crypto.randomUUID()
-                    : (
-                        Date.now().toString(36) +
-                        "-" +
-                        Math.random()
-                            .toString(36)
-                            .slice(2)
-                    );
-
+            solicitudGestionId = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : (
+                        Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
         }
-
-
-        btnConfirmarGestionServicio.disabled =
-            true;
-
-
+        btnConfirmarGestionServicio.disabled = true;
         try {
-
-            const payload =
-                new FormData();
-
-
-            payload.append(
-                "tipoCliente",
-                "GESTION_SERVICIO_OFICINA"
-            );
-
-            payload.append(
-                "accion",
-                tipoGestionActual
-            );
-
-            payload.append(
-                "id",
-                servicioGestionSeleccionado.id
-            );
-
-            payload.append(
-                "solicitudGestionId",
-                solicitudGestionId
-            );
-
-
-            if (
-                tipoGestionActual ===
-                "REAGENDAR"
-            ) {
-
-                payload.append(
-                    "fechaProgramada",
-                    inputNuevaFechaGestion.value
-                );
-
-                payload.append(
-                    "ventanaHoraria",
-                    inputAtencionInmediataGestion.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestion.value
-                );
-
-                payload.append(
-                    "operarioAsignado",
-                    selectNuevoOperarioGestion.value
-                );
+            const payload = new FormData();
+            payload.append("tipoCliente","GESTION_SERVICIO_OFICINA");
+            payload.append("accion",tipoGestionActual);
+            payload.append("id",servicioGestionSeleccionado.id);
+            payload.append("solicitudGestionId",solicitudGestionId);
+            if (tipoGestionActual ==="REAGENDAR") {
+                payload.append("fechaProgramada",inputNuevaFechaGestion.value);
+                payload.append("ventanaHoraria",inputAtencionInmediataGestion.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestion.value);
+                payload.append("operarioAsignado",selectNuevoOperarioGestion.value);
+                if (checkOtraDireccionReagendar.checked) {
+                    if (!direccionReagendar.value.trim() || !comunaReagendar.value) {throw new Error("Debe ingresar la nueva dirección y seleccionar la comuna.");}}
+                payload.append("cambiarDireccion",checkOtraDireccionReagendar.checked ? "SI" : "NO");
+                payload.append("nuevaDireccion",checkOtraDireccionReagendar.checked ? direccionReagendar.value.trim() : "");
+                payload.append("nuevaComuna",checkOtraDireccionReagendar.checked ? comunaReagendar.value : "");
+                payload.append("llevaNuevoFlete",fleteReagendar.value);
+                if (fleteReagendar.value === "SI") {
+                    if (!horarioFleteReagendar.value || !convenioReagendar.value) {
+                        throw new Error("Debe seleccionar el horario y el convenio del nuevo flete.");}
+                }
+                payload.append("horarioFleteReagendar",fleteReagendar.value === "SI" ? horarioFleteReagendar.value : "");
+                payload.append("convenioReagendar",fleteReagendar.value === "SI"? convenioReagendar.value: "");
 
             }
 
-
-            const respuesta =
-                await fetch(
-                    "/api/oxitrack/",
-                    {
-                        method: "POST",
-                        body: payload
-                    }
-                );
-
-
-            const resultado =
-                await respuesta.json();
-
-
-            if (
-                !respuesta.ok ||
-                resultado.ok !== true
-            ) {
-
-                throw new Error(
-                    resultado.error ||
-                    "No fue posible gestionar el servicio."
-                );
-
+            const respuesta = await fetch("/api/oxitrack/",{method: "POST",body: payload});
+            const resultado = await respuesta.json();
+            if (!respuesta.ok || resultado.ok !== true) {
+                throw new Error(resultado.error || "No fue posible gestionar el servicio.");
             }
 
-
-            ocultarModal(
-                modalGestionServicio
-            );
-
+            ocultarModal(modalGestionServicio);
             mostrarMensaje(tipoGestionActual === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.", "exito");
-            setTimeout(
-            function () {ocultarMensaje();}, 30000);
-            servicioGestionSeleccionado =
-                null;
-
-            solicitudGestionId =
-                "";
-
-
+            setTimeout(function () {ocultarMensaje();}, 30000); 
+            servicioGestionSeleccionado = null;
+            solicitudGestionId = "";
         } catch (error) {
-
-            console.error(
-                "Error gestión servicio:",
-                error
-            );
-
-            mostrarError(
-                error.message ||
-                "No fue posible gestionar el servicio."
-            );
-
-
+            console.error("Error gestión servicio:",error);
+            mostrarError(error.message || "No fue posible gestionar el servicio.");
         } finally {
-
-            btnConfirmarGestionServicio.disabled =
-                false;
-
+            btnConfirmarGestionServicio.disabled = false;
         }
 
     }

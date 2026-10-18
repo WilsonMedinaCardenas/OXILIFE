@@ -1236,36 +1236,23 @@
                     <div id="resumenGestionServicio"></div>
 
 
-                    <div
-                        id="nuevaProgramacionGestion"
-                        hidden
-                    >
+                    <div id="nuevaProgramacionGestion" hidden>
 
                         <div class="campo">
 
-                            <label for="inputNuevaFechaGestion">
-                                Nueva fecha
-                            </label>
-
-                            <input
-                                type="date"
-                                id="inputNuevaFechaGestion"
-                            >
+                            <label for="inputNuevaFechaGestion">Nueva fecha</label>
+                            <input type="date" id="inputNuevaFechaGestion">
 
                         </div>
 
 
                         <div class="campo">
 
-                            <label for="selectNuevoOperarioGestion">
-                                Operario asignado
-                            </label>
+                            <label for="selectNuevoOperarioGestion">Operario asignado</label>
 
                             <select id="selectNuevoOperarioGestion">
 
-                                <option value="">
-                                    Seleccione un operario
-                                </option>
+                                <option value="">Seleccione un operario</option>
 
                             </select>
 
@@ -1274,33 +1261,69 @@
 
                         <div class="campo">
 
-                            <label for="selectNuevaVentanaGestion">
-                                Nueva ventana horaria
-                            </label>
+                            <label for="selectNuevaVentanaGestion">Nueva ventana horaria</label>
 
                             <select id="selectNuevaVentanaGestion">
 
-                                <option value="">
-                                    Seleccione un horario
-                                </option>
+                                <option value="">Seleccione un horario</option>
 
                             </select>
 
                         </div>
 
-                        <button
-                            type="button"
-                            id="btnAtencionInmediataGestion"
-                            class="btn-atencion-inmediata"
+                        <button type="button" id="btnAtencionInmediataGestion" class="btn-atencion-inmediata">Atención inmediata</button>
+                        <input type="hidden" id="inputAtencionInmediataGestion" value="NO"
                         >
-                            Atención inmediata
-                        </button>
 
-                        <input
-                            type="hidden"
-                            id="inputAtencionInmediataGestion"
-                            value="NO"
-                        >
+                    </div>
+
+                    <!-- DATOS ADICIONALES DEL REAGENDAMIENTO -->
+                    <div id="opcionesReagendamiento" style="margin-top:20px;">
+
+                    <label style="display:flex;align-items:center;gap:10px;"><input type="checkbox" id="checkOtraDireccionReagendar">
+                        Este servicio será para otra dirección
+                    </label>
+
+                    <div id="camposOtraDireccionReagendar" hidden style="margin-top:12px;">
+
+                        <label for="direccionReagendar">Nueva dirección</label>
+                        <input type="text" id="direccionReagendar" placeholder="Ingrese la nueva dirección">
+                        <label for="comunaReagendar">Nueva comuna</label>
+                        <select id="comunaReagendar"><option value="">Seleccione una comuna</option></select>
+
+                    </div>
+
+                    <div style="margin-top:18px;">
+                        <label for="fleteReagendar">¿Lleva nuevo flete?</label>
+
+                        <select id="fleteReagendar">
+                        <option value="SI">Si</option>
+                        <option value="NO">No</option>
+                        </select>
+
+                        <div id="detalleFleteReagendar" hidden style="margin-top:15px;">
+
+                        <div class="campo">
+                            <label for="horarioFleteReagendar">Horario del flete</label>
+
+                            <select id="horarioFleteReagendar">
+                                <option value="">Seleccione horario</option>
+                                <option value="DIURNO">Diurno</option>
+                                <option value="NOCTURNO">Nocturno</option>
+                            </select>
+                        </div>
+
+                        <div class="campo" style="margin-top:12px;">
+                            <label for="convenioReagendar">¿Corresponde a convenio?</label>
+                            <select id="convenioReagendar">
+                                <option value="">Seleccione una opción</option>
+                                <option value="SI">Si</option>
+                                <option value="NO">No</option>
+                            </select>
+                        </div>
+
+                    </div>
+                    </div>
 
                     </div>
 
@@ -1442,7 +1465,7 @@
          JAVASCRIPT
     ========================================================== -->
 
-    <script src="./js/registro-pacientes.js?v=20260921-9" defer></script>
+    <script src="./js/registro-pacientes.js?v=20260965-9" defer></script>
 
 </body>
 
