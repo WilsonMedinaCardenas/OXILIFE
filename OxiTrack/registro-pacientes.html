@@ -1278,52 +1278,99 @@
                     </div>
 
                     <!-- DATOS ADICIONALES DEL REAGENDAMIENTO -->
-                    <div id="opcionesReagendamiento" style="margin-top:20px;">
+                    <div id="opcionesReagendamiento" class="form-seccion">
 
-                    <label style="display:flex;align-items:center;gap:10px;"><input type="checkbox" id="checkOtraDireccionReagendar">
-                        Este servicio será para otra dirección
-                    </label>
+                        <h2>Dirección del servicio</h2>
 
-                    <div id="camposOtraDireccionReagendar" hidden style="margin-top:12px;">
+                        <div class="campo-direccion-check">
+                            <label for="checkOtraDireccionReagendar">
+                                <input type="checkbox" id="checkOtraDireccionReagendar">
+                                <span>Realizar este servicio en otra dirección</span>
+                            </label>
+                        </div>
 
-                        <label for="direccionReagendar">Nueva dirección</label>
-                        <input type="text" id="direccionReagendar" placeholder="Ingrese la nueva dirección">
-                        <label for="comunaReagendar">Nueva comuna</label>
-                        <select id="comunaReagendar"><option value="">Seleccione una comuna</option></select>
+                        <div id="camposOtraDireccionReagendar" hidden>
 
-                    </div>
+                            <div class="campo">
+                                <label for="direccionReagendar">Nueva dirección</label>
+                                <input type="text"
+                                    id="direccionReagendar"
+                                    maxlength="200"
+                                    placeholder="Calle, número, departamento...">
+                            </div>
 
-                    <div style="margin-top:18px;">
-                        <label for="fleteReagendar">¿Lleva nuevo flete?</label>
+                            <div class="campo">
+                                <label for="comunaReagendar">Nueva comuna</label>
+                                <select id="comunaReagendar">
+                                    <option value="">Seleccione una comuna</option>
+                                </select>
+                            </div>
 
-                        <select id="fleteReagendar">
-                        <option value="SI">Si</option>
-                        <option value="NO">No</option>
-                        </select>
+                        </div>
 
-                        <div id="detalleFleteReagendar" hidden style="margin-top:15px;">
+                        <h2 style="margin-top:22px;">Flete</h2>
 
                         <div class="campo">
-                            <label for="horarioFleteReagendar">Horario del flete</label>
+                            <label>¿Este reagendamiento lleva nuevo flete?</label>
 
-                            <select id="horarioFleteReagendar">
-                                <option value="">Seleccione horario</option>
-                                <option value="DIURNO">Diurno</option>
-                                <option value="NOCTURNO">Nocturno</option>
-                            </select>
+                            <div class="selector-tipo-paciente">
+                                <button type="button"
+                                        id="btnFleteSiReagendar"
+                                        class="btn-selector">Sí</button>
+
+                                <button type="button"
+                                        id="btnFleteNoReagendar"
+                                        class="btn-selector">No</button>
+                            </div>
+
+                            <input type="hidden" id="fleteReagendar" value="NO">
                         </div>
 
-                        <div class="campo" style="margin-top:12px;">
-                            <label for="convenioReagendar">¿Corresponde a convenio?</label>
-                            <select id="convenioReagendar">
-                                <option value="">Seleccione una opción</option>
-                                <option value="SI">Si</option>
-                                <option value="NO">No</option>
-                            </select>
+                        <div id="detalleFleteReagendar" hidden>
+
+                            <div class="campo">
+                                <label>Horario del flete</label>
+
+                                <div class="selector-tipo-paciente">
+                                    <button type="button"
+                                            id="btnDiurnoReagendar"
+                                            class="btn-selector">Diurno</button>
+
+                                    <button type="button"
+                                            id="btnNocturnoReagendar"
+                                            class="btn-selector">Nocturno</button>
+                                </div>
+
+                                <input type="hidden"
+                                    id="horarioFleteReagendar"
+                                    value="">
+                            </div>
+
+                            <div class="campo">
+                                <label>¿Corresponde a convenio?</label>
+
+                                <div class="selector-tipo-paciente">
+                                    <button type="button"
+                                            id="btnConvenioSiReagendar"
+                                            class="btn-selector">Sí</button>
+
+                                    <button type="button"
+                                            id="btnConvenioNoReagendar"
+                                            class="btn-selector">No</button>
+                                </div>
+
+                                <input type="hidden"
+                                    id="convenioReagendar"
+                                    value="">
+                            </div>
+
                         </div>
 
-                    </div>
-                    </div>
+                        <p id="errorReagendamiento"
+                        role="alert"
+                        hidden
+                        style="color:#b42318;font-weight:600;margin-top:12px;">
+                        </p>
 
                     </div>
 
@@ -1465,7 +1512,7 @@
          JAVASCRIPT
     ========================================================== -->
 
-    <script src="./js/registro-pacientes.js?v=20260965-9" defer></script>
+    <script src="./js/registro-pacientes.js?v=20260965-0" defer></script>
 
 </body>
 

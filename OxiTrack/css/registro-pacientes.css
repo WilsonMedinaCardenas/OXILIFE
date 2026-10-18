@@ -705,3 +705,46 @@
     .btn-quitar-recarga{width:24px;font-size:23px;}
     .fila-medida-recarga .medida-recarga{font-size:13px;padding:0 5px;height:44px;}
 }
+
+#opcionesReagendamiento {
+    margin-top: 20px;
+}
+
+#opcionesReagendamiento .campo-direccion-check label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+#checkOtraDireccionReagendar {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    margin: 0;
+    accent-color: #611e63;
+}
+
+#opcionesReagendamiento #direccionReagendar,
+#opcionesReagendamiento #comunaReagendar {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#opcionesReagendamiento .selector-tipo-paciente {
+    display: flex;
+    gap: 12px;
+}
+
+#opcionesReagendamiento .btn-selector {
+    flex: 1;
+    min-width: 0;
+}
+
+#detalleFleteReagendar[hidden],
+#camposOtraDireccionReagendar[hidden] {
+    display: none !important;
+}

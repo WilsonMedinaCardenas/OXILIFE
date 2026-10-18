@@ -66,6 +66,68 @@ const fleteReagendar = document.getElementById("fleteReagendar");
 const detalleFleteReagendar = document.getElementById("detalleFleteReagendar");
 const horarioFleteReagendar = document.getElementById("horarioFleteReagendar");
 const convenioReagendar = document.getElementById("convenioReagendar");
+const errorReagendamiento = document.getElementById("errorReagendamiento");
+const btnFleteSiReagendar = document.getElementById("btnFleteSiReagendar");
+const btnFleteNoReagendar = document.getElementById("btnFleteNoReagendar");
+const btnDiurnoReagendar = document.getElementById("btnDiurnoReagendar");
+const btnNocturnoReagendar = document.getElementById("btnNocturnoReagendar");
+const btnConvenioSiReagendar = document.getElementById("btnConvenioSiReagendar");
+const btnConvenioNoReagendar = document.getElementById("btnConvenioNoReagendar");
+
+function seleccionarFleteReagendar(valor) {
+    fleteReagendar.value = valor;
+    detalleFleteReagendar.hidden = valor !== "SI";
+
+    btnFleteSiReagendar.classList.toggle("activo", valor === "SI");
+    btnFleteNoReagendar.classList.toggle("activo", valor === "NO");
+
+    if (valor === "NO") {
+        horarioFleteReagendar.value = "";
+        convenioReagendar.value = "";
+
+        [
+            btnDiurnoReagendar,
+            btnNocturnoReagendar,
+            btnConvenioSiReagendar,
+            btnConvenioNoReagendar
+        ].forEach(btn => btn.classList.remove("activo"));
+    }
+}
+
+btnFleteSiReagendar.addEventListener("click", () => {seleccionarFleteReagendar("SI");});
+btnFleteNoReagendar.addEventListener("click", () => {seleccionarFleteReagendar("NO");});
+btnDiurnoReagendar.addEventListener("click", () => {horarioFleteReagendar.value = "DIURNO";activarBoton(btnDiurnoReagendar, btnNocturnoReagendar);});
+btnNocturnoReagendar.addEventListener("click", () => {horarioFleteReagendar.value = "NOCTURNO";activarBoton(btnNocturnoReagendar, btnDiurnoReagendar);});
+btnConvenioSiReagendar.addEventListener("click", () => {convenioReagendar.value = "SI";activarBoton(btnConvenioSiReagendar, btnConvenioNoReagendar);});
+btnConvenioNoReagendar.addEventListener("click", () => {convenioReagendar.value = "NO";activarBoton(btnConvenioNoReagendar, btnConvenioSiReagendar);});
+
+function reiniciarOpcionesReagendamiento() {
+    checkOtraDireccionReagendar.checked = false;
+    camposOtraDireccionReagendar.hidden = true;
+    direccionReagendar.value = "";
+    comunaReagendar.value = "";
+    errorReagendamiento.hidden = true;
+    errorReagendamiento.textContent = "";
+    seleccionarFleteReagendar("NO");
+}
+
+function cargarComunasReagendamiento() {
+    comunaReagendar.innerHTML = '<option value="">Seleccione una comuna</option>';
+
+    [...new Set(comunasDisponibles)].forEach(comuna => {
+        const opcion = document.createElement("option");
+        opcion.value = comuna;
+        opcion.textContent = comuna;
+        comunaReagendar.appendChild(opcion);
+    });
+}
+
+checkOtraDireccionReagendar.addEventListener("change", function () {
+    if (this.checked) {
+        cargarComunasReagendamiento();
+        direccionReagendar.focus();
+    }
+});
 fleteReagendar.addEventListener("change", function () {
     const llevaFlete = this.value === "SI";
     detalleFleteReagendar.hidden = !llevaFlete;
@@ -1431,6 +1493,7 @@ function abrirGestionServicio(tipo) {
     tipoGestionActual = tipo;
     servicioGestionSeleccionado = null;
     solicitudGestionId = "";
+    reiniciarOpcionesReagendamiento();
 
     inputBuscarGestion.value = "";
     resultadosGestionServicio.innerHTML = "";
@@ -2065,8 +2128,22 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
             servicioGestionSeleccionado = null;
             solicitudGestionId = "";
         } catch (error) {
-            console.error("Error gestión servicio:",error);
-            mostrarError(error.message || "No fue posible gestionar el servicio.");
+            console.error("Error gestión servicio:", error);
+
+            const mensaje =
+                error.message || "No fue posible gestionar el servicio.";
+
+            if (tipoGestionActual === "REAGENDAR") {
+                errorReagendamiento.textContent = mensaje;
+                errorReagendamiento.hidden = false;
+                errorReagendamiento.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest"
+                });
+            } else {
+                mostrarError(mensaje);
+            }
+
         } finally {
             btnConfirmarGestionServicio.disabled = false;
         }
