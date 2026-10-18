@@ -134,20 +134,6 @@ fleteReagendar.addEventListener("change", function () {
     if (!llevaFlete) {horarioFleteReagendar.value = "";convenioReagendar.value = "";}
 });
 
-function cargarComunasReagendamiento() {
-    comunaReagendar.innerHTML = '<option value="">Seleccione una comuna</option>';
-    [...new Set(comunasDisponibles)].forEach(function (comuna) {
-        const opcion = document.createElement("option");
-        opcion.value = comuna;
-        opcion.textContent = comuna;
-        comunaReagendar.appendChild(opcion);
-    });
-}
-
-checkOtraDireccionReagendar.addEventListener("change", function () {
-    if (this.checked) {cargarComunasReagendamiento();direccionReagendar.focus();}
-});
-
 direccionReagendar.addEventListener("input", function () {
     this.value = this.value.toUpperCase();
 });
