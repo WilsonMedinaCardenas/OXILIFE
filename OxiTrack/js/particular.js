@@ -715,11 +715,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     selectServicio.addEventListener("change", async () => {
         const servicio = selectServicio.value.trim();
 
-        actualizarVistaSegunServicio(servicio);
-
+        // 1. Quitar la selección del paciente anterior.
+        selectPaciente.value = "";
         inputPacienteId.value = "";
         pacientesDisponibles = [];
         selectPaciente.disabled = true;
+
+        // 2. Limpiar los elementos del servicio anterior.
+        limpiarElementos();
+
+        // 3. Ocultar los contadores genéricos.
+        const seccionCilindros = document.getElementById("seccionCilindros");
+        if (seccionCilindros) {seccionCilindros.hidden = true;}
+
+        // 4. Ocultar la recarga dinámica anterior.
+        const seccionRecarga = document.getElementById("seccionRecargaDinamica");
+        if (seccionRecarga) {seccionRecarga.hidden = true;}
+
+        // 5. Limpiar las cantidades anteriores.
+        cilindrosRecargaActual = [];
+        ["e07", "e10", "r07", "r10"].forEach(id => {const contador = document.getElementById(id);if (contador) contador.value = "0";});
+
+        // 6. Actualizar la pantalla del nuevo servicio.
+        actualizarVistaSegunServicio(servicio);
 
         if (!servicio) {
             selectPaciente.innerHTML = `<option value="">Primero seleccione un servicio...</option>`;
@@ -762,7 +780,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             cargarElementosRetiro(paciente.elementosOrigen);
         } else {
             limpiarElementos();
-            if (esRetiro && seccionCilindros) seccionCilindros.hidden = false;
+
+            // Sin paciente seleccionado no debe aparecer
+            // ningún contador genérico.
+            if (seccionCilindros) {seccionCilindros.hidden = !(paciente &&esRetiro && !paciente.elementosOrigen);}
         }
     });
 });
