@@ -1626,78 +1626,39 @@ async function buscarServiciosGestion(
         }
 
 
-        const servicios =
-            Array.isArray(datos.servicios)
-                ? datos.servicios
-                : [];
+        const normalizarEstadoGestion = valor => String(valor || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const serviciosRecibidos = Array.isArray(datos.servicios) ? datos.servicios : [];
+        const servicios = serviciosRecibidos.filter(servicio => {const estado = normalizarEstadoGestion(servicio.estado);
+            if (tipoGestionActual === "REAGENDAR") {
+                return estado === "PENDIENTE" ||
+                    estado === "AGENDADO" ||
+                    estado === "REAGENDADO" ||
+                    estado === "NO REALIZADO";
+            }
 
-
-        resultadosGestionServicio.innerHTML =
-            "";
-
-
+            return estado === "PENDIENTE" || estado === "AGENDADO" || estado === "REAGENDADO";
+        });
+        resultadosGestionServicio.innerHTML = "";
         if (!servicios.length) {
 
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "resultado-busqueda-item";
-
-            item.textContent =
-                "No se encontraron servicios pendientes.";
-
-            resultadosGestionServicio.appendChild(
-                item
-            );
-
-            mostrar(
-                resultadosGestionServicio
-            );
-
+            const item = document.createElement("div");
+            item.className = "resultado-busqueda-item";
+            item.textContent = "No se encontraron servicios pendientes.";
+            resultadosGestionServicio.appendChild(item);
+            mostrar(resultadosGestionServicio);
             return;
 
         }
 
 
-        servicios.forEach(
-            function (servicio) {
+        servicios.forEach(function (servicio) {
 
-                const item =
-                    document.createElement(
-                        "div"
-                    );
+                const item = document.createElement( "div");
+                item.className ="resultado-busqueda-item";
+                item.textContent = servicio.nombre + " | " + servicio.servicio + " | " + servicio.estado + " | " + servicio.fechaProgramada + " | " + servicio.ventanaHoraria;
 
-                item.className =
-                    "resultado-busqueda-item";
-
-                item.textContent =
-                    servicio.nombre +
-                    " | " +
-                    servicio.servicio +
-                    " | " +
-                    servicio.fechaProgramada +
-                    " | " +
-                    servicio.ventanaHoraria;
-
-
-                item.addEventListener(
-                    "click",
-                    function () {
-
-                        seleccionarServicioGestion(
-                            servicio
-                        );
-
-                    }
-                );
-
-
-                resultadosGestionServicio.appendChild(
-                    item
-                );
+                item.addEventListener("click",function () {seleccionarServicioGestion(servicio);});
+                resultadosGestionServicio.appendChild(item);
 
             }
         );
@@ -2108,11 +2069,19 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
                 throw new Error(resultado.error || "No fue posible gestionar el servicio.");
             }
 
+            const gestionRealizada = tipoGestionActual;
             ocultarModal(modalGestionServicio);
-            mostrarMensaje(tipoGestionActual === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.", "exito");
-            setTimeout(function () {ocultarMensaje();}, 30000); 
+            mostrarMensaje(gestionRealizada === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.","exito");
+            setTimeout(function () {ocultarMensaje();}, 30000);
             servicioGestionSeleccionado = null;
             solicitudGestionId = "";
+            resultadosGestionServicio.innerHTML = "";
+            ocultar(resultadosGestionServicio);
+            ocultar(detalleGestionServicio);
+            ocultar(nuevaProgramacionGestion);
+            mostrar(accionesCerrarGestion);
+
+            // La próxima búsqueda consultará nuevamente al backend.
         } catch (error) {
             console.error("Error gestión servicio:", error);
 

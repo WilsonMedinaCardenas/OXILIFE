@@ -19,6 +19,7 @@ let fotosCapturadas = [];
 let signaturePad = null;
 let elementosDisponibles = [];
 let envioIdParticularActual = "";
+let resultadoServicioParticular = "ATENDIDO";
 
 // ==========================================================
 // MODALES OXITRACK
@@ -416,6 +417,7 @@ function construirPayloadParticular(registro) {
     payload.append("tipoCliente","PARTICULAR");
     payload.append("envioId",registro.envioId);
     payload.append("servicio",registro.servicio);
+    payload.append("resultadoServicio",registro.resultadoServicio || "ATENDIDO");
     payload.append("pacienteId",registro.pacienteId);
     payload.append("elementos",registro.elementos);
     payload.append("recargaRealizada",registro.recargaRealizada || "[]");
@@ -427,7 +429,7 @@ function construirPayloadParticular(registro) {
     payload.append("observaciones",registro.observaciones);
     payload.append("gps",registro.gps);
     payload.append("dispositivo",registro.dispositivo);
-    payload.append("firma",registro.firma,"firma.png");
+    if (registro.firma) payload.append("firma",registro.firma,"firma.png");
 
     if (registro.foto) {payload.append("foto",registro.foto,"foto-servicio-1.jpg");}
     if (registro.foto2) {payload.append("foto2", registro.foto2,"foto-servicio-2.jpg");}
@@ -706,6 +708,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const selectServicio = document.getElementById("servicioParticular");
     const selectPaciente = document.getElementById("pacienteParticular");
+    const btnNoRealizado = document.getElementById("btnNoRealizado");
+    const avisoNoRealizado = document.getElementById("avisoNoRealizado");
+    const btnCancelarNoRealizado = document.getElementById("btnCancelarNoRealizado");
+
+    function cambiarResultadoServicio(resultado) {
+        resultadoServicioParticular = resultado;
+        avisoNoRealizado.hidden = resultado !== "NO REALIZADO";
+        document.getElementById("seccionFotos").hidden = resultado === "NO REALIZADO" ? false : selectServicio.value.toLowerCase().includes("retiro");
+        document.getElementById("firma").hidden = resultado === "NO REALIZADO";
+        document.getElementById("tituloFirmaParticular").hidden = resultado === "NO REALIZADO";
+        document.getElementById("btnEnviar").textContent = resultado === "NO REALIZADO" ? "Confirmar NO REALIZADO" : "Enviar Registro";
+    }
+    btnNoRealizado.addEventListener("click", () => cambiarResultadoServicio("NO REALIZADO"));
+    btnCancelarNoRealizado.addEventListener("click", () => cambiarResultadoServicio("ATENDIDO"));
     const inputPacienteId = document.getElementById("pacienteId");
 
     await cargarServicios(selectServicio);
@@ -713,6 +729,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     sincronizarPendientesParticular();
 
     selectServicio.addEventListener("change", async () => {
+
+        cambiarResultadoServicio("ATENDIDO");
+        btnNoRealizado.disabled = true; 
         const servicio = selectServicio.value.trim();
 
         // 1. Quitar la selección del paciente anterior.
@@ -749,6 +768,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     selectPaciente.addEventListener("change", async () => {
+
+        cambiarResultadoServicio("ATENDIDO");
+        btnNoRealizado.disabled = !selectPaciente.value;
         const paciente = pacientesDisponibles.find(item => String(item.id) === String(selectPaciente.value));
         inputPacienteId.value = paciente ? paciente.id : "";
         const servicio = selectServicio.value.trim().toLowerCase();
@@ -1561,118 +1583,74 @@ function limpiarElementos() {
 
 function limpiarFormularioParticular() {
 
-    const formulario =
-        document.getElementById("formularioParticular");
-
-    const selectServicio =
-        document.getElementById("servicioParticular");
-
-    const selectPaciente =
-        document.getElementById("pacienteParticular");
-
-    const inputPacienteId =
-        document.getElementById("pacienteId");
-
-    const obs =
-        document.getElementById("obs");
-
+    const formulario = document.getElementById("formularioParticular");
+    const selectServicio = document.getElementById("servicioParticular");
+    const selectPaciente = document.getElementById("pacienteParticular");
+    const inputPacienteId = document.getElementById("pacienteId");
+    const obs = document.getElementById("obs");
 
     // ------------------------------------------------------
     // FORMULARIO BASE
     // ------------------------------------------------------
 
-    if (formulario) {
-        formulario.reset();
-    }
-
+    if (formulario) {formulario.reset();}
 
     // ------------------------------------------------------
     // SERVICIO
     // ------------------------------------------------------
 
-    if (selectServicio) {
-        selectServicio.value = "";
-    }
-
+    if (selectServicio) {selectServicio.value = "";}
 
     // ------------------------------------------------------
     // PACIENTE
     // ------------------------------------------------------
 
     if (selectPaciente) {
-
         selectPaciente.innerHTML =
             `<option value="">
                 Primero seleccione un servicio...
             </option>`;
-
         selectPaciente.disabled = true;
-
     }
 
-
-    if (inputPacienteId) {
-        inputPacienteId.value = "";
-    }
-
-
+    if (inputPacienteId) {inputPacienteId.value = "";}
     pacientesDisponibles = [];
-
 
     // ------------------------------------------------------
     // CONTADORES
     // ------------------------------------------------------
 
-    ["e07", "e10", "r07", "r10"]
-        .forEach(id => {
-
-            const input =
-                document.getElementById(id);
-
-            if (input) {
-                input.value = "0";
-            }
-
+    ["e07", "e10", "r07", "r10"].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {input.value = "0";}
         });
-
 
     // ------------------------------------------------------
     // ELEMENTOS
     // ------------------------------------------------------
 
     limpiarElementos();
-
     elementosDisponibles = [];
-
 
     // ------------------------------------------------------
     // OBSERVACIONES
     // ------------------------------------------------------
 
-    if (obs) {
-        obs.value = "";
-    }
-
+    if (obs) {obs.value = "";}
 
     // ------------------------------------------------------
     // FOTOS
     // ------------------------------------------------------
 
     detenerCamara();
-
     fotosCapturadas = [];
-
     pintarFotosCapturadas();
-
 
     // ------------------------------------------------------
     // FIRMA
     // ------------------------------------------------------
 
-    if (signaturePad) {
-        signaturePad.clear();
-    }
-
+    if (signaturePad) {signaturePad.clear();}
 
     // ------------------------------------------------------
     // NUEVO ENVÍO = NUEVO ID
@@ -1680,11 +1658,16 @@ function limpiarFormularioParticular() {
 
     envioIdParticularActual = "";
 
-
     // ------------------------------------------------------
     // RESTABLECER VISTA
     // ------------------------------------------------------
-
+    
+    resultadoServicioParticular = "ATENDIDO";
+    document.getElementById("avisoNoRealizado").hidden = true;
+    document.getElementById("btnNoRealizado").disabled = true;
+    document.getElementById("firma").hidden = false;
+    document.getElementById("tituloFirmaParticular").hidden = false;
+    document.getElementById("btnEnviar").textContent = "Enviar Registro";
     actualizarVistaSegunServicio("");
 
 }
@@ -1968,6 +1951,9 @@ function capturarUbicacionGps() {
 async function confirmarEnvioParticular(datos) {
 
     const servicio = String(datos.servicio || "").toUpperCase();
+    if (datos.resultadoServicio === "NO REALIZADO") {
+        return abrirModalConfirmacion(`<div class="modal-seccion"><strong>Servicio:</strong><span>${servicio}</span><strong>Resultado:</strong><span>NO REALIZADO</span><strong>Paciente:</strong><span>${datos.paciente}</span><strong>Fotografías:</strong><span>${datos.fotos}</span><strong>Observación compartida con el paciente:</strong><span>${datos.observaciones}</span></div>`);
+    }
     const esImplementacion = servicio.includes("IMPLEMENT");
     const esVenta = servicio.includes("VENTA");
     const esRetiro = servicio.includes("RETIRO");
@@ -2138,6 +2124,7 @@ function inicializarFormulario() {
         const r07 = document.getElementById("r07").value;
         const r10 = document.getElementById("r10").value;
         const observaciones = document.getElementById("obs").value.trim().toUpperCase();
+        const esNoRealizado = resultadoServicioParticular === "NO REALIZADO";
 
         if (!servicio) {alert("Debe seleccionar un servicio."); return;}
         if (!pacienteId) {alert("Debe seleccionar un paciente válido.");return;}
@@ -2150,22 +2137,15 @@ function inicializarFormulario() {
         const retiroConOrigen = esRetiro && pacienteActual && pacienteActual.idOrigen && pacienteActual.elementosOrigen;
         const requiereFoto = esImplementacion || servicioNormalizado.includes("recarga") || servicioNormalizado.includes("venta");
 
-        if (requiereFoto && fotosCapturadas.length === 0) {
+        if ((requiereFoto || esNoRealizado) && fotosCapturadas.length === 0) {
             alert("Debe tomar al menos una fotografía antes de enviar el registro.");
             return;
         }
+        if (esNoRealizado && !observaciones) {alert("Debe explicar por qué no se realizó el servicio.");return;}
+        if (fotosCapturadas.length > 2) {alert("Solo se permite un máximo de 2 fotografías.");return;}
+        if (esVisitaTecnica && !observaciones.trim()) {alert("Debe registrar las observaciones de la visita técnica.");return;}
 
-        if (fotosCapturadas.length > 2) {
-            alert("Solo se permite un máximo de 2 fotografías.");
-            return;
-        }
-
-        if (esVisitaTecnica && !observaciones.trim()) {
-            alert("Debe registrar las observaciones de la visita técnica.");
-            return;
-        }
-
-        const recargaRealizada = esRecarga ? obtenerRecargaRealizada() : [];
+        const recargaRealizada = esRecarga && !esNoRealizado ? obtenerRecargaRealizada() : [];
 
         if (esRecarga && recargaRealizada.length === 0) {
             alert("No se cargaron los cilindros programados para esta recarga.");
@@ -2182,17 +2162,14 @@ function inicializarFormulario() {
             alert("Las cantidades de recarga no son válidas.");
             return;
         }
-        const elementosSeleccionados = esImplementacion ? obtenerElementosSeleccionados() : retiroConOrigen ? obtenerElementosRetiro() : [];
+        const elementosSeleccionados = esNoRealizado ? [] : esImplementacion ? obtenerElementosSeleccionados() : retiroConOrigen ? obtenerElementosRetiro() : [];
 
-        if (esImplementacion && elementosSeleccionados.length === 0) {
+        if (esImplementacion && !esNoRealizado && elementosSeleccionados.length === 0) {
             alert("Debe registrar al menos un elemento entregado en la implementación.");
             return;
         }
 
-        if (!signaturePad || signaturePad.isEmpty()) {
-            alert("Debe solicitar la firma del cliente.");
-            return;
-        }
+        if (!esNoRealizado && (!signaturePad || signaturePad.isEmpty())) {alert("Debe solicitar la firma del cliente.");return;}
 
         const confirmado = await confirmarEnvioParticular({
             servicio,
@@ -2204,7 +2181,8 @@ function inicializarFormulario() {
             r07,
             r10,
             observaciones,
-            fotos: fotosCapturadas.length
+            fotos: fotosCapturadas.length,
+            resultadoServicio: resultadoServicioParticular,
         });
 
         if (!confirmado) return;
@@ -2215,12 +2193,15 @@ function inicializarFormulario() {
 
         try {
 
-            const firmaDataUrl = signaturePad.toDataURL("image/png");
-            const respuestaFirma = await fetch(firmaDataUrl);
-            const blobFirma = await respuestaFirma.blob();
+            let blobFirma = null;
+            if (!esNoRealizado) {
+                const respuestaFirma = await fetch(signaturePad.toDataURL("image/png"));
+                blobFirma = await respuestaFirma.blob();
+            }
             const registroParticular = {envioId:envioIdParticularActual,
                 fechaCreacion:new Date().toISOString(),
                 servicio:servicio,
+                resultadoServicio:resultadoServicioParticular,
                 pacienteId:pacienteId,
                 elementos:JSON.stringify(elementosSeleccionados),
                 recargaRealizada:JSON.stringify(recargaRealizada),

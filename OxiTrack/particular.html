@@ -323,9 +323,7 @@
                  FIRMA
                  ================================================== -->
 
-            <label>
-                Firma Cliente
-            </label>
+            <label id="tituloFirmaParticular">Firma Cliente</label>
 
             <canvas id="firma"></canvas>
 
@@ -341,6 +339,12 @@
                 Enviar Registro
             </button>
 
+            <button type="button" id="btnNoRealizado" style="background:#9c3434;color:#fff;" disabled>NO REALIZADO</button>
+            <div id="avisoNoRealizado" hidden style="margin:12px 0;padding:12px;border:1px solid #b55;border-radius:8px;">
+                <strong>Servicio no realizado</strong>
+                <p>Debe registrar una observación y al menos una fotografía. La observación será compartida con el paciente. No se requiere firma.</p>
+                <button type="button" id="btnCancelarNoRealizado" class="btn-secundario">Volver al registro normal</button>
+            </div>
 
             <button
                 type="button"
@@ -414,7 +418,7 @@
 
 
     <!-- JS EXCLUSIVO PARA PARTICULARES -->
-    <script src="./js/particular.js?v=20260913-5"></script>
+    <script src="./js/particular.js?v=20260913-6"></script>
 
     <script>
         if ("serviceWorker" in navigator) {
