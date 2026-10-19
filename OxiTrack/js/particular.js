@@ -713,14 +713,61 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btnCancelarNoRealizado = document.getElementById("btnCancelarNoRealizado");
 
     function cambiarResultadoServicio(resultado) {
+        const esNoRealizado = resultado === "NO REALIZADO";
         resultadoServicioParticular = resultado;
-        avisoNoRealizado.hidden = resultado !== "NO REALIZADO";
-        document.getElementById("seccionFotos").hidden = resultado === "NO REALIZADO" ? false : selectServicio.value.toLowerCase().includes("retiro");
-        document.getElementById("firma").hidden = resultado === "NO REALIZADO";
-        document.getElementById("tituloFirmaParticular").hidden = resultado === "NO REALIZADO";
-        document.getElementById("btnEnviar").textContent = resultado === "NO REALIZADO" ? "Confirmar NO REALIZADO" : "Enviar Registro";
+
+        avisoNoRealizado.hidden = !esNoRealizado;
+
+        const firma = document.getElementById("firma");
+        const tituloFirma = document.getElementById("tituloFirmaParticular");
+        const limpiarFirma = document.getElementById("btnLimpiar");
+        const enviar = document.getElementById("btnEnviar");
+        const textoFoto = document.querySelector("#seccionFotos .texto-foto");
+
+        firma.hidden = esNoRealizado;
+        tituloFirma.hidden = esNoRealizado;
+        limpiarFirma.hidden = esNoRealizado;
+
+        enviar.textContent = "Enviar Registro";
+
+        if (textoFoto) {
+            textoFoto.textContent = esNoRealizado
+                ? "Tome al menos una fotografía como respaldo del servicio no realizado."
+                : "Tome al menos una fotografía del servicio realizado.";
+        }
+
+        ["seccionElementos", "seccionRecargaDinamica", "seccionCilindros"].forEach(id => {
+            const seccion = document.getElementById(id);
+            if (!seccion) return;
+
+            if (esNoRealizado) {
+                seccion.dataset.ocultoAntesNoRealizado = String(seccion.hidden);
+                seccion.hidden = true;
+            } else if (seccion.dataset.ocultoAntesNoRealizado !== undefined) {
+                seccion.hidden = seccion.dataset.ocultoAntesNoRealizado === "true";
+                delete seccion.dataset.ocultoAntesNoRealizado;
+            }
+        });
+
+        const fotos = document.getElementById("seccionFotos");
+        fotos.hidden = esNoRealizado
+            ? false
+            : selectServicio.value.toLowerCase().includes("retiro");
+
+        btnNoRealizado.hidden = esNoRealizado || !selectPaciente.value;
     }
-    btnNoRealizado.addEventListener("click", () => cambiarResultadoServicio("NO REALIZADO"));
+    btnNoRealizado.addEventListener("click", () => {
+        if (!selectPaciente.value) return;
+
+        alert(
+            "SERVICIO NO REALIZADO\n\n" +
+            "Debe escribir el motivo en Observaciones y tomar al menos una fotografía.\n\n" +
+            "No se requiere firma. La observación y la fotografía respaldarán el registro."
+        );
+
+        cambiarResultadoServicio("NO REALIZADO");
+        document.getElementById("obs").focus();
+    });
     btnCancelarNoRealizado.addEventListener("click", () => cambiarResultadoServicio("ATENDIDO"));
     const inputPacienteId = document.getElementById("pacienteId");
 
@@ -731,7 +778,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     selectServicio.addEventListener("change", async () => {
 
         cambiarResultadoServicio("ATENDIDO");
-        btnNoRealizado.disabled = true; 
+        btnNoRealizado.disabled = true;
+        btnNoRealizado.hidden = true; 
         const servicio = selectServicio.value.trim();
 
         // 1. Quitar la selección del paciente anterior.
@@ -771,6 +819,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         cambiarResultadoServicio("ATENDIDO");
         btnNoRealizado.disabled = !selectPaciente.value;
+        btnNoRealizado.hidden = !selectPaciente.value;
         const paciente = pacientesDisponibles.find(item => String(item.id) === String(selectPaciente.value));
         inputPacienteId.value = paciente ? paciente.id : "";
         const servicio = selectServicio.value.trim().toLowerCase();
@@ -1665,6 +1714,15 @@ function limpiarFormularioParticular() {
     resultadoServicioParticular = "ATENDIDO";
     document.getElementById("avisoNoRealizado").hidden = true;
     document.getElementById("btnNoRealizado").disabled = true;
+    document.getElementById("btnNoRealizado").hidden = true;
+    document.getElementById("btnLimpiar").hidden = false;
+
+    ["seccionElementos", "seccionRecargaDinamica", "seccionCilindros"].forEach(id => {
+        const seccion = document.getElementById(id);
+        if (seccion) delete seccion.dataset.ocultoAntesNoRealizado;
+    });
+    const textoFoto = document.querySelector("#seccionFotos .texto-foto");
+    if (textoFoto) {textoFoto.textContent = "Tome al menos una fotografía del servicio realizado.";}
     document.getElementById("firma").hidden = false;
     document.getElementById("tituloFirmaParticular").hidden = false;
     document.getElementById("btnEnviar").textContent = "Enviar Registro";
@@ -1952,7 +2010,7 @@ async function confirmarEnvioParticular(datos) {
 
     const servicio = String(datos.servicio || "").toUpperCase();
     if (datos.resultadoServicio === "NO REALIZADO") {
-        return abrirModalConfirmacion(`<div class="modal-seccion"><strong>Servicio:</strong><span>${servicio}</span><strong>Resultado:</strong><span>NO REALIZADO</span><strong>Paciente:</strong><span>${datos.paciente}</span><strong>Fotografías:</strong><span>${datos.fotos}</span><strong>Observación compartida con el paciente:</strong><span>${datos.observaciones}</span></div>`);
+        return true;
     }
     const esImplementacion = servicio.includes("IMPLEMENT");
     const esVenta = servicio.includes("VENTA");
@@ -2147,7 +2205,7 @@ function inicializarFormulario() {
 
         const recargaRealizada = esRecarga && !esNoRealizado ? obtenerRecargaRealizada() : [];
 
-        if (esRecarga && recargaRealizada.length === 0) {
+        if (esRecarga && !esNoRealizado && recargaRealizada.length === 0) {
             alert("No se cargaron los cilindros programados para esta recarga.");
             return;
         }
