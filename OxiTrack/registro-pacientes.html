@@ -700,11 +700,12 @@
                     <!-- CANTIDAD DE IMPLEMENTACIONES DEL MISMO TIPO -->
                     <div class="campo">
                         <label>Cantidad de implementaciones</label>
-                        <div class="contador" style="display:flex;align-items:center;gap:12px;">
-                            <button type="button" id="btnImplementacionMenos" class="btn-selector" style="width:55px;">−</button>
+                        <div class="contador" style="display:flex;align-items:stretch;gap:12px;width:100%;box-sizing:border-box;">
+                            <button type="button" id="btnImplementacionMenos" class="btn-selector" style="width:64px;min-width:64px;flex-shrink:0;">−</button>
                             <input type="number" id="cantidadImplementacion" value="1" min="1" max="20" readonly
-                                style="width:75px;text-align:center;">
-                            <button type="button" id="btnImplementacionMas" class="btn-selector" style="width:55px;">+</button>
+                                style="flex:1;min-width:0;width:100%;text-align:center;font-size:20px;font-weight:bold;box-sizing:border-box;"
+                            >
+                            <button type="button" id="btnImplementacionMas" class="btn-selector" style="width:64px;min-width:64px;flex-shrink:0;">+</button>
                         </div>
                         <small class="campo-ayuda">Cantidad del mismo tipo de implementación.</small>
                     </div>
@@ -1507,7 +1508,7 @@
          JAVASCRIPT
     ========================================================== -->
 
-    <script src="./js/registro-pacientes.js?v=20260960-0" defer></script>
+    <script src="./js/registro-pacientes.js?v=20260960-1" defer></script>
 
 </body>
 
