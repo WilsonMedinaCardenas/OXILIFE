@@ -756,16 +756,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         btnNoRealizado.hidden = esNoRealizado || !selectPaciente.value;
     }
-    btnNoRealizado.addEventListener("click", () => {
+    btnNoRealizado.addEventListener("click", async () => {
         if (!selectPaciente.value) return;
 
-        alert(
-            "SERVICIO NO REALIZADO\n\n" +
-            "Debe escribir el motivo en Observaciones y tomar al menos una fotografía.\n\n" +
-            "No se requiere firma. La observación y la fotografía respaldarán el registro."
+        cambiarResultadoServicio("NO REALIZADO");
+
+        await mostrarModalResultado(
+            "Servicio no realizado",
+            "Registre el motivo en Observaciones y tome al menos una fotografía como respaldo. No se requiere firma."
         );
 
-        cambiarResultadoServicio("NO REALIZADO");
         document.getElementById("obs").focus();
     });
     btnCancelarNoRealizado.addEventListener("click", () => cambiarResultadoServicio("ATENDIDO"));
