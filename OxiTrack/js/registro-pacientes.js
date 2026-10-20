@@ -247,6 +247,11 @@ const comunaSeleccionada = document.getElementById("comunaSeleccionada");
 const seccionImplementacion = document.getElementById("seccionImplementacion");
 const selectTipoImplementacion = document.getElementById("selectTipoImplementacion");
 const selectCicloImplementacion = document.getElementById("selectCicloImplementacion");
+const cantidadImplementacion = document.getElementById("cantidadImplementacion");
+document.getElementById("btnImplementacionMenos").addEventListener("click", () => {
+    cantidadImplementacion.value = String(Math.max(1, Number(cantidadImplementacion.value) - 1));});
+document.getElementById("btnImplementacionMas").addEventListener("click", () => {
+    cantidadImplementacion.value = String(Math.min(20, Number(cantidadImplementacion.value) + 1));});
 const resumenTarifasImplementacion = document.getElementById("resumenTarifasImplementacion");
 const valorArriendo = document.getElementById("valorArriendo");
 const valorInsumos = document.getElementById("valorInsumos");
@@ -2248,22 +2253,11 @@ btnConfirmarRegistro.addEventListener("click", async function () {
             // IMPLEMENTACIÓN
             // ==================================================
 
-            if (
-                servicioActual === "IMPLEMENTACIÓN"
-            ) {
-
-                payload.append(
-                    "tipo",
-                    selectTipoImplementacion.value
-                );
-
-                payload.append(
-                    "ciclo",
-                    selectCicloImplementacion.value
-                );
-
+            if (servicioActual === "IMPLEMENTACIÓN") {
+                payload.append("tipo",selectTipoImplementacion.value);
+                payload.append("ciclo",selectCicloImplementacion.value);
+                payload.append("cantidadImplementacion", cantidadImplementacion.value);
             }
-
 
             // ==================================================
             // RECARGA
@@ -2295,57 +2289,24 @@ btnConfirmarRegistro.addEventListener("click", async function () {
                 servicioActual === "VISITA TÉCNICA"
             ) {
 
-                payload.append(
-                    "llevaFlete",
-                    llevaFleteActual
-                );
+                payload.append("llevaFlete",llevaFleteActual);
 
-
-                if (
-                    llevaFleteActual === "SI"
-                ) {
-
-                    payload.append(
-                        "horarioFlete",
-                        horarioFleteActual
-                    );
-
-                    payload.append(
-                        "convenio",
-                        convenioActual
-                    );
-
+                if (llevaFleteActual === "SI") {
+                    payload.append("horarioFlete",horarioFleteActual);
+                    payload.append("convenio",convenioActual);
                 }
 
             }
-
-
-            payload.append(
-                "observaciones",
-                inputObservacionesRegistro.value.trim()
-            );
-
+            payload.append("observaciones",inputObservacionesRegistro.value.trim());
 
             // ==================================================
             // ENVÍO
             // ==================================================
 
-            const respuesta =
-                await fetch(
-                    "/api/oxitrack/",
-                    {
-                        method: "POST",
-                        body: payload
-                    }
-                );
-
-
+            const respuesta = await fetch("/api/oxitrack/",{method: "POST",body: payload});
             const textoRespuesta = await respuesta.text();
-
             let resultado;
-
-            try {
-                resultado = JSON.parse(textoRespuesta);
+            try {resultado = JSON.parse(textoRespuesta);
             } catch (error) {
                 console.error("RESPUESTA NO JSON DEL WORKER", {
                     status: respuesta.status,
@@ -2361,68 +2322,26 @@ btnConfirmarRegistro.addEventListener("click", async function () {
                 );
             }
 
-
-            if (
-                !respuesta.ok ||
-                resultado.ok !== true
-            ) {
-
-                throw new Error(
-                    resultado.error ||
-                    "El servidor rechazó el registro."
-                );
-
-            }
-
+            if (!respuesta.ok || resultado.ok !== true) {throw new Error(resultado.error || "El servidor rechazó el registro.");}
 
             // ==================================================
             // ÉXITO
             // ==================================================
 
-            ocultarModal(
-                modalConfirmacionRegistro
-            );
-
-
-            idRegistroCreado.textContent =
-                resultado.id;
-
-
-            mostrarModal(
-                modalRegistroExitoso
-            );
-
+            ocultarModal(modalConfirmacionRegistro);
+            idRegistroCreado.textContent = resultado.id;
+            mostrarModal(modalRegistroExitoso);
 
         } catch (error) {
 
-            console.error(
-                "Error al registrar servicio:",
-                error
-            );
-
-
-            ocultarModal(
-                modalConfirmacionRegistro
-            );
-
-
-            mostrarError(
-                error.message ||
-                "No fue posible registrar el servicio."
-            );
-
-
-            mensajeRegistro.scrollIntoView({
-                behavior: "smooth",
-                block: "center"
-            });
-
+            console.error("Error al registrar servicio:",error);
+            ocultarModal(modalConfirmacionRegistro);
+            mostrarError(error.message ||"No fue posible registrar el servicio.");
+            mensajeRegistro.scrollIntoView({behavior: "smooth",block: "center"});
         } finally {
 
             btnConfirmarRegistro.disabled = false;
-
-            btnConfirmarRegistro.textContent =
-                "Confirmar";
+            btnConfirmarRegistro.textContent = "Confirmar";
 
         }
 
@@ -2841,9 +2760,8 @@ function construirResumen() {
     // ------------------------------------------------------
 
     if (servicioActual === "IMPLEMENTACIÓN") {html += crearFilaResumen("Tipo implementación", textoOpcionSeleccionada(selectTipoImplementacion));
-
         html += crearFilaResumen("Ciclo", textoOpcionSeleccionada(selectCicloImplementacion));
-
+        html += crearFilaResumen("Cantidad", cantidadImplementacion.value);
     }
 
     // ------------------------------------------------------
@@ -2942,6 +2860,7 @@ function crearFilaResumen(titulo, valor) {
 function reiniciarFormularioCompleto() {
 
     formRegistroPaciente.reset();
+    cantidadImplementacion.value = "1";
     configurarFechaServicio();
     servicioActual = "";
     tipoPacienteActual = "";
@@ -2988,6 +2907,7 @@ function reiniciarFormularioCompleto() {
 
 function reiniciarFlujoServicio() {
 
+    cantidadImplementacion.value = "1";
     tipoPacienteActual = "";
     pacienteSeleccionado = null;
     idSolicitudRegistro = "";

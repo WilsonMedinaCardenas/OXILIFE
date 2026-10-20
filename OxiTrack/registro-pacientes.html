@@ -697,6 +697,18 @@
 
                     </div>
 
+                    <!-- CANTIDAD DE IMPLEMENTACIONES DEL MISMO TIPO -->
+                    <div class="campo">
+                        <label>Cantidad de implementaciones</label>
+                        <div class="contador" style="display:flex;align-items:center;gap:12px;">
+                            <button type="button" id="btnImplementacionMenos" class="btn-selector" style="width:55px;">−</button>
+                            <input type="number" id="cantidadImplementacion" value="1" min="1" max="20" readonly
+                                style="width:75px;text-align:center;">
+                            <button type="button" id="btnImplementacionMas" class="btn-selector" style="width:55px;">+</button>
+                        </div>
+                        <small class="campo-ayuda">Cantidad del mismo tipo de implementación.</small>
+                    </div>
+
 
                     <!-- CICLO -->
 
@@ -706,29 +718,12 @@
                             Ciclo de arriendo
                         </label>
 
-                        <select
-                            id="selectCicloImplementacion"
-                            name="ciclo"
-                        >
-
-                            <option value="">
-                                Seleccione un ciclo
-                            </option>
-
-                            <option value="7">
-                                7 días
-                            </option>
-
-                            <option value="15">
-                                15 días
-                            </option>
-
-                            <option value="30">
-                                30 días
-                            </option>
-
+                        <select id="selectCicloImplementacion" name="ciclo">
+                            <option value="">Seleccione un ciclo</option>
+                            <option value="7">7 días</option>
+                            <option value="15">15 días</option>
+                            <option value="30">30 días</option>
                         </select>
-
                     </div>
 
 
@@ -1512,7 +1507,7 @@
          JAVASCRIPT
     ========================================================== -->
 
-    <script src="./js/registro-pacientes.js?v=20260965-0" defer></script>
+    <script src="./js/registro-pacientes.js?v=20260960-0" defer></script>
 
 </body>
 

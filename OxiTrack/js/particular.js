@@ -829,7 +829,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const seccionCilindros = document.getElementById("seccionCilindros");
 
         if (paciente && esImplementacion && paciente.tipo) {
-            await cargarElementos(paciente.tipo);
+            await cargarElementos(paciente.tipo, paciente.detalleImplementacion || "");
         } else if (paciente && esRecarga) {
 
             limpiarElementos();
@@ -1256,117 +1256,56 @@ async function precargarDatosOfflineParticular() {
 // ELEMENTOS SEGÚN TIPO DE IMPLEMENTACIÓN
 // ==========================================================
 
-async function cargarElementos(tipo) {
+async function cargarElementos(tipo, detalleImplementacion = "") {
 
-    const seccion =
-        document.getElementById(
-            "seccionElementos"
-        );
-
-    const lista =
-        document.getElementById(
-            "listaElementos"
-        );
-
-
+    const seccion =document.getElementById("seccionElementos");
+    const lista =document.getElementById( "listaElementos");
     elementosDisponibles = [];
-
     lista.innerHTML = "";
-
     seccion.hidden = true;
-
-
     let elementos = [];
-
-
     if (navigator.onLine) {
-
         try {
+            const respuesta =await fetch(`${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`,{ cache: "no-store" });
+            const datos =await respuesta.json();
 
-            const respuesta =
-                await fetch(
-                    `${WORKER_URL}?modo=elementosParticular&tipo=${encodeURIComponent(tipo)}`,
-                    { cache: "no-store" }
-                );
-
-
-            const datos =
-                await respuesta.json();
-
-
-            if (
-                respuesta.ok &&
-                datos.ok === true &&
-                Array.isArray(datos.elementos)
-            ) {
-
-                elementos =
-                    datos.elementos;
-
-
-                guardarElementosOffline(
-                    tipo,
-                    elementos
-                );
-
+            if (respuesta.ok && datos.ok === true & Array.isArray(datos.elementos)) {
+                elementos = datos.elementos;
+                guardarElementosOffline(tipo,elementos);
             }
-
         } catch (error) {
-
-            console.warn(
-                "Falló consulta online de elementos. Se utilizará caché.",
-                error
-            );
-
+            console.warn("Falló consulta online de elementos. Se utilizará caché.",error);
         }
-
     }
 
 
-    if (elementos.length === 0) {
+    if (elementos.length === 0) {elementos =obtenerElementosOffline(tipo);}
+    elementosDisponibles = elementos;
+    let cantidadesProgramadas = new Map();
 
-        elementos =
-            obtenerElementosOffline(
-                tipo
-            );
-
+    if (detalleImplementacion) {
+        try {
+            const detalle = JSON.parse(detalleImplementacion);
+            if (!Array.isArray(detalle)) {throw new Error("Detalle de implementación inválido.");}
+            cantidadesProgramadas = new Map(detalle.map(item => [String(item.elemento || "").trim().toUpperCase(),Number(item.cantidad)]));
+        } catch (error) {
+            console.error("Error en cantidades programadas:", error);
+            alert("No fue posible interpretar el equipamiento solicitado. Informe a Oficina.");
+            return;
+        }
     }
-
-
-    elementosDisponibles =
-        elementos;
-
-
     if (!elementosDisponibles.length) {
 
-        lista.innerHTML =
-            `<p>No hay elementos disponibles sin conexión para este tipo.</p>`;
-
+        lista.innerHTML = `<p>No hay elementos disponibles sin conexión para este tipo.</p>`;
         seccion.hidden = false;
-
         return;
-
     }
 
 
-    elementosDisponibles.forEach(
-        (elemento, index) => {
-
-            const fila =
-                document.createElement(
-                    "div"
-                );
-
-
-            fila.className =
-                "elemento-fila";
-
-
-            fila.innerHTML = `
-                <label class="elemento-nombre">
-                    ${elemento.elemento}
-                </label>
-
+    elementosDisponibles.forEach((elemento, index) => {
+            const fila =document.createElement("div");
+            fila.className ="elemento-fila";
+            fila.innerHTML = ` <label class="elemento-nombre">${elemento.elemento}</label>
                 <div class="contador elemento-contador">
 
                     <button
@@ -1379,7 +1318,7 @@ async function cargarElementos(tipo) {
 
                     <input
                         id="elemento-${index}"
-                        value="0"
+                        value="${cantidadesProgramadas.get(String(elemento.elemento || '').trim().toUpperCase()) ?? 0}"
                         readonly
                     >
 
@@ -1393,58 +1332,17 @@ async function cargarElementos(tipo) {
 
                 </div>
             `;
-
-
-            lista.appendChild(
-                fila
-            );
+            lista.appendChild(fila);
 
         }
     );
 
 
-    lista
-        .querySelectorAll(
-            ".btn-elemento-menos"
-        )
-        .forEach(btn => {
-
-            btn.addEventListener(
-                "click",
-                () =>
-                    cambiarCantidadElemento(
-                        Number(
-                            btn.dataset.index
-                        ),
-                        -1
-                    )
-            );
-
-        });
-
-
-    lista
-        .querySelectorAll(
-            ".btn-elemento-mas"
-        )
-        .forEach(btn => {
-
-            btn.addEventListener(
-                "click",
-                () =>
-                    cambiarCantidadElemento(
-                        Number(
-                            btn.dataset.index
-                        ),
-                        1
-                    )
-            );
-
-        });
-
-
+    lista.querySelectorAll(".btn-elemento-menos").forEach(btn => {
+            btn.addEventListener("click",() =>cambiarCantidadElemento(Number(btn.dataset.index),-1));});
+    lista.querySelectorAll(".btn-elemento-mas").forEach(btn => {
+            btn.addEventListener("click",() =>cambiarCantidadElemento(Number(btn.dataset.index), 1));});
     seccion.hidden = false;
-
 }
 
 let cilindrosRecargaActual = [];
