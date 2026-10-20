@@ -1,1162 +1,435 @@
-// URL directa de tu Cloudflare Worker
+
+"use strict";
+
 const WORKER_URL = "https://oxilife.cl/api/oxitrack/";
+const $ = id => document.getElementById(id);
+const normalizar = valor => String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
 
-// Variable global para retener las coordenadas GPS de forma indestructible
-let coordenadasGPS = "Buscando señal GPS...";
+let emailOperario = "", nombreOperario = "", asignaciones = [], asignacionActual = null;
+let firmaPad = null, ubicacion = "No disponible", enviando = false, sincronizando = false;
+let solicitudConsulta = 0;
 
-// ==========================================================
-// CONTROL DE ENVÍOS ÚNICOS
-// ==========================================================
+const claveLocal = nombre => `oxitrack_empresa_v2_${emailOperario}_${nombre}`;
 
-let sincronizacionOfflineEnCurso = false;
-
-// ==========================================================
-// MODALES OXITRACK
-// ==========================================================
-
-function abrirModalConfirmacion(contenidoHtml) {
-
-    return new Promise(resolve => {
-
-        const modal =
-            document.getElementById("modalConfirmacion");
-
-        const resumen =
-            document.getElementById("modalResumen");
-
-        const btnVolver =
-            document.getElementById("btnModalVolver");
-
-        const btnConfirmar =
-            document.getElementById("btnModalConfirmar");
-
-
-        resumen.innerHTML = contenidoHtml;
-
-        modal.hidden = false;
-
-
-        const cerrar = resultado => {
-
-            modal.hidden = true;
-
-            btnVolver.onclick = null;
-            btnConfirmar.onclick = null;
-
-            resolve(resultado);
-
-        };
-
-
-        btnVolver.onclick =
-            () => cerrar(false);
-
-
-        btnConfirmar.onclick =
-            () => cerrar(true);
-
-    });
-
+function leerLocal(clave, defecto) {
+  try { return JSON.parse(localStorage.getItem(clave)) ?? defecto; }
+  catch (_) { return defecto; }
 }
 
-
-function mostrarModalResultado(titulo, mensaje) {
-
-    return new Promise(resolve => {
-
-        const modal =
-            document.getElementById("modalResultado");
-
-        const tituloElemento =
-            document.getElementById("modalResultadoTitulo");
-
-        const mensajeElemento =
-            document.getElementById("modalResultadoMensaje");
-
-        const boton =
-            document.getElementById("btnModalResultado");
-
-
-        tituloElemento.textContent = titulo;
-
-        mensajeElemento.textContent = mensaje;
-
-        modal.hidden = false;
-
-
-        boton.onclick = () => {
-
-            modal.hidden = true;
-
-            boton.onclick = null;
-
-            resolve();
-
-        };
-
-    });
-
+function guardarLocal(clave, valor) {
+  localStorage.setItem(clave, JSON.stringify(valor));
 }
 
+function informar(texto) {
+  $("resultado").textContent = texto;
+}
 
-function generarEnvioId() {
+function actualizarEstado() {
+  $("estadoConexion").textContent = navigator.onLine ? "Conexión disponible" : "Sin conexión. Trabajando con datos guardados.";
+  $("cola").textContent = `Envíos pendientes: ${leerLocal(claveLocal("cola"), []).length}`;
+}
 
-    if (
-        window.crypto &&
-        typeof window.crypto.randomUUID === "function"
-    ) {
-        return window.crypto.randomUUID();
+async function consultar(modo, parametros = {}) {
+  const url = new URL(WORKER_URL);
+  url.searchParams.set("modo", modo);
+  Object.entries(parametros).forEach(([nombre, valor]) => url.searchParams.set(nombre, valor));
+  const respuesta = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+  const datos = await respuesta.json();
+  if (!respuesta.ok || datos.ok !== true) throw new Error(datos.error || "Error de consulta.");
+  return datos;
+}
+
+function agregarOpcion(select, valor, texto) {
+  const opcion = document.createElement("option");
+  opcion.value = valor;
+  opcion.textContent = texto;
+  select.appendChild(opcion);
+}
+
+function obtenerPendientesLocales() {
+  return new Set(leerLocal(claveLocal("cola"), []).map(item => String(item.id)));
+}
+
+async function iniciar() {
+  try {
+    const perfil = await consultar("perfilUsuario");
+    emailOperario = String(perfil.email || "").trim().toLowerCase();
+    nombreOperario = String(perfil.operario || "").trim();
+    if (!emailOperario || !nombreOperario) throw new Error("El perfil no devolvió correo y operario.");
+    $("operarioVisible").textContent = `Operario: ${nombreOperario}`;
+  } catch (error) {
+    informar(`No se pudo identificar al operador: ${error.message}`);
+    $("servicio").disabled = true;
+    return;
+  }
+
+  if (typeof SignaturePad === "undefined") {
+    informar("No se pudo cargar la biblioteca de firma. Conéctese a internet y vuelva a cargar.");
+    return;
+  }
+
+  firmaPad = new SignaturePad($("firma"));
+
+  $("servicio").addEventListener("change", cargarAsignaciones);
+  $("asignacion").addEventListener("change", mostrarAsignacion);
+  $("limpiarFirma").addEventListener("click", () => firmaPad.clear());
+  $("formulario").addEventListener("submit", evento => {
+    evento.preventDefault();
+    registrarServicio("ATENDIDO");
+  });
+  $("noRealizado").addEventListener("click", () => registrarServicio("NO REALIZADO"));
+  $("sincronizar").addEventListener("click", sincronizarPendientes);
+
+  window.addEventListener("online", () => {
+    actualizarEstado();
+    sincronizarPendientes();
+  });
+  window.addEventListener("offline", actualizarEstado);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && navigator.onLine) sincronizarPendientes();
+  });
+
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(
+      posicion => { ubicacion = `${posicion.coords.latitude},${posicion.coords.longitude}`; },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 12000 }
+    );
+  }
+
+  try {
+    const datos = await consultar("serviciosEmpresa");
+    if (!Array.isArray(datos.servicios)) throw new Error("Catálogo de servicios inválido.");
+    guardarLocal(claveLocal("servicios"), datos.servicios);
+  } catch (error) {
+    informar(`Se utilizará el catálogo local: ${error.message}`);
+  }
+
+  const servicios = leerLocal(claveLocal("servicios"), []);
+  $("servicio").replaceChildren();
+  agregarOpcion($("servicio"), "", "Seleccione un servicio");
+  servicios.forEach(servicio => agregarOpcion($("servicio"), servicio, servicio));
+
+  actualizarEstado();
+  if (navigator.onLine) sincronizarPendientes();
+}
+
+async function cargarAsignaciones() {
+  const consultaActual = ++solicitudConsulta;
+  const servicio = $("servicio").value;
+
+  asignacionActual = null;
+  asignaciones = [];
+  $("detalleServicio").hidden = true;
+  $("asignacion").disabled = true;
+  $("asignacion").replaceChildren();
+
+  if (!servicio) {
+    agregarOpcion($("asignacion"), "", "Seleccione primero un servicio");
+    return;
+  }
+
+  agregarOpcion($("asignacion"), "", "Cargando asignaciones...");
+  const clave = claveLocal(`asignaciones_${normalizar(servicio)}`);
+
+  try {
+    const datos = await consultar("asignacionesEmpresaTerreno", { servicio });
+    if (!Array.isArray(datos.servicios)) throw new Error("Asignaciones inválidas.");
+    if (consultaActual !== solicitudConsulta) return;
+    guardarLocal(clave, datos.servicios);
+    asignaciones = datos.servicios;
+    $("mensajeAsignaciones").textContent = `${asignaciones.length} asignación(es) pendiente(s).`;
+  } catch (error) {
+    if (consultaActual !== solicitudConsulta) return;
+    asignaciones = leerLocal(clave, []);
+    $("mensajeAsignaciones").textContent = `Datos guardados: ${asignaciones.length}. ${error.message}`;
+  }
+
+  const enCola = obtenerPendientesLocales();
+  asignaciones = asignaciones.filter(item => !enCola.has(String(item.id)));
+
+  $("asignacion").replaceChildren();
+  agregarOpcion($("asignacion"), "", "Seleccione una asignación");
+
+  asignaciones.forEach(item => {
+    const destino = item.paciente ? `${item.paciente} | ${item.empresa}` : item.empresa;
+    const fecha = [item.fechaProgramada, item.ventanaHoraria].filter(Boolean).join(" · ");
+    agregarOpcion($("asignacion"), item.id, `${destino} · ${fecha}`);
+  });
+
+  $("asignacion").disabled = asignaciones.length === 0;
+}
+
+function obtenerElementos(detalle) {
+  let datos = detalle;
+
+  if (typeof datos === "string") {
+    try { datos = JSON.parse(datos); }
+    catch (_) { return []; }
+  }
+
+  if (datos && !Array.isArray(datos) && typeof datos === "object") {
+    if (Array.isArray(datos.elementos)) datos = datos.elementos;
+    else if (Array.isArray(datos.entregados)) datos = datos.entregados;
+    else datos = Object.entries(datos).map(([elemento, cantidad]) => ({ elemento, cantidad }));
+  }
+
+  if (!Array.isArray(datos)) return [];
+
+  return datos.map(item => {
+    const nombre = String(item.elemento || item.nombre || item.producto || (item.gas ? `${item.gas} ${item.medida || ""}` : "") || item.tipo || "").trim();
+    const cantidad = Number(item.cantidad ?? item.unidades ?? 1);
+    return { nombre, cantidad, recarga: item.recarga === true };
+  }).filter(item => item.nombre && Number.isInteger(item.cantidad) && item.cantidad >= 0);
+}
+
+function agregarContador(contenedor, grupo, elemento, indice, cantidadInicial) {
+  const fila = document.createElement("div");
+  fila.className = "fila-cantidad";
+
+  const etiqueta = document.createElement("span");
+  etiqueta.textContent = elemento.nombre;
+
+  const controles = document.createElement("div");
+  controles.className = "cantidad-controles";
+
+  const menos = document.createElement("button");
+  menos.type = "button";
+  menos.textContent = "−";
+
+  const cantidad = document.createElement("input");
+  cantidad.type = "number";
+  cantidad.min = "0";
+  cantidad.max = "50";
+  cantidad.step = "1";
+  cantidad.value = String(cantidadInicial);
+  cantidad.dataset.grupo = grupo;
+  cantidad.dataset.indice = String(indice);
+
+  const mas = document.createElement("button");
+  mas.type = "button";
+  mas.textContent = "+";
+
+  menos.onclick = () => {
+    cantidad.value = String(Math.max(0, Number(cantidad.value || 0) - 1));
+  };
+  mas.onclick = () => {
+    cantidad.value = String(Math.min(50, Number(cantidad.value || 0) + 1));
+  };
+
+  controles.append(menos, cantidad, mas);
+  fila.append(etiqueta, controles);
+  contenedor.appendChild(fila);
+}
+
+function mostrarAsignacion() {
+  asignacionActual = asignaciones.find(item => item.id === $("asignacion").value) || null;
+  $("detalleServicio").hidden = !asignacionActual;
+  if (!asignacionActual) return;
+
+  const item = asignacionActual;
+  const ficha = $("ficha");
+  ficha.replaceChildren();
+
+  [
+    ["Empresa", item.empresa],
+    ["Paciente", item.paciente],
+    ["Servicio", item.servicio],
+    ["Tipo", item.tipo],
+    ["Dirección", `${item.direccion || ""} ${item.comuna || ""}`],
+    ["Programación", `${item.fechaProgramada || ""} ${item.ventanaHoraria || ""}`],
+    ["Observaciones Oficina", item.observacionesOficina]
+  ].forEach(([titulo, valor]) => {
+    if (!String(valor || "").trim()) return;
+    const parrafo = document.createElement("p");
+    const negrita = document.createElement("strong");
+    negrita.textContent = `${titulo}: `;
+    parrafo.append(negrita, document.createTextNode(String(valor)));
+    ficha.appendChild(parrafo);
+  });
+
+  const elementos = obtenerElementos(item.detalleSolicitado);
+  const contenedor = $("cantidades");
+  contenedor.replaceChildren();
+
+  if (!elementos.length) {
+    const aviso = document.createElement("p");
+    aviso.textContent = "Este servicio no tiene un detalle estructurado. No se podrá marcar ATENDIDO hasta resolverlo.";
+    contenedor.appendChild(aviso);
+  } else {
+    ["ENTREGADOS", "RETIRADOS"].forEach(grupo => {
+      const seccion = document.createElement("section");
+      seccion.className = "panel";
+      const titulo = document.createElement("h3");
+      titulo.textContent = grupo;
+      seccion.appendChild(titulo);
+
+      elementos.forEach((elemento, indice) => {
+        agregarContador(seccion, grupo, elemento, indice, grupo === "ENTREGADOS" ? elemento.cantidad : 0);
+      });
+
+      contenedor.appendChild(seccion);
+    });
+  }
+
+  $("receptor").value = "";
+  $("observaciones").value = "";
+  $("foto").value = "";
+  firmaPad.clear();
+  ajustarFirma();
+}
+
+function ajustarFirma() {
+  const canvas = $("firma");
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  const ancho = canvas.getBoundingClientRect().width;
+  if (!ancho) return;
+  canvas.width = Math.round(ancho * ratio);
+  canvas.height = Math.round(170 * ratio);
+  canvas.getContext("2d").scale(ratio, ratio);
+  firmaPad.clear();
+}
+
+function leerCantidad(grupo, indice) {
+  const input = [...document.querySelectorAll("#cantidades input")].find(
+    elemento => elemento.dataset.grupo === grupo && elemento.dataset.indice === String(indice)
+  );
+  const numero = Number(input?.value);
+  if (!input || input.value.trim() === "" || !Number.isInteger(numero) || numero < 0 || numero > 50) {
+    throw new Error("Las cantidades deben ser números enteros entre 0 y 50.");
+  }
+  return numero;
+}
+
+function obtenerDetalleRealizado() {
+  const elementos = obtenerElementos(asignacionActual.detalleSolicitado);
+  return {
+    entregados: elementos.map((item, indice) => ({ ...item, cantidad: leerCantidad("ENTREGADOS", indice) })),
+    retirados: elementos.map((item, indice) => ({ ...item, cantidad: leerCantidad("RETIRADOS", indice) }))
+  };
+}
+
+async function convertirFotografia(archivo) {
+  if (!archivo) return "";
+  if (!archivo.type.startsWith("image/")) throw new Error("Seleccione una fotografía válida.");
+
+  const imagen = await createImageBitmap(archivo);
+  const escala = Math.min(1, 1280 / Math.max(imagen.width, imagen.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(imagen.width * escala);
+  canvas.height = Math.round(imagen.height * escala);
+  canvas.getContext("2d").drawImage(imagen, 0, 0, canvas.width, canvas.height);
+  if (imagen.close) imagen.close();
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
+
+async function registrarServicio(resultadoServicio) {
+  if (enviando || !asignacionActual) return;
+
+  try {
+    const observaciones = $("observaciones").value.trim();
+    const foto = $("foto").files[0];
+    const servicio = normalizar(asignacionActual.servicio);
+    const requiereFoto = resultadoServicio === "NO REALIZADO" || servicio.includes("RECARGA") || servicio.includes("IMPLEMENT");
+
+    if (resultadoServicio === "NO REALIZADO" && !observaciones) {
+      throw new Error("NO REALIZADO requiere una observación.");
+    }
+    if (requiereFoto && !foto) throw new Error("Este resultado requiere una fotografía.");
+    if (resultadoServicio === "ATENDIDO" && firmaPad.isEmpty()) {
+      throw new Error("ATENDIDO requiere firma.");
+    }
+    if (resultadoServicio === "ATENDIDO" && !obtenerElementos(asignacionActual.detalleSolicitado).length) {
+      throw new Error("Falta el detalle solicitado del servicio.");
     }
 
-    return (
-        Date.now().toString(36) +
-        "-" +
-        Math.random().toString(36).slice(2) +
-        "-" +
-        Math.random().toString(36).slice(2)
-    );
-}
+    const detalle = resultadoServicio === "ATENDIDO" ? obtenerDetalleRealizado() : { entregados: [], retirados: [] };
+    if (!confirm(`¿Confirmar ${resultadoServicio} para ${asignacionActual.paciente || asignacionActual.empresa}?`)) return;
 
-// ==========================================================
-// CACHE LOCAL DE CLIENTES
-// SOLO GUARDA ID + NOMBRE
-// ==========================================================
+    enviando = true;
+    $("enviar").disabled = true;
+    $("noRealizado").disabled = true;
 
-const CLAVE_CLIENTES_OFFLINE = "oxitrack_clientes_cache";
-
-function guardarClientesOffline(clientes) {
-
-    const cache = {
-        actualizado: Date.now(),
-        clientes: clientes
+    const registro = {
+      tipoCliente: "EMPRESA_TERRENO",
+      id: asignacionActual.id,
+      servicio: asignacionActual.servicio,
+      resultadoServicio,
+      envioId: crypto.randomUUID(),
+      detalleRealizado: JSON.stringify(detalle),
+      observaciones,
+      receptor: $("receptor").value.trim(),
+      gps: ubicacion,
+      dispositivo: navigator.userAgent.slice(0, 180),
+      fotoData: await convertirFotografia(foto),
+      firmaData: resultadoServicio === "ATENDIDO" ? firmaPad.toDataURL("image/png") : ""
     };
 
-    localStorage.setItem(
-        CLAVE_CLIENTES_OFFLINE,
-        JSON.stringify(cache)
-    );
+    const cola = leerLocal(claveLocal("cola"), []);
+    cola.push(registro);
+    guardarLocal(claveLocal("cola"), cola);
+
+    informar("Registro guardado localmente. Sincronizando...");
+    $("detalleServicio").hidden = true;
+    asignacionActual = null;
+
+    await cargarAsignaciones();
+    await sincronizarPendientes();
+  } catch (error) {
+    informar(`No se registró: ${error.message}`);
+  } finally {
+    enviando = false;
+    $("enviar").disabled = false;
+    $("noRealizado").disabled = false;
+    actualizarEstado();
+  }
 }
 
-
-function obtenerClientesOffline() {
-
-    try {
-
-        const cache = JSON.parse(
-            localStorage.getItem(CLAVE_CLIENTES_OFFLINE) || "null"
-        );
-
-        if (
-            !cache ||
-            !Array.isArray(cache.clientes)
-        ) {
-            return [];
-        }
-
-        return cache.clientes;
-
-    } catch (error) {
-
-        return [];
-    }
-}
-
-// ==========================================================
-// INICIO OXITRACK
-// GPS + OFFLINE + SERVICIOS + BUSCADOR DE CLIENTES
-// ==========================================================
-
-document.addEventListener("DOMContentLoaded", async () => {
-    // ------------------------------------------------------
-    // 1. Iniciar GPS
-    // ------------------------------------------------------
-    capturarUbicacionGps();
-    // ------------------------------------------------------
-    // 2. Intentar sincronizar registros pendientes offline
-    // ------------------------------------------------------
-    intentarSincronizarOffline();
-    // ------------------------------------------------------
-    // ACTUALIZAR CACHE LOCAL DE CLIENTES SI HAY INTERNET
-    // ------------------------------------------------------
-
-    if (navigator.onLine) {
-
-        try {
-
-            const respuestaClientes = await fetch(
-                WORKER_URL + "?syncClientes=1"
-            );
-
-            const datosClientes =
-                await respuestaClientes.json();
-
-            if (
-                datosClientes.ok === true &&
-                Array.isArray(datosClientes.clientes)
-            ) {
-
-                guardarClientesOffline(
-                    datosClientes.clientes
-                );
-
-                console.log(
-                    "Catálogo local de clientes actualizado."
-                );
-            }
-
-        } catch (error) {
-
-            console.warn(
-                "No fue posible actualizar el catálogo local de clientes."
-            );
-        }
-    }
-
-    // ------------------------------------------------------
-    // 3. Cargar solamente los SERVICIOS al iniciar
-    // ------------------------------------------------------
-    try {
-
-        const datalistServicios =
-            document.getElementById("listaServicios");
-
-        const respuesta =
-            await fetch(WORKER_URL);
-
-        const datos =
-            await respuesta.json();
-
-
-        if (
-            datos &&
-            datos.servicios &&
-            Array.isArray(datos.servicios)
-        ) {
-
-            datalistServicios.innerHTML = "";
-
-            datos.servicios.forEach(serv => {
-
-                const opcion =
-                    document.createElement("option");
-
-                opcion.value = serv;
-
-                datalistServicios.appendChild(opcion);
-            });
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "Aviso: no fue posible cargar los servicios.",
-            error
-        );
-    }
-
-
-    // ======================================================
-    // 4. BUSCADOR DE CLIENTES
-    // ======================================================
-
-    const inputCliente = document.getElementById("cliente");
-    const inputClienteId = document.getElementById("clienteId");
-    const datalistClientes = document.getElementById("listaEmpresas");
-
-    let clientesEncontrados = [];
-    let temporizadorBusqueda = null;
-    // ------------------------------------------------------
-    // BUSCAR CUANDO EL OPERARIO ESCRIBA
-    // ------------------------------------------------------
-    inputCliente.addEventListener("input", () => {
-
-        const textoBusqueda =
-            inputCliente.value.trim();
-
-
-        // Si modifica el texto, invalidamos
-        // cualquier selección anterior.
-        inputClienteId.value = "";
-
-
-        clearTimeout(temporizadorBusqueda);
-
-
-        // Menos de 3 caracteres:
-        // no hacemos ninguna consulta.
-        if (textoBusqueda.length < 3) {
-
-            datalistClientes.innerHTML = "";
-
-            clientesEncontrados = [];
-
-            return;
-        }
-
-
-        // Esperamos 300 ms para no llamar al Worker
-        // por cada tecla que escribe.
-        temporizadorBusqueda = setTimeout(async () => {
-
-        try {
-
-            let listaResultados = [];
-
-
-            // ==================================================
-            // CON INTERNET: CONSULTAR WORKER
-            // ==================================================
-
-            if (navigator.onLine) {
-
-                const respuesta =
-                    await fetch(
-                        WORKER_URL +
-                        "?buscar=" +
-                        encodeURIComponent(textoBusqueda)
-                    );
-
-                const datos =
-                    await respuesta.json();
-
-                if (
-                    datos &&
-                    Array.isArray(datos.clientes)
-                ) {
-
-                    listaResultados =
-                        datos.clientes;
-                }
-
-
-            // ==================================================
-            // SIN INTERNET: CONSULTAR CACHE LOCAL
-            // ==================================================
-
-            } else {
-
-                const clientesLocales =
-                    obtenerClientesOffline();
-
-                const textoNormalizado =
-                    textoBusqueda.toLowerCase();
-
-                listaResultados =
-                    clientesLocales
-                        .filter(item =>
-                            String(item.nombre || "")
-                                .toLowerCase()
-                                .includes(textoNormalizado)
-                        )
-                        .slice(0, 10);
-            }
-
-
-            // ==================================================
-            // MOSTRAR RESULTADOS
-            // ==================================================
-
-            datalistClientes.innerHTML = "";
-
-            clientesEncontrados =
-                listaResultados;
-
-
-            listaResultados.forEach(item => {
-
-                const opcion =
-                    document.createElement("option");
-
-                opcion.value =
-                    item.nombre;
-
-                datalistClientes
-                    .appendChild(opcion);
-            });
-
-        } catch (error) {
-
-            // Si parecía haber internet pero falló la petición,
-            // hacemos respaldo automático con la cache local.
-
-            const clientesLocales =
-                obtenerClientesOffline();
-
-            const textoNormalizado =
-                textoBusqueda.toLowerCase();
-
-            const resultadosLocales =
-                clientesLocales
-                    .filter(item =>
-                        String(item.nombre || "")
-                            .toLowerCase()
-                            .includes(textoNormalizado)
-                    )
-                    .slice(0, 10);
-
-
-            datalistClientes.innerHTML = "";
-
-            clientesEncontrados =
-                resultadosLocales;
-
-
-            resultadosLocales.forEach(item => {
-
-                const opcion =
-                    document.createElement("option");
-
-                opcion.value =
-                    item.nombre;
-
-                datalistClientes
-                    .appendChild(opcion);
-        
-    });
-
-
-            console.warn(
-                "Búsqueda realizada desde catálogo offline."
-            );
-        }
-
-        // Cierra setTimeout de la búsqueda
-        }, 300);
-
-    }); // Cierra inputCliente.addEventListener("input")
-
-
-    // ------------------------------------------------------
-    // GUARDAR EL ID CUANDO SELECCIONA UNA EMPRESA
-
-
-    // ------------------------------------------------------
-    // GUARDAR EL ID CUANDO SELECCIONA UNA EMPRESA
-    // ------------------------------------------------------
-    inputCliente.addEventListener("change", () => {
-
-        const nombreSeleccionado =
-            inputCliente.value
-                .trim()
-                .toLowerCase();
-
-
-        const clienteEncontrado =
-            clientesEncontrados.find(item =>
-                item.nombre
-                    .trim()
-                    .toLowerCase() ===
-                nombreSeleccionado
-            );
-
-
-        if (clienteEncontrado) {
-
-            inputClienteId.value =
-                clienteEncontrado.id;
-
-        } else {
-
-            inputClienteId.value = "";
-        }
-
-    });
-
-});
-
-// Lanzar rastreo si el celular vuelve a recuperar internet estando abierto
-window.addEventListener("online", intentarSincronizarOffline); // ACTIVADO DE FORMA CORRECTA
-
-// ==========================================================
-// REINTENTAR CUANDO EL OPERARIO REGRESA A OXITRACK
-// ==========================================================
-
-document.addEventListener("visibilitychange", () => {
-        if ( document.visibilityState === "visible" && navigator.onLine) {
-            intentarSincronizarOffline();
-            }
-        }
-);
-
-// Función nativa optimizada para smartphones en terreno
-function capturarUbicacionGps() {
-    if (navigator.geolocation) {
-        // Usamos watchPosition para que el celular rastree continuamente la señal mientras el operario llena el formulario
-        navigator.geolocation.watchPosition(
-            (position) => {
-                // Formato oficial: Latitud, Longitud limpio para Google Sheets y Google Maps
-                coordenadasGPS = `${position.coords.latitude}, ${position.coords.longitude}`;
-                console.log("GPS Actualizado en tiempo real con éxito:", coordenadasGPS);
-            },
-            (error) => {
-                // Control defensivo secundario si hay pérdida total de señal
-                if (coordenadasGPS === "Buscando señal GPS...") {
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            coordenadasGPS = "Permiso GPS denegado por operario";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            coordenadasGPS = "Señal GPS no disponible (Subterráneo)";
-                            break;
-                        case error.TIMEOUT:
-                            coordenadasGPS = "Tiempo de espera GPS agotado";
-                            break;
-                        default:
-                            coordenadasGPS = "Error de ubicación no identificado";
-                    }
-                }
-            },
-            // CONFIGURACIÓN FLEXIBLE CORPORATIVA PARA CELULARES
-            { 
-                enableHighAccuracy: false, // Permite usar antenas de red celular si el satélite puro tarda en enganchar bajo techo
-                timeout: 15000,            // Ampliamos el tiempo de espera a 15 segundos para dar margen al teléfono
-                maximumAge: 30000          // Permite usar ubicaciones guardadas en la caché del celular de los últimos 30 segundos si la señal es inestable
-            }
-        );
-    } else {
-        coordenadasGPS = "GPS no soportado en este dispositivo";
-    }
-}
-
-
-// ----------------------------
-// CONTADORES (TUS FUNCIONES NATIVAS)
-// ----------------------------
-function aumentar(id) {
-    const input = document.getElementById(id);
-    input.value = parseInt(input.value) + 1;
-}
-
-function disminuir(id) {
-    const input = document.getElementById(id);
-    let valor = parseInt(input.value);
-    if (valor > 0) {
-        valor--;
-    }
-    input.value = valor;
-}
-
-
-function limpiarTexto(e) {
-    e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9 ]/g, '');
-}
-//document.getElementById("operario").addEventListener("input", limpiarTexto);
-
-// ----------------------------
-// FIRMA ELECTRONICA
-// ----------------------------
-const canvas = document.getElementById("firma");
-canvas.width = canvas.offsetWidth;
-canvas.height = 220;
-const signaturePad = new SignaturePad(canvas);
-
-document.getElementById("btnLimpiar").addEventListener("click", () => {
-    signaturePad.clear();
-});
-
-// ----------------------------
-// ENVIAR FORMULARIO CON SEGUNDA COMPROBACIÓN & CONTROL OFFLINE
-// ----------------------------
-document.getElementById("formulario").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const envioId = generarEnvioId();
-
-    if (signaturePad.isEmpty()) {
-        alert("Debe ingresar la firma.");
-        return;
-    }
-
-
-    const e07 = document.getElementById("e07").value;
-    const e10 = document.getElementById("e10").value;
-    const r07 = document.getElementById("r07").value;
-    const r10 = document.getElementById("r10").value;
-    const cliente = document.getElementById("cliente").value;
-    const servicio = document.getElementById("servicio").value;
-    const paciente = document.getElementById("paciente").value.toUpperCase();
-    const clienteIdSeleccionado = document.getElementById("clienteId").value.trim();
-
-    if (!clienteIdSeleccionado) {
-        alert("Debe seleccionar una empresa válida de la lista.");
-        return;
-    }
-
-    // ======================================================
-    // MODAL DE CONFIRMACIÓN OXITRACK
-    // ======================================================
-
-    const mensajeConfirmacion = `
-        <div class="modal-seccion">
-            <strong>Empresa</strong>
-            <span>${cliente}</span>
-        </div>
-
-        <div class="modal-seccion">
-            <strong>Servicio</strong>
-            <span>${servicio}</span>
-        </div>
-
-        <div class="modal-seccion">
-            <strong>Paciente</strong>
-            <span>${paciente || "No aplica"}</span>
-        </div>
-
-        <div class="modal-seccion">
-            <strong>Entregados</strong>
-            <span>Cilindros 0.7 m³: ${e07}</span>
-            <span>Cilindros 10 m³: ${e10}</span>
-        </div>
-
-        <div class="modal-seccion">
-            <strong>Retirados</strong>
-            <span>Cilindros 0.7 m³: ${r07}</span>
-            <span>Cilindros 10 m³: ${r10}</span>
-        </div>
-    `;
-
-    const confirmado = await abrirModalConfirmacion(mensajeConfirmacion);
-
-    if (!confirmado) {return;}
-
-    const btn = document.getElementById("btnEnviar");
-    btn.disabled = true;
-    btn.textContent = "Enviando...";
-
-    // Convertir la firma a archivo binario físico síncrono
-    const dataUrl = signaturePad.toDataURL("image/png");
-    const partesData = dataUrl.split(","); 
-    const base64Limpio = partesData.pop();
-    const caracteresBinarios = atob(base64Limpio);
-    const arrayConBytes = new Uint8Array(caracteresBinarios.length);
-    for (let i = 0; i < caracteresBinarios.length; i++) {
-        arrayConBytes[i] = caracteresBinarios.charCodeAt(i);
-    }
-    const blobFirma = new Blob([arrayConBytes], { type: "image/png" });
-
-    // Construcción del FormData dinámico con las nuevas propiedades
-    const payload = new FormData();
-
-    payload.append("envioId", envioId);
-    payload.append("cliente", cliente);
-    payload.append("servicio", servicio);
-    payload.append("paciente", paciente);
-    payload.append("entrega07", e07);
-    payload.append("entrega10", e10);
-    payload.append("retiro07", r07);
-    payload.append("retiro10", r10);
-    payload.append("observaciones", document.getElementById("obs").value.toUpperCase());
-    payload.append("dispositivo", navigator.userAgent);
-    payload.append("gps", coordenadasGPS);
-    payload.append("clienteId", clienteIdSeleccionado);
-    payload.append("firma", blobFirma, "firma.png");
-
-    try {
-
-    const respuesta = await fetch(WORKER_URL, {
-        method: "POST",
-        body: payload
-    });
-
-    const resultado = await respuesta.json();
-
-    console.log("RESPUESTA DEL WORKER:", resultado);
-
-    if (respuesta.ok && resultado.ok === true) {
-
-        await mostrarModalResultado(
-            "Registro enviado",
-            "El servicio fue registrado correctamente."
-        );
-        location.reload();
-
-    } else {
-
-        console.error(
-            "ERROR REPORTADO POR EL WORKER:",
-            resultado.error
-        );
-
-        alert(
-            "Error al enviar el formulario:\n\n" +
-            (resultado.error || "Error desconocido del servidor.")
-        );
-    }
-
-} catch (error) {
-
-    console.error(
-        "Error de red, ejecutando salvaguarda local offline:",
-        error
-    );
-        
-        // 🛡️ INYECTOR QUIRÚRGICO OFFLINE (GUARDA EN EL STORE DEL CELULAR SI SE PIERDE LA SEÑAL)
-        const registroOffline = { 
-            envioId: envioId,
-            cliente: cliente,
-            clienteId: clienteIdSeleccionado,
-            servicio: servicio,
-            paciente: paciente,
-            entrega07: e07,
-            entrega10: e10,
-            retiro07: r07,
-            retiro10: r10,
-            observaciones: document.getElementById("obs").value.toUpperCase(),
-            dispositivo: navigator.userAgent,
-            gps: coordenadasGPS,
-            fechaRegistroOffline: new Date().toISOString(),
-            firmaBase64: base64Limpio
-        };
-
-        let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
-        registrosGuardados.push(registroOffline);
-        localStorage.setItem("oxitrack_offline", JSON.stringify(registrosGuardados));
-
-        alert("⚠️ Sin señal de Internet. El registro se guardó de forma segura en la memoria del celular. Se enviará automáticamente apenas recuperes conexión.");
-        location.reload();
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "Enviar Reporte";
-    }
-});
-
-// 🛡️ SINCRONIZADOR EN SEGUNDO PLANO (CORREGIDO ASÍNCRONO & INMUNE A ERRORES)
-// ==========================================================
-// SINCRONIZADOR DE REGISTROS OFFLINE
-// ==========================================================
-
-async function intentarSincronizarOffline() {
-
-    // ======================================================
-    // EVITAR DOS SINCRONIZACIONES SIMULTÁNEAS
-    // ======================================================
-
-    if (sincronizacionOfflineEnCurso) {
-
-        console.log(
-            "Sincronizador: ya existe una sincronización en curso."
-        );
-
-        return;
-    }
-
-
-    sincronizacionOfflineEnCurso = true;
-
-
-    try {
-
-        // ------------------------------------------------------
-        // 1. LEER REGISTROS PENDIENTES
-        // ------------------------------------------------------
-
-        let registrosGuardados = JSON.parse(localStorage.getItem("oxitrack_offline") || "[]");
-
-        let registrosMigrados = false;
-
-        registrosGuardados.forEach(registro => {
-
-            if (!registro.envioId) {
-
-                registro.envioId =
-                    generarEnvioId();
-
-                registrosMigrados = true;
-            }
-
+async function sincronizarPendientes() {
+  if (sincronizando || !navigator.onLine || !emailOperario) return;
+  sincronizando = true;
+
+  try {
+    let cola = leerLocal(claveLocal("cola"), []);
+
+    while (cola.length) {
+      const registro = cola[0];
+      const formulario = new FormData();
+      Object.entries(registro).forEach(([nombre, valor]) => formulario.append(nombre, valor));
+
+      let respuesta;
+      try {
+        respuesta = await fetch(WORKER_URL, {
+          method: "POST",
+          body: formulario,
+          credentials: "same-origin"
         });
-
-        if (registrosMigrados) {
-
-            localStorage.setItem(
-                "oxitrack_offline",
-                JSON.stringify(registrosGuardados)
-            );
-
-            console.log(
-                "Sincronizador: registros offline antiguos actualizados con ID único."
-            );
-        }
-
-
-        if (registrosGuardados.length === 0) {return;}
-
-        // Si el navegador todavía considera que no hay conexión,
-        // ni siquiera intentamos sincronizar.
-
-        if (!navigator.onLine) {
-
-            console.log(
-                "Sincronizador: aún no hay conexión. Registros conservados."
-            );
-
-            return;
-        }
-
-
-        console.log(
-            `Sincronizador: Procesando ${registrosGuardados.length} envíos diferidos...`
-        );
-
-
-        // ------------------------------------------------------
-        // 2. PROCESAR DE ATRÁS HACIA ADELANTE
-        // ------------------------------------------------------
-
-        for (
-            let i = registrosGuardados.length - 1;
-            i >= 0;
-            i--
-        ) {
-
-            const reg = registrosGuardados[i];
-
-
-            // --------------------------------------------------
-            // GPS DEL REGISTRO OFFLINE
-            // --------------------------------------------------
-
-            let gpsFinal =
-                reg.gps ||
-                "No disponible";
-
-
-            const gpsOriginalValido =
-                /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/
-                    .test(
-                        String(gpsFinal).trim()
-                    );
-
-
-            // --------------------------------------------------
-            // CALCULAR TIEMPO DESDE EL REGISTRO
-            // --------------------------------------------------
-
-            const fechaOriginal =
-                reg.fechaRegistroOffline
-                    ? new Date(
-                        reg.fechaRegistroOffline
-                    )
-                    : null;
-
-
-            const minutosDesdeRegistro =
-                fechaOriginal
-                    ? (
-                        Date.now() -
-                        fechaOriginal.getTime()
-                    ) / 60000
-                    : Infinity;
-
-
-            // --------------------------------------------------
-            // RECUPERAR GPS SOLO SI HAN PASADO <= 10 MIN
-            // --------------------------------------------------
-
-            if (
-                !gpsOriginalValido &&
-                navigator.geolocation &&
-                minutosDesdeRegistro <= 10
-            ) {
-
-                try {
-
-                    const posicionRecuperada =
-                        await new Promise(
-                            (resolve, reject) => {
-
-                                navigator.geolocation
-                                    .getCurrentPosition(
-                                        resolve,
-                                        reject,
-                                        {
-                                            enableHighAccuracy: true,
-                                            timeout: 8000,
-                                            maximumAge: 0
-                                        }
-                                    );
-
-                            }
-                        );
-
-
-                    const lat =
-                        posicionRecuperada
-                            .coords
-                            .latitude;
-
-
-                    const lng =
-                        posicionRecuperada
-                            .coords
-                            .longitude;
-
-
-                    gpsFinal =
-                        `${lat}, ${lng} (Ubicación capturada al recuperar señal)`;
-
-
-                    console.log(
-                        "Sincronizador: ubicación cercana recuperada después del registro offline."
-                    );
-
-
-                } catch (errorGps) {
-
-                    gpsFinal =
-                        "No disponible";
-
-
-                    console.warn(
-                        "Sincronizador: no fue posible obtener ubicación cercana al recuperar señal."
-                    );
-
-                }
-
-
-            } else if (!gpsOriginalValido) {
-
-                gpsFinal =
-                    "No disponible (sin ubicación válida cercana al momento del registro)";
-
-            }
-
-
-            // --------------------------------------------------
-            // 3. RECONSTRUIR FORMDATA
-            // --------------------------------------------------
-
-            const payloadOffline =
-                new FormData();
-
-
-            payloadOffline.append(
-                "envioId",
-                reg.envioId || ""
-            );
-
-            payloadOffline.append(
-                "cliente",
-                reg.cliente || ""
-            );
-
-            payloadOffline.append(
-                "clienteId",
-                reg.clienteId || ""
-            );
-
-            payloadOffline.append(
-                "servicio",
-                reg.servicio || ""
-            );
-
-            payloadOffline.append(
-                "paciente",
-                reg.paciente || ""
-            );
-
-            payloadOffline.append(
-                "entrega07",
-                reg.entrega07 || "0"
-            );
-
-            payloadOffline.append(
-                "entrega10",
-                reg.entrega10 || "0"
-            );
-
-            payloadOffline.append(
-                "retiro07",
-                reg.retiro07 || "0"
-            );
-
-            payloadOffline.append(
-                "retiro10",
-                reg.retiro10 || "0"
-            );
-
-            payloadOffline.append(
-                "observaciones",
-                (reg.observaciones || "") +
-                " Sincronizado offline"
-            );
-
-            payloadOffline.append(
-                "dispositivo",
-                reg.dispositivo || ""
-            );
-
-            payloadOffline.append(
-                "gps",
-                gpsFinal
-            );
-
-            payloadOffline.append(
-                "fechaRegistroOffline",
-                reg.fechaRegistroOffline || ""
-            );
-
-
-            // --------------------------------------------------
-            // 4. RECONSTRUIR FIRMA PNG
-            // --------------------------------------------------
-
-            const caracteresBinarios =
-                atob(
-                    reg.firmaBase64
-                );
-
-
-            const arrayConBytes =
-                new Uint8Array(
-                    caracteresBinarios.length
-                );
-
-
-            for (
-                let j = 0;
-                j < caracteresBinarios.length;
-                j++
-            ) {
-
-                arrayConBytes[j] =
-                    caracteresBinarios
-                        .charCodeAt(j);
-
-            }
-
-
-            const blobFirma =
-                new Blob(
-                    [arrayConBytes],
-                    {
-                        type:
-                            "image/png"
-                    }
-                );
-
-
-            payloadOffline.append(
-                "firma",
-                blobFirma,
-                "firma.png"
-            );
-
-
-            // --------------------------------------------------
-            // 5. INTENTAR SINCRONIZAR
-            // --------------------------------------------------
-
-            try {
-
-                const res =
-                    await fetch(
-                        WORKER_URL,
-                        {
-                            method:
-                                "POST",
-                            body:
-                                payloadOffline
-                        }
-                    );
-
-
-                let resultado;
-
-
-                try {
-
-                    resultado =
-                        await res.json();
-
-
-                } catch (errorJson) {
-
-                    console.error(
-                        "Sincronizador: el servidor no devolvió JSON válido. " +
-                        "El registro se conservará."
-                    );
-
-                    break;
-
-                }
-
-
-                // ------------------------------------------------
-                // BORRAR SOLO SI EL WORKER CONFIRMA ok:true
-                // ------------------------------------------------
-
-                if (
-                    res.ok &&
-                    resultado &&
-                    resultado.ok === true
-                ) {
-
-                    registrosGuardados.splice(
-                        i,
-                        1
-                    );
-
-
-                    localStorage.setItem(
-                        "oxitrack_offline",
-                        JSON.stringify(
-                            registrosGuardados
-                        )
-                    );
-
-
-                    if (
-                        resultado.duplicado === true
-                    ) {
-
-                        console.log(
-                            `✅ Registro diferido de ${reg.cliente} ya había sido procesado. Eliminado de la cola local.`
-                        );
-
-                    } else {
-
-                        console.log(
-                            `✅ Registro diferido de ${reg.cliente} sincronizado con éxito.`
-                        );
-
-                    }
-
-
-                } else {
-
-                    console.error(
-                        "❌ El Worker rechazó el registro offline:",
-                        resultado?.error ||
-                        "Error desconocido"
-                    );
-
-
-                    break;
-
-                }
-
-
-            } catch (err) {
-
-                console.error(
-                    "Sincronizador: volvió a fallar la conexión. " +
-                    "El registro permanecerá guardado."
-                );
-
-
-                break;
-
-            }
-
-        }
-
-
-    } finally {
-
-        sincronizacionOfflineEnCurso = false;
-
+      } catch (_) {
+        informar("Sin conexión. El envío permanece guardado.");
+        break;
+      }
+
+      let datos;
+      try {
+        datos = await respuesta.json();
+      } catch (_) {
+        informar("Respuesta inválida. El envío permanece guardado.");
+        break;
+      }
+
+      if (!respuesta.ok || datos.ok !== true) {
+        informar(`Envío pendiente: ${datos.error || respuesta.status}`);
+        break;
+      }
+
+      cola.shift();
+      guardarLocal(claveLocal("cola"), cola);
+      informar(datos.advertencia || (datos.duplicado ? "Envío registrado anteriormente." : "Servicio registrado correctamente."));
     }
-
+  } finally {
+    sincronizando = false;
+    actualizarEstado();
+  }
 }
+
+window.addEventListener("DOMContentLoaded", iniciar);

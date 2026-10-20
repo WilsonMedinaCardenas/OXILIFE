@@ -1,170 +1,95 @@
+
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>OxiTrack</title>
-
-    <link rel="stylesheet" href="css/oxitrack-base.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OxiTrack | Terreno Empresa</title>
+  <link rel="stylesheet" href="css/oxitrack-base.css">
+  <style>
+    [hidden] { display: none !important; }
+    .contenedor { max-width: 450px; margin: auto; }
+    .grupo { margin: 14px 0; }
+    .panel { padding: 12px; border: 1px solid #ddd; border-radius: 10px; margin: 12px 0; }
+    .fila-cantidad { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px; margin: 9px 0; border: 1px solid #ddd; border-radius: 9px; }
+    .cantidad-controles { display: flex; align-items: center; gap: 6px; }
+    .cantidad-controles button { min-width: 38px; min-height: 38px; }
+    .cantidad-controles input { width: 62px; text-align: center; }
+    .boton-alerta { background: #9b2020; color: #fff; }
+    .estado { font-size: .9rem; color: #555; }
+    .ayuda { font-size: .85rem; color: #666; }
+    select, textarea, input { max-width: 100%; }
+    canvas { width: 100%; height: 170px; border: 1px solid #aaa; border-radius: 8px; background: white; touch-action: none; }
+    button { cursor: pointer; }
+  </style>
 </head>
-
 <body>
-
-    <div class="contenedor">
-
-        <!-- CABECERA CON LOGO Y TÍTULOS -->
-        <div class="cabecera-logo">
-            <img src="..\assets\img\favicon.png" 
-                alt="Logo Oxilfe" 
-                class="logo-marca">
-
-            <div class="textos-cabecera">
-                <h1>OxiTrack</h1>
-                <p class="subtitulo">Registro Empresa</p>
-            </div>
-        </div>
-
-        <form id="formulario">
-            <label>Empresa</label>
-
-            <input type="text" id="cliente" list="listaEmpresas" placeholder="Escriba al menos 3 letras de la empresa..." autocomplete="off">
-            <input type="hidden" id="clienteId">
-            <datalist id="listaEmpresas"></datalist>
-
-            <!-- NUEVO CAMPO: SERVICIO DESPLEGABLE -->
-            <label>Servicio</label>
-            <input type="text" id="servicio" list="listaServicios" placeholder="Seleccione el tipo de servicio...">
-            <datalist id="listaServicios"></datalist>
-
-            <!-- NUEVO CAMPO: PACIENTE MANUAL -->
-            <label>Paciente</label>
-            <input type="text" id="paciente" placeholder="Nombre del paciente (Ingreso manual)">
-
-            <!--<label>Operario</label>
-            <input type="text" id="operario" maxlength="80" placeholder="Nombre del operario">-->
-
-            <div class="titulo">ENTREGADOS</div>
-
-            <label>Cilindros 0.7 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('e07')">−</button>
-                <input id="e07" value="0" readonly>
-                <button type="button" onclick="aumentar('e07')">+</button>
-            </div>
-
-            <label>Cilindros 10 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('e10')">−</button>
-                <input id="e10" value="0" readonly>
-                <button type="button" onclick="aumentar('e10')">+</button>
-            </div>
-
-            <div class="titulo">RETIRADOS</div>
-
-            <label>Cilindros 0.7 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('r07')">−</button>
-                <input id="r07" value="0" readonly>
-                <button type="button" onclick="aumentar('r07')">+</button>
-            </div>
-
-            <label>Cilindros 10 m³</label>
-            <div class="contador">
-                <button type="button" onclick="disminuir('r10')">−</button>
-                <input id="r10" value="0" readonly>
-                <button type="button" onclick="aumentar('r10')">+</button>
-            </div>
-
-            <label>Observaciones</label>
-            <textarea id="obs"></textarea>
-
-            <label>Firma Cliente</label>
-            <canvas id="firma"></canvas>
-
-            <button type="submit" id="btnEnviar">Enviar Registro</button>
-            <button type="button" id="btnLimpiar">Limpiar Firma</button>
-
-        </form>
+  <main class="contenedor">
+    <div class="cabecera-logo">
+      <img src="../assets/img/favicon.png" alt="Oxilife" width="54">
+      <h1>OxiTrack</h1>
+      <p class="subtitulo">Terreno Empresa</p>
     </div>
 
-        <!-- =====================================================
-         MODAL CONFIRMACIÓN
-         ===================================================== -->
+    <p id="estadoConexion" class="estado">Iniciando...</p>
+    <p id="operarioVisible" class="estado"></p>
 
-    <div id="modalConfirmacion" class="modal" hidden>
+    <form id="formulario">
+      <div class="grupo">
+        <label for="servicio">Servicio</label>
+        <select id="servicio" required>
+          <option value="">Cargando servicios...</option>
+        </select>
+      </div>
 
-        <div class="modal-contenido">
+      <div class="grupo">
+        <label for="asignacion">Asignación pendiente</label>
+        <select id="asignacion" required disabled>
+          <option value="">Seleccione primero un servicio</option>
+        </select>
+        <p id="mensajeAsignaciones" class="ayuda"></p>
+      </div>
 
-            <h2>Confirmar Registro</h2>
+      <section id="detalleServicio" hidden>
+        <div id="ficha" class="panel"></div>
+        <div id="cantidades"></div>
 
-            <div
-                id="modalResumen"
-                class="modal-resumen"
-            ></div>
-
-            <div class="modal-acciones">
-
-                <button
-                    type="button"
-                    id="btnModalVolver"
-                    class="btn-secundario"
-                >
-                    Volver
-                </button>
-
-                <button
-                    type="button"
-                    id="btnModalConfirmar"
-                    class="btn-principal"
-                >
-                    Confirmar
-                </button>
-
-            </div>
-
+        <div class="grupo">
+          <label for="receptor">Nombre de quien recibe</label>
+          <input id="receptor" autocomplete="name" placeholder="Persona que recibió el servicio">
         </div>
 
-    </div>
-
-
-    <!-- =====================================================
-         MODAL RESULTADO
-         ===================================================== -->
-
-    <div id="modalResultado" class="modal" hidden>
-
-        <div class="modal-contenido modal-exito">
-
-            <h2 id="modalResultadoTitulo">
-                Registro Exitoso
-            </h2>
-
-            <p
-                id="modalResultadoMensaje"
-                class="modal-mensaje"
-            ></p>
-
-            <button
-                type="button"
-                id="btnModalResultado"
-                class="btn-principal"
-            >
-                Aceptar
-            </button>
-
+        <div class="grupo">
+          <label for="observaciones">Observaciones de terreno</label>
+          <textarea id="observaciones" rows="3" placeholder="Indique quién recibió, condiciones de entrega o motivo del servicio no realizado"></textarea>
         </div>
 
-    </div>
+        <div class="grupo">
+          <label for="foto">Fotografía de respaldo</label>
+          <input id="foto" type="file" accept="image/*" capture="environment">
+          <p class="ayuda">Obligatoria para NO REALIZADO, implementaciones y recargas.</p>
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-    <script src="./js/empresa.js?v=20260908-3" defer></script>
+        <div id="zonaFirma" class="grupo">
+          <label>Firma de quien recibe</label>
+          <canvas id="firma"></canvas>
+          <button type="button" id="limpiarFirma">Limpiar firma</button>
+        </div>
 
+        <div class="grupo">
+          <button type="submit" id="enviar">Registrar ATENDIDO</button>
+          <button type="button" id="noRealizado" class="boton-alerta">NO REALIZADO</button>
+        </div>
+      </section>
+    </form>
+
+    <p id="resultado" role="status"></p>
+
+    <button type="button" id="sincronizar">Sincronizar pendientes</button>
+    <p id="cola" class="estado"></p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <script src="./js/empresa.js?v=20261020-3" defer></script>
 </body>
-
 </html>
