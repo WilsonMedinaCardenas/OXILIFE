@@ -13,6 +13,7 @@ let identidad = "", operario = "", asignaciones = [], seleccion = null;
 let gps = "No disponible", firmaPad = null, streamCamara = null;
 let fotosCapturadas = [], resultadoServicio = "ATENDIDO";
 let enviando = false, sincronizando = false, consultaAsignaciones = 0;
+let promesaSincronizacionEmpresa = null;
 let perfilCargado = false, detalleActual = [], ultimoAviso = "";
 
 const clave = sufijo => `oxitrack_empresa_v2_${identidad}_${sufijo}`;
@@ -401,25 +402,52 @@ function cambiarResultado(resultado) {
 // ==========================================================
 
 async function cargarServicios() {
-    let servicios = [];
+    const select = $("servicio");
+    let servicios = leer(clave("servicios"), []);
 
-    if (navigator.onLine) {
-        try {
-            const datos = await consultar("serviciosEmpresa");
-            if (!Array.isArray(datos.servicios)) throw Error("Catálogo inválido.");
-            servicios = datos.servicios;
-            guardar(clave("servicios"), servicios);
-        } catch (error) {
-            servicios = leer(clave("servicios"), []);
-            mensaje(`Se utilizará el catálogo guardado: ${error.message}`);
+    function pintar(lista) {
+        const anterior = select.value;
+
+        select.replaceChildren();
+
+        agregarOpcion(
+            select,
+            "",
+            "Seleccione el tipo de servicio..."
+        );
+
+        lista.forEach(servicio => {
+            agregarOpcion(select, servicio, servicio);
+        });
+
+        if (lista.includes(anterior)) {
+            select.value = anterior;
         }
-    } else {
-        servicios = leer(clave("servicios"), []);
     }
 
-    $("servicio").replaceChildren();
-    agregarOpcion($("servicio"), "", "Seleccione el tipo de servicio...");
-    servicios.forEach(servicio => agregarOpcion($("servicio"), servicio, servicio));
+    // Primero mostrar catálogo guardado.
+    pintar(servicios);
+
+    if (!navigator.onLine) return;
+
+    try {
+        const datos = await consultar("serviciosEmpresa");
+
+        if (!Array.isArray(datos.servicios)) {
+            throw Error("Catálogo de Empresa inválido.");
+        }
+
+        servicios = datos.servicios;
+
+        guardar(clave("servicios"), servicios);
+        pintar(servicios);
+
+    } catch (error) {
+        console.warn(
+            "Empresa: se conserva catálogo local:",
+            error
+        );
+    }
 }
 
 async function cargarAsignaciones() {
@@ -630,6 +658,40 @@ async function enviosPendientesEmpresa() {
 // ENVÍO Y ALMACENAMIENTO OFFLINE
 // ==========================================================
 
+function limpiarFormularioEmpresa() {
+    detenerCamara();
+
+    seleccion = null;
+    asignaciones = [];
+    detalleActual = [];
+    fotosCapturadas = [];
+
+    $("formulario").reset();
+
+    $("servicio").value = "";
+    $("asignacion").replaceChildren();
+    agregarOpcion(
+        $("asignacion"),
+        "",
+        "Primero seleccione un servicio..."
+    );
+    $("asignacion").disabled = true;
+
+    $("pacienteId").value = "";
+    $("receptor").value = "";
+    $("observaciones").value = "";
+    $("cantidades").replaceChildren();
+
+    pintarFotos();
+
+    if (firmaPad) {
+        firmaPad.clear();
+    }
+
+    cambiarResultado("ATENDIDO");
+    $("resultado").textContent = "";
+}
+
 function generarEnvioId() {
     return crypto.randomUUID ? crypto.randomUUID() :
         `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
@@ -638,30 +700,64 @@ function generarEnvioId() {
 async function registrar() {
     if (enviando || !seleccion) return;
 
+    let guardadoLocalmente = false;
+
     try {
         const observaciones = $("observaciones").value.trim();
         const clase = tipoServicio(seleccion.servicio);
         const noRealizado = resultadoServicio === "NO REALIZADO";
-        const requiereFoto = noRealizado || clase === "IMPLEMENTACION" || clase === "RECARGA";
 
-        if (noRealizado && !observaciones) throw Error("NO REALIZADO requiere observaciones.");
-        if (requiereFoto && fotosCapturadas.length === 0) {throw Error("Debe tomar al menos una fotografía.");}
-        if (fotosCapturadas.length > 2) {throw Error("Solo se permiten dos fotografías.");}
-        if (!noRealizado && firmaPad.isEmpty()) throw Error("Debe registrar la firma.");
-        if (!noRealizado && !detalleActual.length) throw Error("El servicio no tiene elementos programados. Consulte a Oficina.");
+        // Fotografía obligatoria para todos los servicios.
+        if (fotosCapturadas.length === 0) {
+            throw Error("Debe tomar al menos una fotografía.");
+        }
 
-        const detalle = noRealizado ? { entregados: [], retirados: [] } : cantidades();
+        if (fotosCapturadas.length > 2) {
+            throw Error("Solo se permiten dos fotografías.");
+        }
+
+        if (noRealizado && !observaciones) {
+            throw Error("NO REALIZADO requiere observaciones.");
+        }
+
+        if (!noRealizado && firmaPad.isEmpty()) {
+            throw Error("Debe registrar la firma.");
+        }
+
+        if (!noRealizado && !detalleActual.length) {
+            throw Error(
+                "El servicio no tiene elementos programados. Consulte a Oficina."
+            );
+        }
+
+        const detalle = noRealizado
+            ? { entregados: [], retirados: [] }
+            : cantidades();
+
         const resumen = [
             ["Resultado", resultadoServicio],
             ["Servicio", seleccion.servicio],
-            ["Paciente / Empresa", seleccion.paciente ? `${seleccion.paciente} | ${seleccion.empresa}` : seleccion.empresa],
-            ["Recibe", $("receptor").value.trim() || "No informado"],
-            ["Observaciones", observaciones || "Sin observaciones"]
+            [
+                "Paciente / Empresa",
+                seleccion.paciente
+                    ? `${seleccion.paciente} | ${seleccion.empresa}`
+                    : seleccion.empresa
+            ],
+            ["Recibe", $("receptor").value.trim() || "No informado"]
         ];
 
+        if (observaciones) {
+            resumen.push(["Observaciones", observaciones]);
+        }
+
         if (!noRealizado) {
-            detalle.entregados.forEach(item => resumen.push([`Entregado: ${item.nombre}`, item.cantidad]));
-            detalle.retirados.forEach(item => resumen.push([`Retirado: ${item.nombre}`, item.cantidad]));
+            detalle.entregados.forEach(item =>
+                resumen.push([`Entregado: ${item.nombre}`, item.cantidad])
+            );
+
+            detalle.retirados.forEach(item =>
+                resumen.push([`Retirado: ${item.nombre}`, item.cantidad])
+            );
         }
 
         if (!await abrirModalConfirmacion(resumen)) return;
@@ -669,6 +765,7 @@ async function registrar() {
         enviando = true;
         $("btnEnviar").disabled = true;
         $("btnNoRealizado").disabled = true;
+        $("btnEnviar").textContent = "Enviando...";
 
         const envio = {
             tipoCliente: "EMPRESA_TERRENO",
@@ -683,91 +780,124 @@ async function registrar() {
             dispositivo: navigator.userAgent.slice(0, 180),
             fotoData: fotosCapturadas[0] || "",
             foto2Data: fotosCapturadas[1] || "",
-            firmaData: noRealizado ? "" : firmaPad.toDataURL("image/png")
+            firmaData: noRealizado
+                ? ""
+                : firmaPad.toDataURL("image/png"),
+            identidad,
+            fechaCreacion: new Date().toISOString()
         };
 
-        envio.identidad = identidad;
-        envio.fechaCreacion = new Date().toISOString();
+        // PASO CRÍTICO:
+        // No enviar ni limpiar hasta confirmar escritura local.
         await guardarEnvioEmpresa(envio);
+        guardadoLocalmente = true;
 
-        const servicioActual = $("servicio").value;
-
-        $("btnEnviar").textContent = "Enviando...";
-        mensaje("Procesando registro. Espere un momento.");
-
-        detenerCamara();
-        estado();
-
-        await sincronizar();
-        const siguePendiente = (await enviosPendientesEmpresa()).some(item => item.envioId === envio.envioId);
-        await mostrarModalResultado(
-            siguePendiente ? "Registro pendiente" : "Registro exitoso",
-            siguePendiente
-                ? "El servicio quedó guardado en este dispositivo. Se enviará cuando el servidor esté disponible."
-                : "El servicio fue recibido por el servidor."
+        console.log(
+            "Empresa: registro protegido en IndexedDB:",
+            envio.envioId
         );
 
-            if (!siguePendiente) {
-                seleccion = null;
-                asignaciones = [];
-                detalleActual = [];
+        // SIN INTERNET:
+        // Ya está guardado. No intentamos llamar al servidor.
+        if (!navigator.onLine) {
+            await mostrarModalResultado(
+                "Sin conexión",
+                "No tiene señal. El registro quedó guardado en este dispositivo y se enviará automáticamente cuando vuelva la conexión."
+            );
 
-                $("asignacion").value = "";
-                $("receptor").value = "";
-                $("observaciones").value = "";
-                $("cantidades").replaceChildren();
-
-                fotosCapturadas = [];
-                pintarFotos();
-
-                firmaPad.clear();
-                cambiarResultado("ATENDIDO");
-
-                $("servicio").value = servicioActual;
-                await cargarAsignaciones();
-        } else {
-            mensaje("Registro guardado en este dispositivo, pendiente de sincronización.");
+            limpiarFormularioEmpresa();
+            return;
         }
+
+        // CON INTERNET:
+        // Intentamos sincronizar sin perder la copia local.
+        await sincronizar();
+
+        const pendientes = await enviosPendientesEmpresa();
+
+        const siguePendiente = pendientes.some(
+            item => item.envioId === envio.envioId
+        );
+
+        if (siguePendiente) {
+            await mostrarModalResultado(
+                "Registro guardado",
+                "No fue posible confirmar el envío. El registro quedó guardado en este dispositivo y se enviará automáticamente cuando el servidor esté disponible."
+            );
+        } else {
+            await mostrarModalResultado(
+                "Registro enviado",
+                "El servicio fue registrado correctamente."
+            );
+        }
+
+        limpiarFormularioEmpresa();
+
     } catch (error) {
-        await mostrarModalResultado("No fue posible registrar", error.message);
+        console.error("Empresa: error al registrar:", error);
+
+        if (guardadoLocalmente) {
+            await mostrarModalResultado(
+                "Registro guardado",
+                "El registro está guardado en este dispositivo. No fue posible completar la sincronización. Se intentará nuevamente al recuperar la conexión."
+            );
+
+            limpiarFormularioEmpresa();
+        } else {
+            await mostrarModalResultado(
+                "No fue posible guardar",
+                "El registro NO quedó guardado. No cierre esta pantalla ni borre la firma o las fotografías. Detalle: " +
+                error.message
+            );
+        }
+
     } finally {
         enviando = false;
         $("btnEnviar").disabled = false;
         $("btnEnviar").textContent = "Enviar Registro";
         $("btnNoRealizado").disabled = false;
-        estado();
+
+        await estado();
     }
 }
 
-async function sincronizar() {
-    if (sincronizando || !navigator.onLine || !identidad) {
-        return;
+function sincronizar() {
+    if (promesaSincronizacionEmpresa) {
+        return promesaSincronizacionEmpresa;
     }
 
-    sincronizando = true;
+    if (!navigator.onLine || !identidad) {
+        return Promise.resolve();
+    }
 
-    try {
-        const pendientes = await enviosPendientesEmpresa();
+    promesaSincronizacionEmpresa = (async () => {
+        sincronizando = true;
 
-        for (const registro of pendientes) {
-            const formulario = new FormData();
+        try {
+            const pendientes = await enviosPendientesEmpresa();
 
-            Object.entries(registro).forEach(([llave, valor]) => {
-                if (llave !== "identidad" && llave !== "fechaCreacion") {
-                    formulario.append(llave, valor);
-                }
-            });
+            for (const registro of pendientes) {
+                if (!navigator.onLine) break;
 
-            let respuesta;
-            let datos;
+                const formulario = new FormData();
 
-            try {
+                Object.entries(registro).forEach(([llave, valor]) => {
+                    if (llave !== "identidad" &&
+                        llave !== "fechaCreacion") {
+                        formulario.append(llave, valor);
+                    }
+                });
+
                 const controlador = new AbortController();
 
+                // Tiempo máximo por registro, incluyendo lectura JSON.
                 const temporizador = setTimeout(
                     () => controlador.abort(),
-                    60000
+                    20000
                 );
+
+                let respuesta;
+                let datos;
 
                 try {
                     respuesta = await fetch(API_EMPRESA, {
@@ -777,51 +907,84 @@ async function sincronizar() {
                         cache: "no-store",
                         signal: controlador.signal
                     });
+
+                    const tipo = String(
+                        respuesta.headers.get("content-type") || ""
+                    ).toLowerCase();
+
+                    if (!tipo.includes("application/json")) {
+                        throw Error(
+                            "El servidor no devolvió una respuesta JSON."
+                        );
+                    }
+
+                    datos = await respuesta.json();
+
+                } catch (error) {
+                    console.warn(
+                        "Empresa: envío conservado para reintento:",
+                        registro.envioId,
+                        error
+                    );
+
+                    break;
+
                 } finally {
                     clearTimeout(temporizador);
                 }
 
-                const tipo = String(
-                    respuesta.headers.get("content-type") || ""
-                ).toLowerCase();
+                if (!respuesta.ok || datos.ok !== true) {
+                    console.error(
+                        "Empresa: servidor rechazó el registro:",
+                        registro.envioId,
+                        datos.error || respuesta.status
+                    );
 
-                if (!tipo.includes("application/json")) {
-                    throw Error("El servidor no devolvió JSON.");
+                    // No borrar la evidencia.
+                    // Tampoco avanzar sobre un error sin resolver.
+                    break;
                 }
 
-                datos = await respuesta.json();
+                // ÚNICAMENTE eliminar si el servidor confirmó ok:true.
+                await eliminarEnvioEmpresa(registro.envioId);
 
-            } catch (error) {
-                mensaje(
-                    "Sin conexión o sesión no disponible. El envío permanece guardado."
+                console.log(
+                    datos.duplicado
+                        ? "Empresa: registro ya procesado:"
+                        : "Empresa: registro sincronizado:",
+                    registro.envioId
                 );
-                break;
             }
 
-            if (!respuesta.ok || datos.ok !== true) {
-                mensaje(
-                    `Envío pendiente: ${datos.error || respuesta.status}. No se eliminará.`
-                );
-                break;
-            }
-
-            await eliminarEnvioEmpresa(registro.envioId);
-
-            mensaje(
-                datos.duplicado
-                    ? "El servicio ya estaba registrado."
-                    : "Servicio registrado correctamente."
+        } catch (error) {
+            console.error(
+                "Empresa: error general de sincronización:",
+                error
             );
+
+        } finally {
+            sincronizando = false;
+
+            try {
+                await estado();
+            } catch (error) {
+                console.warn(
+                    "Empresa: no fue posible actualizar el estado:",
+                    error
+                );
+            }
         }
+    })();
 
-    } catch (error) {
-        console.error("Error sincronizando Empresa:", error);
-        mensaje("No fue posible sincronizar. Los registros permanecen guardados.");
+    const tarea = promesaSincronizacionEmpresa;
 
-    } finally {
-        sincronizando = false;
-        await estado();
-    }
+    void tarea.finally(() => {
+        if (promesaSincronizacionEmpresa === tarea) {
+            promesaSincronizacionEmpresa = null;
+        }
+    });
+
+    return tarea;
 }
 
 // ==========================================================
@@ -890,7 +1053,9 @@ async function iniciar() {
         firmaPad = new SignaturePad($("firma"));
         await migrarColaEmpresaAnterior();
         await cargarServicios();
-        await sincronizar();
+
+        // Sincronización automática, sin bloquear la pantalla.
+        void sincronizar();
 
         // Precarga todas las asignaciones para mantenerlas disponibles sin internet.
         if (navigator.onLine) {
