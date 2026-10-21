@@ -18,17 +18,53 @@ let perfilCargado = false, detalleActual = [], ultimoAviso = "";
 const clave = sufijo => `oxitrack_empresa_v2_${identidad}_${sufijo}`;
 const leer = (llave, defecto) => { try { return JSON.parse(localStorage.getItem(llave)) ?? defecto; } catch { return defecto; } };
 const guardar = (llave, valor) => localStorage.setItem(llave, JSON.stringify(valor));
+const CLAVE_IDENTIDAD_EMPRESA = "oxitrack_empresa_ultima_identidad";
+
+function guardarIdentidadEmpresa(email, nombreOperario) {
+    localStorage.setItem(
+        CLAVE_IDENTIDAD_EMPRESA,
+        JSON.stringify({
+            email: String(email || "").trim().toLowerCase(),
+            operario: String(nombreOperario || "").trim()
+        })
+    );
+}
+
+function recuperarIdentidadEmpresa() {
+    const datos = leer(CLAVE_IDENTIDAD_EMPRESA, null);
+
+    if (!datos || !datos.email || !datos.operario) {
+        return false;
+    }
+
+    identidad = String(datos.email).trim().toLowerCase();
+    operario = String(datos.operario).trim();
+
+    return true;
+}
 
 function mensaje(texto) {
     ultimoAviso = texto;
     $("resultado").textContent = texto;
 }
 
-function estado() {
-    $("estadoConexion").textContent = navigator.onLine ? "" : "Sin conexión. Se utilizarán datos guardados.";
-    if (identidad) {
-        const cantidad = leer(clave("cola"), []).length;
-        $("cola").textContent = cantidad ? `Envíos pendientes: ${cantidad}` : "";
+async function estado() {
+    $("estadoConexion").textContent = navigator.onLine
+        ? ""
+        : "Sin conexión. Se utilizarán datos guardados.";
+
+    if (!identidad) return;
+
+    try {
+        const cantidad = (await enviosPendientesEmpresa()).length;
+
+        $("cola").textContent = cantidad
+            ? `Envíos pendientes: ${cantidad}`
+            : "";
+
+    } catch (error) {
+        console.error("No fue posible consultar la cola Empresa:", error);
+        $("cola").textContent = "No fue posible consultar los envíos pendientes.";
     }
 }
 
@@ -423,7 +459,8 @@ async function cargarAsignaciones() {
 
     if (consultaCorrecta) guardar(llave, resultados);
 
-    const pendientesLocales = new Set(leer(clave("cola"), []).map(item => String(item.id)));
+    const pendientes = await enviosPendientesEmpresa();
+    const pendientesLocales = new Set(pendientes.map(item => String(item.id)));
     asignaciones = resultados.filter(item => !pendientesLocales.has(String(item.id)));
 
     $("asignacion").replaceChildren();
@@ -457,6 +494,139 @@ function mostrarSeleccion() {
 }
 
 // ==========================================================
+// INDEXEDDB - COLA EMPRESA
+// ==========================================================
+
+const DB_EMPRESA = "oxitrack_empresa_db";
+const STORE_ENVIOS_EMPRESA = "envios";
+
+function abrirDbEmpresa() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_EMPRESA, 1);
+
+        request.onupgradeneeded = () => {
+            const db = request.result;
+
+            if (!db.objectStoreNames.contains(STORE_ENVIOS_EMPRESA)) {
+                db.createObjectStore(STORE_ENVIOS_EMPRESA, {
+                    keyPath: "envioId"
+                });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function guardarEnvioEmpresa(registro) {
+    const db = await abrirDbEmpresa();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_ENVIOS_EMPRESA, "readwrite");
+
+        tx.objectStore(STORE_ENVIOS_EMPRESA).put(registro);
+
+        tx.oncomplete = () => {
+            db.close();
+            resolve();
+        };
+
+        tx.onerror = () => {
+            const error = tx.error;
+            db.close();
+            reject(error);
+        };
+
+        tx.onabort = () => {
+            const error = tx.error || Error("Almacenamiento interrumpido.");
+            db.close();
+            reject(error);
+        };
+    });
+}
+
+async function obtenerEnviosEmpresa() {
+    const db = await abrirDbEmpresa();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_ENVIOS_EMPRESA, "readonly");
+        const request = tx.objectStore(STORE_ENVIOS_EMPRESA).getAll();
+
+        request.onsuccess = () => {
+            const registros = Array.isArray(request.result)
+                ? request.result
+                : [];
+
+            resolve(registros);
+        };
+
+        request.onerror = () => reject(request.error);
+
+        tx.oncomplete = () => db.close();
+    });
+}
+
+async function eliminarEnvioEmpresa(envioId) {
+    const db = await abrirDbEmpresa();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_ENVIOS_EMPRESA, "readwrite");
+
+        tx.objectStore(STORE_ENVIOS_EMPRESA).delete(envioId);
+
+        tx.oncomplete = () => {
+            db.close();
+            resolve();
+        };
+
+        tx.onerror = () => {
+            const error = tx.error;
+            db.close();
+            reject(error);
+        };
+
+        tx.onabort = () => {
+            const error = tx.error || Error("No fue posible eliminar el envío.");
+            db.close();
+            reject(error);
+        };
+    });
+}
+
+async function migrarColaEmpresaAnterior() {
+    if (!identidad) return;
+
+    const anterior = leer(clave("cola"), []);
+
+    if (!Array.isArray(anterior) || !anterior.length) return;
+
+    for (const registro of anterior) {
+        await guardarEnvioEmpresa({
+            ...registro,
+            identidad,
+            fechaCreacion: registro.fechaCreacion || new Date().toISOString()
+        });
+    }
+
+    // Solo se elimina la cola antigua cuando todos los
+    // registros se guardaron correctamente en IndexedDB.
+    localStorage.removeItem(clave("cola"));
+}
+
+async function enviosPendientesEmpresa() {
+    const registros = await obtenerEnviosEmpresa();
+
+    return registros
+        .filter(item => item.identidad === identidad)
+        .sort((a, b) =>
+            String(a.fechaCreacion || "").localeCompare(
+                String(b.fechaCreacion || "")
+            )
+        );
+}
+
+// ==========================================================
 // ENVÍO Y ALMACENAMIENTO OFFLINE
 // ==========================================================
 
@@ -475,7 +645,8 @@ async function registrar() {
         const requiereFoto = noRealizado || clase === "IMPLEMENTACION" || clase === "RECARGA";
 
         if (noRealizado && !observaciones) throw Error("NO REALIZADO requiere observaciones.");
-        if (requiereFoto && fotosCapturadas.length === 0) throw Error("Debe tomar al menos una fotografía.");
+        if (requiereFoto && fotosCapturadas.length === 0) {throw Error("Debe tomar al menos una fotografía.");}
+        if (fotosCapturadas.length > 2) {throw Error("Solo se permiten dos fotografías.");}
         if (!noRealizado && firmaPad.isEmpty()) throw Error("Debe registrar la firma.");
         if (!noRealizado && !detalleActual.length) throw Error("El servicio no tiene elementos programados. Consulte a Oficina.");
 
@@ -511,12 +682,13 @@ async function registrar() {
             gps,
             dispositivo: navigator.userAgent.slice(0, 180),
             fotoData: fotosCapturadas[0] || "",
+            foto2Data: fotosCapturadas[1] || "",
             firmaData: noRealizado ? "" : firmaPad.toDataURL("image/png")
         };
 
-        const cola = leer(clave("cola"), []);
-        cola.push(envio);
-        guardar(clave("cola"), cola);
+        envio.identidad = identidad;
+        envio.fechaCreacion = new Date().toISOString();
+        await guardarEnvioEmpresa(envio);
 
         const servicioActual = $("servicio").value;
 
@@ -527,9 +699,7 @@ async function registrar() {
         estado();
 
         await sincronizar();
-
-        const siguePendiente = leer(clave("cola"), []).some(item => item.envioId === envio.envioId);
-
+        const siguePendiente = (await enviosPendientesEmpresa()).some(item => item.envioId === envio.envioId);
         await mostrarModalResultado(
             siguePendiente ? "Registro pendiente" : "Registro exitoso",
             siguePendiente
@@ -570,48 +740,87 @@ async function registrar() {
 }
 
 async function sincronizar() {
-    if (sincronizando || !navigator.onLine || !identidad) return;
+    if (sincronizando || !navigator.onLine || !identidad) {
+        return;
+    }
 
     sincronizando = true;
 
     try {
-        let cola = leer(clave("cola"), []);
+        const pendientes = await enviosPendientesEmpresa();
 
-        while (cola.length) {
-            const registro = cola[0];
+        for (const registro of pendientes) {
             const formulario = new FormData();
-            Object.entries(registro).forEach(([llave, valor]) => formulario.append(llave, valor));
 
-            let respuesta, datos;
+            Object.entries(registro).forEach(([llave, valor]) => {
+                if (llave !== "identidad" && llave !== "fechaCreacion") {
+                    formulario.append(llave, valor);
+                }
+            });
+
+            let respuesta;
+            let datos;
 
             try {
-                respuesta = await fetch(API_EMPRESA, {
-                    method: "POST",
-                    body: formulario,
-                    credentials: "same-origin",
-                    cache: "no-store"
-                });
+                const controlador = new AbortController();
 
-                const tipo = String(respuesta.headers.get("content-type") || "").toLowerCase();
-                if (!tipo.includes("application/json")) throw Error("La sesión no devolvió una respuesta válida.");
+                const temporizador = setTimeout(
+                    () => controlador.abort(),
+                    60000
+                );
+
+                try {
+                    respuesta = await fetch(API_EMPRESA, {
+                        method: "POST",
+                        body: formulario,
+                        credentials: "same-origin",
+                        cache: "no-store",
+                        signal: controlador.signal
+                    });
+                } finally {
+                    clearTimeout(temporizador);
+                }
+
+                const tipo = String(
+                    respuesta.headers.get("content-type") || ""
+                ).toLowerCase();
+
+                if (!tipo.includes("application/json")) {
+                    throw Error("El servidor no devolvió JSON.");
+                }
+
                 datos = await respuesta.json();
+
             } catch (error) {
-                mensaje("Sin conexión o sesión no disponible. El envío permanece guardado.");
+                mensaje(
+                    "Sin conexión o sesión no disponible. El envío permanece guardado."
+                );
                 break;
             }
 
             if (!respuesta.ok || datos.ok !== true) {
-                mensaje(`Envío pendiente: ${datos.error || respuesta.status}. No se eliminará.`);
+                mensaje(
+                    `Envío pendiente: ${datos.error || respuesta.status}. No se eliminará.`
+                );
                 break;
             }
 
-            cola.shift();
-            guardar(clave("cola"), cola);
-            mensaje(datos.duplicado ? "El servicio ya estaba registrado." : "Servicio registrado correctamente.");
+            await eliminarEnvioEmpresa(registro.envioId);
+
+            mensaje(
+                datos.duplicado
+                    ? "El servicio ya estaba registrado."
+                    : "Servicio registrado correctamente."
+            );
         }
+
+    } catch (error) {
+        console.error("Error sincronizando Empresa:", error);
+        mensaje("No fue posible sincronizar. Los registros permanecen guardados.");
+
     } finally {
         sincronizando = false;
-        estado();
+        await estado();
     }
 }
 
@@ -623,7 +832,7 @@ async function iniciar() {
     $("formulario").addEventListener("submit", evento => {
         evento.preventDefault();
         registrar();
-    });
+});
 
     $("btnNoRealizado").addEventListener("click", async () => {
         if (!seleccion) return;
@@ -644,16 +853,15 @@ async function iniciar() {
     window.addEventListener("online", async () => {
         estado();
         await sincronizar();
-        if ($("servicio").value) await cargarAsignaciones();
+        if ($("servicio").value && !seleccion && !enviando) {await cargarAsignaciones();}
     });
 
     window.addEventListener("offline", estado);
 
     document.addEventListener("visibilitychange", async () => {
-        if (document.visibilityState === "visible" && navigator.onLine) {
-            await sincronizar();
-        }
-    });
+    if (document.visibilityState === "visible") {await sincronizar();}});
+    window.addEventListener("focus", async () => {await sincronizar();});
+    window.addEventListener("pageshow", async () => {await sincronizar();});
 
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(
@@ -661,17 +869,26 @@ async function iniciar() {
             () => {},
             { enableHighAccuracy: true, maximumAge: 30000, timeout: 12000 }
         );
-    }
+    } try {
+        let perfilDisponible = false;
 
-    try {
-        const perfil = await consultar("perfilUsuario");
-        identidad = String(perfil.email || perfil.emailAccess || "").trim().toLowerCase();
-        operario = String(perfil.operario || "").trim();
+        try {
+            const perfil = await consultar("perfilUsuario");
 
-        if (!identidad || !operario) throw Error("El perfil no devolvió correo y operario.");
+            identidad = String(perfil.email || perfil.emailAccess || "").trim().toLowerCase();
+            operario = String(perfil.operario || "").trim();
+            if (!identidad || !operario) {throw Error("El perfil no devolvió correo y operario.");}
+            guardarIdentidadEmpresa(identidad, operario);
+            perfilDisponible = true;
+
+        } catch (error) {
+            if (!recuperarIdentidadEmpresa()) {throw Error("No existe un perfil guardado. Ingrese una vez con conexión para habilitar el modo offline.");}
+            console.warn("Empresa: utilizando identidad guardada.",error);
+        }
 
         perfilCargado = true;
         firmaPad = new SignaturePad($("firma"));
+        await migrarColaEmpresaAnterior();
         await cargarServicios();
         await sincronizar();
 
