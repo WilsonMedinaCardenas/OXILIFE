@@ -1,435 +1,683 @@
 
 "use strict";
 
-const WORKER_URL = "https://oxilife.cl/api/oxitrack/";
+// ==========================================================
+// OXITRACK - TERRENO EMPRESA
+// ==========================================================
+
+const API_EMPRESA = "https://oxilife.cl/api/oxitrack/";
 const $ = id => document.getElementById(id);
 const normalizar = valor => String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
 
-let emailOperario = "", nombreOperario = "", asignaciones = [], asignacionActual = null;
-let firmaPad = null, ubicacion = "No disponible", enviando = false, sincronizando = false;
-let solicitudConsulta = 0;
+let identidad = "", operario = "", asignaciones = [], seleccion = null;
+let gps = "No disponible", firmaPad = null, streamCamara = null;
+let fotosCapturadas = [], resultadoServicio = "ATENDIDO";
+let enviando = false, sincronizando = false, consultaAsignaciones = 0;
+let perfilCargado = false, detalleActual = [], ultimoAviso = "";
 
-const claveLocal = nombre => `oxitrack_empresa_v2_${emailOperario}_${nombre}`;
+const clave = sufijo => `oxitrack_empresa_v2_${identidad}_${sufijo}`;
+const leer = (llave, defecto) => { try { return JSON.parse(localStorage.getItem(llave)) ?? defecto; } catch { return defecto; } };
+const guardar = (llave, valor) => localStorage.setItem(llave, JSON.stringify(valor));
 
-function leerLocal(clave, defecto) {
-  try { return JSON.parse(localStorage.getItem(clave)) ?? defecto; }
-  catch (_) { return defecto; }
+function mensaje(texto) {
+    ultimoAviso = texto;
+    $("resultado").textContent = texto;
 }
 
-function guardarLocal(clave, valor) {
-  localStorage.setItem(clave, JSON.stringify(valor));
-}
-
-function informar(texto) {
-  $("resultado").textContent = texto;
-}
-
-function actualizarEstado() {
-  $("estadoConexion").textContent = navigator.onLine ? "Conexión disponible" : "Sin conexión. Trabajando con datos guardados.";
-  $("cola").textContent = `Envíos pendientes: ${leerLocal(claveLocal("cola"), []).length}`;
+function estado() {
+    $("estadoConexion").textContent = navigator.onLine ? "" : "Sin conexión. Se utilizarán datos guardados.";
+    if (identidad) {
+        const cantidad = leer(clave("cola"), []).length;
+        $("cola").textContent = cantidad ? `Envíos pendientes: ${cantidad}` : "";
+    }
 }
 
 async function consultar(modo, parametros = {}) {
-  const url = new URL(WORKER_URL);
-  url.searchParams.set("modo", modo);
-  Object.entries(parametros).forEach(([nombre, valor]) => url.searchParams.set(nombre, valor));
-  const respuesta = await fetch(url, { credentials: "same-origin", cache: "no-store" });
-  const datos = await respuesta.json();
-  if (!respuesta.ok || datos.ok !== true) throw new Error(datos.error || "Error de consulta.");
-  return datos;
+    const url = new URL(API_EMPRESA);
+    url.searchParams.set("modo", modo);
+    Object.entries(parametros).forEach(([llave, valor]) => url.searchParams.set(llave, valor));
+
+    const respuesta = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+    const tipo = String(respuesta.headers.get("content-type") || "").toLowerCase();
+    if (!tipo.includes("application/json")) throw Error("No fue posible validar la sesión de OxiTrack.");
+
+    const datos = await respuesta.json();
+    if (!respuesta.ok || datos.ok !== true) throw Error(datos.error || "Error al consultar el servidor.");
+    return datos;
 }
 
 function agregarOpcion(select, valor, texto) {
-  const opcion = document.createElement("option");
-  opcion.value = valor;
-  opcion.textContent = texto;
-  select.appendChild(opcion);
+    const opcion = document.createElement("option");
+    opcion.value = String(valor);
+    opcion.textContent = String(texto);
+    select.appendChild(opcion);
 }
 
-function obtenerPendientesLocales() {
-  return new Set(leerLocal(claveLocal("cola"), []).map(item => String(item.id)));
+function abrirModalConfirmacion(filas) {
+    return new Promise(resolve => {
+        const modal = $("modalConfirmacion");
+        const resumen = $("modalResumen");
+        const volver = $("btnModalVolver");
+        const confirmar = $("btnModalConfirmar");
+
+        resumen.replaceChildren();
+        filas.forEach(([nombre, valor]) => {
+            const fila = document.createElement("div");
+            const etiqueta = document.createElement("span");
+            const dato = document.createElement("strong");
+            fila.className = "dato-resumen";
+            etiqueta.textContent = nombre;
+            dato.textContent = String(valor ?? "");
+            fila.append(etiqueta, dato);
+            resumen.appendChild(fila);
+        });
+
+        const cerrar = respuesta => {
+            modal.hidden = true;
+            volver.onclick = null;
+            confirmar.onclick = null;
+            resolve(respuesta);
+        };
+
+        volver.onclick = () => cerrar(false);
+        confirmar.onclick = () => cerrar(true);
+        modal.hidden = false;
+    });
 }
 
-async function iniciar() {
-  try {
-    const perfil = await consultar("perfilUsuario");
-    emailOperario = String(perfil.email || "").trim().toLowerCase();
-    nombreOperario = String(perfil.operario || "").trim();
-    if (!emailOperario || !nombreOperario) throw new Error("El perfil no devolvió correo y operario.");
-    $("operarioVisible").textContent = `Operario: ${nombreOperario}`;
-  } catch (error) {
-    informar(`No se pudo identificar al operador: ${error.message}`);
-    $("servicio").disabled = true;
-    return;
-  }
+function mostrarModalResultado(titulo, texto) {
+    return new Promise(resolve => {
+        $("modalResultadoTitulo").textContent = titulo;
+        $("modalResultadoMensaje").textContent = texto;
+        $("modalResultado").hidden = false;
+        $("btnModalResultado").onclick = () => {
+            $("modalResultado").hidden = true;
+            $("btnModalResultado").onclick = null;
+            resolve();
+        };
+    });
+}
 
-  if (typeof SignaturePad === "undefined") {
-    informar("No se pudo cargar la biblioteca de firma. Conéctese a internet y vuelva a cargar.");
-    return;
-  }
+// ==========================================================
+// DETALLE SOLICITADO
+// ==========================================================
 
-  firmaPad = new SignaturePad($("firma"));
+function detalleLista(valor) {
+    let datos = valor;
 
-  $("servicio").addEventListener("change", cargarAsignaciones);
-  $("asignacion").addEventListener("change", mostrarAsignacion);
-  $("limpiarFirma").addEventListener("click", () => firmaPad.clear());
-  $("formulario").addEventListener("submit", evento => {
-    evento.preventDefault();
-    registrarServicio("ATENDIDO");
-  });
-  $("noRealizado").addEventListener("click", () => registrarServicio("NO REALIZADO"));
-  $("sincronizar").addEventListener("click", sincronizarPendientes);
+    if (typeof datos === "string") {
+        try {
+            datos = JSON.parse(datos);
+        } catch {
+            datos = datos.trim() ? [{ elemento: datos, cantidad: 1 }] : [];
+        }
+    }
 
-  window.addEventListener("online", () => {
-    actualizarEstado();
-    sincronizarPendientes();
-  });
-  window.addEventListener("offline", actualizarEstado);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && navigator.onLine) sincronizarPendientes();
-  });
+    if (datos && !Array.isArray(datos) && typeof datos === "object") {
+        datos = Object.entries(datos).map(([elemento, cantidad]) => ({ elemento, cantidad }));
+    }
 
-  if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(
-      posicion => { ubicacion = `${posicion.coords.latitude},${posicion.coords.longitude}`; },
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 30000, timeout: 12000 }
+    if (!Array.isArray(datos)) return [];
+
+    return datos.map(item => {
+        const gas = String(item.gas || "").trim();
+        const elemento = String(item.elemento || item.nombre || item.producto || item.tipo || "").trim();
+        const medida = String(item.medida || "").trim();
+        const nombre = elemento || [gas, medida].filter(Boolean).join(" ");
+        const cantidad = Number(item.cantidad ?? item.unidades ?? 1);
+        return { nombre, cantidad, gas, elemento, medida };
+    }).filter(item => item.nombre && Number.isInteger(item.cantidad) && item.cantidad >= 0);
+}
+
+function tipoServicio(servicio) {
+    const texto = normalizar(servicio);
+    if (texto.includes("IMPLEMENT")) return "IMPLEMENTACION";
+    if (texto.includes("RETIRO")) return "RETIRO";
+    if (texto.includes("RECARGA")) return "RECARGA";
+    return "OTRO";
+}
+
+function crearContador(item, indice, grupo, inicial) {
+    const fila = document.createElement("div");
+    const nombre = document.createElement("label");
+    const contador = document.createElement("div");
+    const menos = document.createElement("button");
+    const cantidad = document.createElement("input");
+    const mas = document.createElement("button");
+
+    fila.className = "elemento-fila";
+    nombre.className = "elemento-nombre";
+    contador.className = "contador elemento-contador";
+    nombre.textContent = item.nombre;
+
+    menos.type = "button";
+    menos.textContent = "−";
+    mas.type = "button";
+    mas.textContent = "+";
+
+    cantidad.type = "text";
+    cantidad.readOnly = true;
+    cantidad.value = String(inicial);
+    cantidad.dataset.grupo = grupo;
+    cantidad.dataset.indice = String(indice);
+
+    menos.addEventListener("click", () => {
+        cantidad.value = String(Math.max(0, Number(cantidad.value) - 1));
+    });
+
+    mas.addEventListener("click", () => {
+        cantidad.value = String(Math.min(50, Number(cantidad.value) + 1));
+    });
+
+    contador.append(menos, cantidad, mas);
+    fila.append(nombre, contador);
+    return fila;
+}
+
+function crearSeccion(titulo, grupo, elementos, cantidadInicial) {
+    const seccion = document.createElement("div");
+    const encabezado = document.createElement("div");
+    encabezado.className = "titulo";
+    encabezado.textContent = titulo;
+    seccion.appendChild(encabezado);
+
+    elementos.forEach((item, indice) => {
+        seccion.appendChild(crearContador(item, indice, grupo, cantidadInicial(item)));
+    });
+
+    return seccion;
+}
+
+function pintarCantidades() {
+    const contenedor = $("cantidades");
+    contenedor.replaceChildren();
+
+    if (!seleccion) return;
+
+    const clase = tipoServicio(seleccion.servicio);
+    detalleActual = detalleLista(seleccion.detalleSolicitado);
+
+    if (!detalleActual.length) {
+        const aviso = document.createElement("p");
+        aviso.className = "empresa-advertencia";
+        aviso.textContent = "Este servicio no tiene elementos programados. Informe a Oficina antes de registrarlo.";
+        contenedor.appendChild(aviso);
+        return;
+    }
+
+    if (clase === "IMPLEMENTACION") {
+        contenedor.appendChild(crearSeccion("ELEMENTOS ENTREGADOS", "ENTREGADOS", detalleActual, item => item.cantidad));
+        return;
+    }
+
+    if (clase === "RETIRO") {
+        contenedor.appendChild(crearSeccion("ELEMENTOS RETIRADOS", "RETIRADOS", detalleActual, item => item.cantidad));
+        return;
+    }
+
+    contenedor.appendChild(crearSeccion("ENTREGADOS", "ENTREGADOS", detalleActual, item => item.cantidad));
+    contenedor.appendChild(crearSeccion("RETIRADOS", "RETIRADOS", detalleActual, () => 0));
+}
+
+function valorCantidad(grupo, indice) {
+    const input = [...$("cantidades").querySelectorAll("input")].find(item =>
+        item.dataset.grupo === grupo && item.dataset.indice === String(indice)
     );
-  }
 
-  try {
-    const datos = await consultar("serviciosEmpresa");
-    if (!Array.isArray(datos.servicios)) throw new Error("Catálogo de servicios inválido.");
-    guardarLocal(claveLocal("servicios"), datos.servicios);
-  } catch (error) {
-    informar(`Se utilizará el catálogo local: ${error.message}`);
-  }
+    if (!input) return 0;
+    const valor = Number(input.value);
+    if (!Number.isInteger(valor) || valor < 0 || valor > 50) throw Error("Cantidad inválida.");
+    return valor;
+}
 
-  const servicios = leerLocal(claveLocal("servicios"), []);
-  $("servicio").replaceChildren();
-  agregarOpcion($("servicio"), "", "Seleccione un servicio");
-  servicios.forEach(servicio => agregarOpcion($("servicio"), servicio, servicio));
+function cantidades() {
+    const clase = tipoServicio(seleccion.servicio);
+    const entregados = clase === "RETIRO" ? [] : detalleActual.map((item, indice) => ({
+        nombre: item.nombre, cantidad: valorCantidad("ENTREGADOS", indice)
+    }));
 
-  actualizarEstado();
-  if (navigator.onLine) sincronizarPendientes();
+    const retirados = clase === "IMPLEMENTACION" ? [] : detalleActual.map((item, indice) => ({
+        nombre: item.nombre, cantidad: valorCantidad("RETIRADOS", indice)
+    }));
+
+    return { entregados, retirados };
+}
+
+// ==========================================================
+// FIRMA Y CÁMARA
+// ==========================================================
+
+function ajustarFirma() {
+    const canvas = $("firma");
+    const ancho = canvas.getBoundingClientRect().width || canvas.offsetWidth || 400;
+    const escala = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = Math.round(ancho * escala);
+    canvas.height = Math.round(220 * escala);
+    canvas.getContext("2d").scale(escala, escala);
+    if (firmaPad) firmaPad.clear();
+}
+
+async function abrirCamara() {
+    if (fotosCapturadas.length >= 2) {
+        await mostrarModalResultado("Fotografías", "Puede registrar un máximo de dos fotografías.");
+        return;
+    }
+
+    try {
+        detenerCamara();
+        if (!navigator.mediaDevices?.getUserMedia) throw Error("Cámara no disponible.");
+        streamCamara = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } }, audio: false
+        });
+
+        $("vistaCamara").srcObject = streamCamara;
+        $("vistaCamara").hidden = false;
+        $("btnAbrirCamara").hidden = true;
+        $("btnTomarFoto").hidden = false;
+        await $("vistaCamara").play();
+    } catch (error) {
+        detenerCamara();
+        await mostrarModalResultado("Cámara", "No fue posible abrir la cámara. Revise los permisos del teléfono.");
+    }
+}
+
+function detenerCamara() {
+    if (streamCamara) {
+        streamCamara.getTracks().forEach(track => track.stop());
+        streamCamara = null;
+    }
+    $("vistaCamara").srcObject = null;
+    $("vistaCamara").hidden = true;
+    $("btnTomarFoto").hidden = true;
+    $("btnAbrirCamara").hidden = false;
+}
+
+async function tomarFoto() {
+    const video = $("vistaCamara");
+    if (!streamCamara || !video.videoWidth || fotosCapturadas.length >= 2) return;
+
+    const canvas = $("canvasFoto");
+    const escala = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * escala);
+    canvas.height = Math.round(video.videoHeight * escala);
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    fotosCapturadas.push(canvas.toDataURL("image/jpeg", 0.72));
+    detenerCamara();
+    pintarFotos();
+}
+
+function pintarFotos() {
+    const contenedor = $("previewFotos");
+    contenedor.replaceChildren();
+
+    fotosCapturadas.forEach((foto, indice) => {
+        const marco = document.createElement("div");
+        const imagen = document.createElement("img");
+        const eliminar = document.createElement("button");
+
+        marco.className = "foto-preview";
+        imagen.src = foto;
+        imagen.alt = `Fotografía ${indice + 1}`;
+        eliminar.type = "button";
+        eliminar.textContent = "×";
+        eliminar.setAttribute("aria-label", "Eliminar fotografía");
+
+        eliminar.onclick = () => {
+            fotosCapturadas.splice(indice, 1);
+            pintarFotos();
+        };
+
+        marco.append(imagen, eliminar);
+        contenedor.appendChild(marco);
+    });
+
+    $("btnAbrirCamara").hidden = fotosCapturadas.length >= 2;
+}
+
+// ==========================================================
+// RESULTADO DEL SERVICIO
+// ==========================================================
+
+function cambiarResultado(resultado) {
+    resultadoServicio = resultado;
+    const noRealizado = resultado === "NO REALIZADO";
+
+    $("cantidades").hidden = noRealizado;
+    $("tituloFirmaEmpresa").hidden = noRealizado;
+    $("firma").hidden = noRealizado;
+    $("btnLimpiar").hidden = noRealizado;
+    $("btnNoRealizado").hidden = noRealizado;
+    $("avisoNoRealizado").hidden = !noRealizado;
+    $("seccionFotos").hidden = !noRealizado && tipoServicio(seleccion?.servicio) === "RETIRO";
+
+    $("seccionFotos").querySelector(".texto-foto").textContent = noRealizado
+        ? "Tome al menos una fotografía como respaldo del servicio no realizado."
+        : "Tome al menos una fotografía del servicio realizado.";
+
+    $("btnEnviar").textContent = "Enviar Registro";
+
+    if (noRealizado) $("observaciones").focus();
+}
+
+// ==========================================================
+// SERVICIOS Y ASIGNACIONES
+// ==========================================================
+
+async function cargarServicios() {
+    let servicios = [];
+
+    if (navigator.onLine) {
+        try {
+            const datos = await consultar("serviciosEmpresa");
+            if (!Array.isArray(datos.servicios)) throw Error("Catálogo inválido.");
+            servicios = datos.servicios;
+            guardar(clave("servicios"), servicios);
+        } catch (error) {
+            servicios = leer(clave("servicios"), []);
+            mensaje(`Se utilizará el catálogo guardado: ${error.message}`);
+        }
+    } else {
+        servicios = leer(clave("servicios"), []);
+    }
+
+    $("servicio").replaceChildren();
+    agregarOpcion($("servicio"), "", "Seleccione el tipo de servicio...");
+    servicios.forEach(servicio => agregarOpcion($("servicio"), servicio, servicio));
 }
 
 async function cargarAsignaciones() {
-  const consultaActual = ++solicitudConsulta;
-  const servicio = $("servicio").value;
+    const consulta = ++consultaAsignaciones;
+    const servicio = $("servicio").value.trim();
 
-  asignacionActual = null;
-  asignaciones = [];
-  $("detalleServicio").hidden = true;
-  $("asignacion").disabled = true;
-  $("asignacion").replaceChildren();
-
-  if (!servicio) {
-    agregarOpcion($("asignacion"), "", "Seleccione primero un servicio");
-    return;
-  }
-
-  agregarOpcion($("asignacion"), "", "Cargando asignaciones...");
-  const clave = claveLocal(`asignaciones_${normalizar(servicio)}`);
-
-  try {
-    const datos = await consultar("asignacionesEmpresaTerreno", { servicio });
-    if (!Array.isArray(datos.servicios)) throw new Error("Asignaciones inválidas.");
-    if (consultaActual !== solicitudConsulta) return;
-    guardarLocal(clave, datos.servicios);
-    asignaciones = datos.servicios;
-    $("mensajeAsignaciones").textContent = `${asignaciones.length} asignación(es) pendiente(s).`;
-  } catch (error) {
-    if (consultaActual !== solicitudConsulta) return;
-    asignaciones = leerLocal(clave, []);
-    $("mensajeAsignaciones").textContent = `Datos guardados: ${asignaciones.length}. ${error.message}`;
-  }
-
-  const enCola = obtenerPendientesLocales();
-  asignaciones = asignaciones.filter(item => !enCola.has(String(item.id)));
-
-  $("asignacion").replaceChildren();
-  agregarOpcion($("asignacion"), "", "Seleccione una asignación");
-
-  asignaciones.forEach(item => {
-    const destino = item.paciente ? `${item.paciente} | ${item.empresa}` : item.empresa;
-    const fecha = [item.fechaProgramada, item.ventanaHoraria].filter(Boolean).join(" · ");
-    agregarOpcion($("asignacion"), item.id, `${destino} · ${fecha}`);
-  });
-
-  $("asignacion").disabled = asignaciones.length === 0;
-}
-
-function obtenerElementos(detalle) {
-  let datos = detalle;
-
-  if (typeof datos === "string") {
-    try { datos = JSON.parse(datos); }
-    catch (_) { return []; }
-  }
-
-  if (datos && !Array.isArray(datos) && typeof datos === "object") {
-    if (Array.isArray(datos.elementos)) datos = datos.elementos;
-    else if (Array.isArray(datos.entregados)) datos = datos.entregados;
-    else datos = Object.entries(datos).map(([elemento, cantidad]) => ({ elemento, cantidad }));
-  }
-
-  if (!Array.isArray(datos)) return [];
-
-  return datos.map(item => {
-    const nombre = String(item.elemento || item.nombre || item.producto || (item.gas ? `${item.gas} ${item.medida || ""}` : "") || item.tipo || "").trim();
-    const cantidad = Number(item.cantidad ?? item.unidades ?? 1);
-    return { nombre, cantidad, recarga: item.recarga === true };
-  }).filter(item => item.nombre && Number.isInteger(item.cantidad) && item.cantidad >= 0);
-}
-
-function agregarContador(contenedor, grupo, elemento, indice, cantidadInicial) {
-  const fila = document.createElement("div");
-  fila.className = "fila-cantidad";
-
-  const etiqueta = document.createElement("span");
-  etiqueta.textContent = elemento.nombre;
-
-  const controles = document.createElement("div");
-  controles.className = "cantidad-controles";
-
-  const menos = document.createElement("button");
-  menos.type = "button";
-  menos.textContent = "−";
-
-  const cantidad = document.createElement("input");
-  cantidad.type = "number";
-  cantidad.min = "0";
-  cantidad.max = "50";
-  cantidad.step = "1";
-  cantidad.value = String(cantidadInicial);
-  cantidad.dataset.grupo = grupo;
-  cantidad.dataset.indice = String(indice);
-
-  const mas = document.createElement("button");
-  mas.type = "button";
-  mas.textContent = "+";
-
-  menos.onclick = () => {
-    cantidad.value = String(Math.max(0, Number(cantidad.value || 0) - 1));
-  };
-  mas.onclick = () => {
-    cantidad.value = String(Math.min(50, Number(cantidad.value || 0) + 1));
-  };
-
-  controles.append(menos, cantidad, mas);
-  fila.append(etiqueta, controles);
-  contenedor.appendChild(fila);
-}
-
-function mostrarAsignacion() {
-  asignacionActual = asignaciones.find(item => item.id === $("asignacion").value) || null;
-  $("detalleServicio").hidden = !asignacionActual;
-  if (!asignacionActual) return;
-
-  const item = asignacionActual;
-  const ficha = $("ficha");
-  ficha.replaceChildren();
-
-  [
-    ["Empresa", item.empresa],
-    ["Paciente", item.paciente],
-    ["Servicio", item.servicio],
-    ["Tipo", item.tipo],
-    ["Dirección", `${item.direccion || ""} ${item.comuna || ""}`],
-    ["Programación", `${item.fechaProgramada || ""} ${item.ventanaHoraria || ""}`],
-    ["Observaciones Oficina", item.observacionesOficina]
-  ].forEach(([titulo, valor]) => {
-    if (!String(valor || "").trim()) return;
-    const parrafo = document.createElement("p");
-    const negrita = document.createElement("strong");
-    negrita.textContent = `${titulo}: `;
-    parrafo.append(negrita, document.createTextNode(String(valor)));
-    ficha.appendChild(parrafo);
-  });
-
-  const elementos = obtenerElementos(item.detalleSolicitado);
-  const contenedor = $("cantidades");
-  contenedor.replaceChildren();
-
-  if (!elementos.length) {
-    const aviso = document.createElement("p");
-    aviso.textContent = "Este servicio no tiene un detalle estructurado. No se podrá marcar ATENDIDO hasta resolverlo.";
-    contenedor.appendChild(aviso);
-  } else {
-    ["ENTREGADOS", "RETIRADOS"].forEach(grupo => {
-      const seccion = document.createElement("section");
-      seccion.className = "panel";
-      const titulo = document.createElement("h3");
-      titulo.textContent = grupo;
-      seccion.appendChild(titulo);
-
-      elementos.forEach((elemento, indice) => {
-        agregarContador(seccion, grupo, elemento, indice, grupo === "ENTREGADOS" ? elemento.cantidad : 0);
-      });
-
-      contenedor.appendChild(seccion);
-    });
-  }
-
-  $("receptor").value = "";
-  $("observaciones").value = "";
-  $("foto").value = "";
-  firmaPad.clear();
-  ajustarFirma();
-}
-
-function ajustarFirma() {
-  const canvas = $("firma");
-  const ratio = Math.max(window.devicePixelRatio || 1, 1);
-  const ancho = canvas.getBoundingClientRect().width;
-  if (!ancho) return;
-  canvas.width = Math.round(ancho * ratio);
-  canvas.height = Math.round(170 * ratio);
-  canvas.getContext("2d").scale(ratio, ratio);
-  firmaPad.clear();
-}
-
-function leerCantidad(grupo, indice) {
-  const input = [...document.querySelectorAll("#cantidades input")].find(
-    elemento => elemento.dataset.grupo === grupo && elemento.dataset.indice === String(indice)
-  );
-  const numero = Number(input?.value);
-  if (!input || input.value.trim() === "" || !Number.isInteger(numero) || numero < 0 || numero > 50) {
-    throw new Error("Las cantidades deben ser números enteros entre 0 y 50.");
-  }
-  return numero;
-}
-
-function obtenerDetalleRealizado() {
-  const elementos = obtenerElementos(asignacionActual.detalleSolicitado);
-  return {
-    entregados: elementos.map((item, indice) => ({ ...item, cantidad: leerCantidad("ENTREGADOS", indice) })),
-    retirados: elementos.map((item, indice) => ({ ...item, cantidad: leerCantidad("RETIRADOS", indice) }))
-  };
-}
-
-async function convertirFotografia(archivo) {
-  if (!archivo) return "";
-  if (!archivo.type.startsWith("image/")) throw new Error("Seleccione una fotografía válida.");
-
-  const imagen = await createImageBitmap(archivo);
-  const escala = Math.min(1, 1280 / Math.max(imagen.width, imagen.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(imagen.width * escala);
-  canvas.height = Math.round(imagen.height * escala);
-  canvas.getContext("2d").drawImage(imagen, 0, 0, canvas.width, canvas.height);
-  if (imagen.close) imagen.close();
-  return canvas.toDataURL("image/jpeg", 0.72);
-}
-
-async function registrarServicio(resultadoServicio) {
-  if (enviando || !asignacionActual) return;
-
-  try {
-    const observaciones = $("observaciones").value.trim();
-    const foto = $("foto").files[0];
-    const servicio = normalizar(asignacionActual.servicio);
-    const requiereFoto = resultadoServicio === "NO REALIZADO" || servicio.includes("RECARGA") || servicio.includes("IMPLEMENT");
-
-    if (resultadoServicio === "NO REALIZADO" && !observaciones) {
-      throw new Error("NO REALIZADO requiere una observación.");
-    }
-    if (requiereFoto && !foto) throw new Error("Este resultado requiere una fotografía.");
-    if (resultadoServicio === "ATENDIDO" && firmaPad.isEmpty()) {
-      throw new Error("ATENDIDO requiere firma.");
-    }
-    if (resultadoServicio === "ATENDIDO" && !obtenerElementos(asignacionActual.detalleSolicitado).length) {
-      throw new Error("Falta el detalle solicitado del servicio.");
-    }
-
-    const detalle = resultadoServicio === "ATENDIDO" ? obtenerDetalleRealizado() : { entregados: [], retirados: [] };
-    if (!confirm(`¿Confirmar ${resultadoServicio} para ${asignacionActual.paciente || asignacionActual.empresa}?`)) return;
-
-    enviando = true;
-    $("enviar").disabled = true;
-    $("noRealizado").disabled = true;
-
-    const registro = {
-      tipoCliente: "EMPRESA_TERRENO",
-      id: asignacionActual.id,
-      servicio: asignacionActual.servicio,
-      resultadoServicio,
-      envioId: crypto.randomUUID(),
-      detalleRealizado: JSON.stringify(detalle),
-      observaciones,
-      receptor: $("receptor").value.trim(),
-      gps: ubicacion,
-      dispositivo: navigator.userAgent.slice(0, 180),
-      fotoData: await convertirFotografia(foto),
-      firmaData: resultadoServicio === "ATENDIDO" ? firmaPad.toDataURL("image/png") : ""
-    };
-
-    const cola = leerLocal(claveLocal("cola"), []);
-    cola.push(registro);
-    guardarLocal(claveLocal("cola"), cola);
-
-    informar("Registro guardado localmente. Sincronizando...");
+    seleccion = null;
+    asignaciones = [];
+    detalleActual = [];
     $("detalleServicio").hidden = true;
-    asignacionActual = null;
+    $("asignacion").disabled = true;
+    $("asignacion").replaceChildren();
 
-    await cargarAsignaciones();
-    await sincronizarPendientes();
-  } catch (error) {
-    informar(`No se registró: ${error.message}`);
-  } finally {
-    enviando = false;
-    $("enviar").disabled = false;
-    $("noRealizado").disabled = false;
-    actualizarEstado();
-  }
+    if (!servicio) {
+        agregarOpcion($("asignacion"), "", "Primero seleccione un servicio...");
+        return;
+    }
+
+    agregarOpcion($("asignacion"), "", "Cargando pacientes...");
+    const llave = clave(`asignaciones_${normalizar(servicio)}`);
+    let resultados = [];
+    let consultaCorrecta = false;
+
+    if (navigator.onLine) {
+        try {
+            const datos = await consultar("asignacionesEmpresaTerreno", { servicio });
+            if (!Array.isArray(datos.servicios)) throw Error("Respuesta de asignaciones inválida.");
+            resultados = datos.servicios;
+            consultaCorrecta = true;
+        } catch (error) {
+            mensaje(`No fue posible actualizar pacientes. Se utilizará información guardada: ${error.message}`);
+        }
+    }
+
+    if (!consultaCorrecta) resultados = leer(llave, []);
+    if (consulta !== consultaAsignaciones) return;
+
+    if (consultaCorrecta) guardar(llave, resultados);
+
+    const pendientesLocales = new Set(leer(clave("cola"), []).map(item => String(item.id)));
+    asignaciones = resultados.filter(item => !pendientesLocales.has(String(item.id)));
+
+    $("asignacion").replaceChildren();
+    agregarOpcion($("asignacion"), "", asignaciones.length ? "Seleccione el paciente..." : "No hay pacientes disponibles");
+
+    asignaciones.forEach(item => {
+        const etiqueta = item.paciente ? `${item.paciente} | ${item.empresa}` : item.empresa;
+        agregarOpcion($("asignacion"), item.id, etiqueta);
+    });
+
+    $("asignacion").disabled = asignaciones.length === 0;
 }
 
-async function sincronizarPendientes() {
-  if (sincronizando || !navigator.onLine || !emailOperario) return;
-  sincronizando = true;
+function mostrarSeleccion() {
+    seleccion = asignaciones.find(item => String(item.id) === String($("asignacion").value)) || null;
+    $("detalleServicio").hidden = !seleccion;
+    if (!seleccion) return;
 
-  try {
-    let cola = leerLocal(claveLocal("cola"), []);
+    $("pacienteId").value = String(seleccion.id);
+    $("receptor").value = "";
+    $("observaciones").value = "";
+    fotosCapturadas = [];
+    detenerCamara();
+    pintarFotos();
 
-    while (cola.length) {
-      const registro = cola[0];
-      const formulario = new FormData();
-      Object.entries(registro).forEach(([nombre, valor]) => formulario.append(nombre, valor));
+    ajustarFirma();
+    pintarCantidades();
+    cambiarResultado("ATENDIDO");
+}
 
-      let respuesta;
-      try {
-        respuesta = await fetch(WORKER_URL, {
-          method: "POST",
-          body: formulario,
-          credentials: "same-origin"
-        });
-      } catch (_) {
-        informar("Sin conexión. El envío permanece guardado.");
-        break;
-      }
+// ==========================================================
+// ENVÍO Y ALMACENAMIENTO OFFLINE
+// ==========================================================
 
-      let datos;
-      try {
-        datos = await respuesta.json();
-      } catch (_) {
-        informar("Respuesta inválida. El envío permanece guardado.");
-        break;
-      }
+function generarEnvioId() {
+    return crypto.randomUUID ? crypto.randomUUID() :
+        `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
 
-      if (!respuesta.ok || datos.ok !== true) {
-        informar(`Envío pendiente: ${datos.error || respuesta.status}`);
-        break;
-      }
+async function registrar() {
+    if (enviando || !seleccion) return;
 
-      cola.shift();
-      guardarLocal(claveLocal("cola"), cola);
-      informar(datos.advertencia || (datos.duplicado ? "Envío registrado anteriormente." : "Servicio registrado correctamente."));
+    try {
+        const observaciones = $("observaciones").value.trim();
+        const clase = tipoServicio(seleccion.servicio);
+        const noRealizado = resultadoServicio === "NO REALIZADO";
+        const requiereFoto = noRealizado || clase === "IMPLEMENTACION" || clase === "RECARGA";
+
+        if (noRealizado && !observaciones) throw Error("NO REALIZADO requiere observaciones.");
+        if (requiereFoto && fotosCapturadas.length === 0) throw Error("Debe tomar al menos una fotografía.");
+        if (!noRealizado && firmaPad.isEmpty()) throw Error("Debe registrar la firma.");
+        if (!noRealizado && !detalleActual.length) throw Error("El servicio no tiene elementos programados. Consulte a Oficina.");
+
+        const detalle = noRealizado ? { entregados: [], retirados: [] } : cantidades();
+        const resumen = [
+            ["Resultado", resultadoServicio],
+            ["Servicio", seleccion.servicio],
+            ["Paciente / Empresa", seleccion.paciente ? `${seleccion.paciente} | ${seleccion.empresa}` : seleccion.empresa],
+            ["Recibe", $("receptor").value.trim() || "No informado"],
+            ["Observaciones", observaciones || "Sin observaciones"]
+        ];
+
+        if (!noRealizado) {
+            detalle.entregados.forEach(item => resumen.push([`Entregado: ${item.nombre}`, item.cantidad]));
+            detalle.retirados.forEach(item => resumen.push([`Retirado: ${item.nombre}`, item.cantidad]));
+        }
+
+        if (!await abrirModalConfirmacion(resumen)) return;
+
+        enviando = true;
+        $("btnEnviar").disabled = true;
+        $("btnNoRealizado").disabled = true;
+
+        const envio = {
+            tipoCliente: "EMPRESA_TERRENO",
+            id: seleccion.id,
+            servicio: seleccion.servicio,
+            resultadoServicio,
+            envioId: generarEnvioId(),
+            detalleRealizado: JSON.stringify(detalle),
+            observaciones,
+            receptor: $("receptor").value.trim(),
+            gps,
+            dispositivo: navigator.userAgent.slice(0, 180),
+            fotoData: fotosCapturadas[0] || "",
+            firmaData: noRealizado ? "" : firmaPad.toDataURL("image/png")
+        };
+
+        const cola = leer(clave("cola"), []);
+        cola.push(envio);
+        guardar(clave("cola"), cola);
+
+        const servicioActual = $("servicio").value;
+        $("detalleServicio").hidden = true;
+        $("asignacion").value = "";
+        seleccion = null;
+        detenerCamara();
+        estado();
+
+        await sincronizar();
+        await cargarAsignaciones();
+
+        const siguePendiente = leer(clave("cola"), []).some(item => item.envioId === envio.envioId);
+
+        await mostrarModalResultado(
+            siguePendiente ? "Registro pendiente" : "Registro exitoso",
+            siguePendiente
+                ? "El servicio quedó guardado en este dispositivo. Se enviará cuando el servidor esté disponible."
+                : "El servicio fue recibido por el servidor."
+        );
+
+        $("servicio").value = servicioActual;
+    } catch (error) {
+        await mostrarModalResultado("No fue posible registrar", error.message);
+    } finally {
+        enviando = false;
+        $("btnEnviar").disabled = false;
+        $("btnNoRealizado").disabled = false;
+        estado();
     }
-  } finally {
-    sincronizando = false;
-    actualizarEstado();
-  }
+}
+
+async function sincronizar() {
+    if (sincronizando || !navigator.onLine || !identidad) return;
+
+    sincronizando = true;
+
+    try {
+        let cola = leer(clave("cola"), []);
+
+        while (cola.length) {
+            const registro = cola[0];
+            const formulario = new FormData();
+            Object.entries(registro).forEach(([llave, valor]) => formulario.append(llave, valor));
+
+            let respuesta, datos;
+
+            try {
+                respuesta = await fetch(API_EMPRESA, {
+                    method: "POST",
+                    body: formulario,
+                    credentials: "same-origin",
+                    cache: "no-store"
+                });
+
+                const tipo = String(respuesta.headers.get("content-type") || "").toLowerCase();
+                if (!tipo.includes("application/json")) throw Error("La sesión no devolvió una respuesta válida.");
+                datos = await respuesta.json();
+            } catch (error) {
+                mensaje("Sin conexión o sesión no disponible. El envío permanece guardado.");
+                break;
+            }
+
+            if (!respuesta.ok || datos.ok !== true) {
+                mensaje(`Envío pendiente: ${datos.error || respuesta.status}. No se eliminará.`);
+                break;
+            }
+
+            cola.shift();
+            guardar(clave("cola"), cola);
+            mensaje(datos.duplicado ? "El servicio ya estaba registrado." : "Servicio registrado correctamente.");
+        }
+    } finally {
+        sincronizando = false;
+        estado();
+    }
+}
+
+// ==========================================================
+// INICIALIZACIÓN
+// ==========================================================
+
+async function iniciar() {
+    $("formulario").addEventListener("submit", evento => {
+        evento.preventDefault();
+        registrar();
+    });
+
+    $("btnNoRealizado").addEventListener("click", async () => {
+        if (!seleccion) return;
+        cambiarResultado("NO REALIZADO");
+        await mostrarModalResultado(
+            "Servicio no realizado",
+            "Indique el motivo en Observaciones y tome al menos una fotografía. No se requiere firma."
+        );
+    });
+
+    $("btnCancelarNoRealizado").addEventListener("click", () => cambiarResultado("ATENDIDO"));
+    $("btnAbrirCamara").addEventListener("click", abrirCamara);
+    $("btnTomarFoto").addEventListener("click", tomarFoto);
+    $("btnLimpiar").addEventListener("click", () => firmaPad?.clear());
+    $("sincronizar").addEventListener("click", sincronizar);
+    $("servicio").addEventListener("change", cargarAsignaciones);
+    $("asignacion").addEventListener("change", mostrarSeleccion);
+
+    window.addEventListener("online", async () => {
+        estado();
+        await sincronizar();
+        if ($("servicio").value) await cargarAsignaciones();
+    });
+
+    window.addEventListener("offline", estado);
+
+    document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" && navigator.onLine) {
+            await sincronizar();
+        }
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+            posicion => gps = `${posicion.coords.latitude},${posicion.coords.longitude}`,
+            () => {},
+            { enableHighAccuracy: true, maximumAge: 30000, timeout: 12000 }
+        );
+    }
+
+    try {
+        const perfil = await consultar("perfilUsuario");
+        identidad = String(perfil.email || perfil.emailAccess || "").trim().toLowerCase();
+        operario = String(perfil.operario || "").trim();
+
+        if (!identidad || !operario) throw Error("El perfil no devolvió correo y operario.");
+
+        perfilCargado = true;
+        firmaPad = new SignaturePad($("firma"));
+        await cargarServicios();
+        await sincronizar();
+
+        // Precarga todas las asignaciones para mantenerlas disponibles sin internet.
+        if (navigator.onLine) {
+            const servicioOriginal = $("servicio").value;
+
+            for (const opcion of [...$("servicio").options].slice(1)) {
+                try {
+                    const datos = await consultar("asignacionesEmpresaTerreno", { servicio: opcion.value });
+                    if (Array.isArray(datos.servicios)) {
+                        guardar(clave(`asignaciones_${normalizar(opcion.value)}`), datos.servicios);
+                    }
+                } catch (error) {
+                    console.warn("No fue posible precargar:", opcion.value, error);
+                }
+            }
+
+            $("servicio").value = servicioOriginal;
+        }
+
+        mensaje("");
+    } catch (error) {
+        mensaje(`No fue posible iniciar Empresa: ${error.message}`);
+        $("servicio").disabled = true;
+    }
+
+    estado();
 }
 
 window.addEventListener("DOMContentLoaded", iniciar);

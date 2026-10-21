@@ -3,93 +3,113 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OxiTrack | Terreno Empresa</title>
-  <link rel="stylesheet" href="css/oxitrack-base.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OxiTrack - Empresa</title>
+  <link rel="stylesheet" href="./css/oxitrack-base.css">
+  <link rel="stylesheet" href="./css/particular.css">
   <style>
     [hidden] { display: none !important; }
-    .contenedor { max-width: 450px; margin: auto; }
-    .grupo { margin: 14px 0; }
-    .panel { padding: 12px; border: 1px solid #ddd; border-radius: 10px; margin: 12px 0; }
-    .fila-cantidad { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px; margin: 9px 0; border: 1px solid #ddd; border-radius: 9px; }
-    .cantidad-controles { display: flex; align-items: center; gap: 6px; }
-    .cantidad-controles button { min-width: 38px; min-height: 38px; }
-    .cantidad-controles input { width: 62px; text-align: center; }
-    .boton-alerta { background: #9b2020; color: #fff; }
-    .estado { font-size: .9rem; color: #555; }
-    .ayuda { font-size: .85rem; color: #666; }
-    select, textarea, input { max-width: 100%; }
-    canvas { width: 100%; height: 170px; border: 1px solid #aaa; border-radius: 8px; background: white; touch-action: none; }
-    button { cursor: pointer; }
+    .empresa-contenedor { width: 100%; }
+    .empresa-estado { font-size: 12px; color: #666; margin: 0 0 8px; }
+    .empresa-estado:empty { display: none; }
+    #resultado { margin: 12px 0; font-size: 14px; color: #611e63; }
+    #resultado:empty { display: none; }
+    #receptor { margin-bottom: 12px; }
+    #btnNoRealizado { background: #963636; color: white; margin-top: 14px; }
+    #btnCancelarNoRealizado { background: #999; color: white; }
+    #sincronizar { background: #eee; color: #333; font-size: 13px; padding: 9px; margin-top: 12px; }
+    #firma { display: block; }
+    .elemento-contador input { flex: 1; min-width: 0; }
+    .empresa-advertencia { font-size: 13px; color: #963636; margin: 10px 0; }
   </style>
 </head>
 <body>
-  <main class="contenedor">
+  <div class="contenedor particular-contenedor empresa-contenedor">
     <div class="cabecera-logo">
-      <img src="../assets/img/favicon.png" alt="Oxilife" width="54">
-      <h1>OxiTrack</h1>
-      <p class="subtitulo">Terreno Empresa</p>
+      <img src="../assets/img/favicon.png" alt="Logo Oxilife" class="logo-marca">
+      <div class="textos-cabecera">
+        <h1>OxiTrack</h1>
+        <p class="subtitulo">Registro Empresa</p>
+      </div>
     </div>
 
-    <p id="estadoConexion" class="estado">Iniciando...</p>
-    <p id="operarioVisible" class="estado"></p>
-
     <form id="formulario">
-      <div class="grupo">
-        <label for="servicio">Servicio</label>
-        <select id="servicio" required>
-          <option value="">Cargando servicios...</option>
-        </select>
-      </div>
+      <label for="servicio">Servicio</label>
+      <select id="servicio" class="select-particular" required>
+        <option value="">Cargando servicios...</option>
+      </select>
 
-      <div class="grupo">
-        <label for="asignacion">Asignación pendiente</label>
-        <select id="asignacion" required disabled>
-          <option value="">Seleccione primero un servicio</option>
-        </select>
-        <p id="mensajeAsignaciones" class="ayuda"></p>
-      </div>
+      <label for="asignacion">Paciente</label>
+      <select id="asignacion" class="select-particular" required disabled>
+        <option value="">Primero seleccione un servicio...</option>
+      </select>
 
-      <section id="detalleServicio" hidden>
-        <div id="ficha" class="panel"></div>
+      <input type="hidden" id="pacienteId">
+      <p id="estadoConexion" class="empresa-estado"></p>
+      <p id="operarioVisible" class="empresa-estado" hidden></p>
+      <p id="mensajeAsignaciones" class="empresa-estado" hidden></p>
+
+      <div id="detalleServicio" hidden>
         <div id="cantidades"></div>
 
-        <div class="grupo">
-          <label for="receptor">Nombre de quien recibe</label>
-          <input id="receptor" autocomplete="name" placeholder="Persona que recibió el servicio">
+        <label for="receptor">Nombre de quien recibe</label>
+        <input id="receptor" autocomplete="name" placeholder="Persona que recibió el servicio">
+
+        <label for="observaciones">Observaciones</label>
+        <textarea id="observaciones" placeholder="Observaciones del servicio..."></textarea>
+
+        <div id="seccionFotos" class="seccion-fotos">
+          <div class="titulo">EVIDENCIA FOTOGRÁFICA</div>
+          <p class="texto-foto">Tome al menos una fotografía del servicio realizado.</p>
+          <video id="vistaCamara" autoplay playsinline hidden></video>
+          <div class="botones-camara">
+            <button type="button" id="btnAbrirCamara">Abrir Cámara</button>
+            <button type="button" id="btnTomarFoto" hidden>Tomar Foto</button>
+          </div>
+          <div id="previewFotos" class="preview-fotos"></div>
+          <canvas id="canvasFoto" hidden></canvas>
         </div>
 
-        <div class="grupo">
-          <label for="observaciones">Observaciones de terreno</label>
-          <textarea id="observaciones" rows="3" placeholder="Indique quién recibió, condiciones de entrega o motivo del servicio no realizado"></textarea>
+        <label id="tituloFirmaEmpresa" for="firma">Firma Cliente</label>
+        <canvas id="firma"></canvas>
+
+        <button type="button" id="btnNoRealizado">NO REALIZADO</button>
+
+        <div id="avisoNoRealizado" hidden>
+          <p class="empresa-advertencia">Registre el motivo y tome al menos una fotografía. No se requiere firma.</p>
+          <button type="button" id="btnCancelarNoRealizado">Volver al registro normal</button>
         </div>
 
-        <div class="grupo">
-          <label for="foto">Fotografía de respaldo</label>
-          <input id="foto" type="file" accept="image/*" capture="environment">
-          <p class="ayuda">Obligatoria para NO REALIZADO, implementaciones y recargas.</p>
-        </div>
-
-        <div id="zonaFirma" class="grupo">
-          <label>Firma de quien recibe</label>
-          <canvas id="firma"></canvas>
-          <button type="button" id="limpiarFirma">Limpiar firma</button>
-        </div>
-
-        <div class="grupo">
-          <button type="submit" id="enviar">Registrar ATENDIDO</button>
-          <button type="button" id="noRealizado" class="boton-alerta">NO REALIZADO</button>
-        </div>
-      </section>
+        <button type="submit" id="btnEnviar">Enviar Registro</button>
+        <button type="button" id="btnLimpiar">Limpiar Firma</button>
+      </div>
     </form>
 
     <p id="resultado" role="status"></p>
-
     <button type="button" id="sincronizar">Sincronizar pendientes</button>
-    <p id="cola" class="estado"></p>
-  </main>
+    <p id="cola" class="empresa-estado"></p>
+  </div>
+
+  <div id="modalConfirmacion" class="modal" hidden>
+    <div class="modal-contenido">
+      <h2>Confirmar Registro</h2>
+      <div id="modalResumen" class="modal-resumen"></div>
+      <div class="modal-acciones">
+        <button type="button" id="btnModalVolver" class="btn-secundario">Volver</button>
+        <button type="button" id="btnModalConfirmar" class="btn-principal">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalResultado" class="modal" hidden>
+    <div class="modal-contenido modal-exito">
+      <h2 id="modalResultadoTitulo">Registro</h2>
+      <p id="modalResultadoMensaje" class="modal-mensaje"></p>
+      <button type="button" id="btnModalResultado" class="btn-principal">Aceptar</button>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-  <script src="./js/empresa.js?v=20261020-3" defer></script>
+  <script src="./js/empresa.js?v=20261021-1" defer></script>
 </body>
 </html>
