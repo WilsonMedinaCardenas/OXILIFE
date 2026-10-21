@@ -349,7 +349,7 @@ function cambiarResultado(resultado) {
     $("btnLimpiar").hidden = noRealizado;
     $("btnNoRealizado").hidden = noRealizado;
     $("avisoNoRealizado").hidden = !noRealizado;
-    $("seccionFotos").hidden = !noRealizado && tipoServicio(seleccion?.servicio) === "RETIRO";
+    $("seccionFotos").hidden = false;
 
     $("seccionFotos").querySelector(".texto-foto").textContent = noRealizado
         ? "Tome al menos una fotografía como respaldo del servicio no realizado."
@@ -393,7 +393,7 @@ async function cargarAsignaciones() {
     seleccion = null;
     asignaciones = [];
     detalleActual = [];
-    $("detalleServicio").hidden = true;
+    $("cantidades").replaceChildren();
     $("asignacion").disabled = true;
     $("asignacion").replaceChildren();
 
@@ -439,8 +439,10 @@ async function cargarAsignaciones() {
 
 function mostrarSeleccion() {
     seleccion = asignaciones.find(item => String(item.id) === String($("asignacion").value)) || null;
-    $("detalleServicio").hidden = !seleccion;
-    if (!seleccion) return;
+    if (!seleccion) {
+        $("cantidades").replaceChildren();
+        return;
+    }
 
     $("pacienteId").value = String(seleccion.id);
     $("receptor").value = "";
@@ -517,14 +519,14 @@ async function registrar() {
         guardar(clave("cola"), cola);
 
         const servicioActual = $("servicio").value;
-        $("detalleServicio").hidden = true;
-        $("asignacion").value = "";
-        seleccion = null;
+
+        $("btnEnviar").textContent = "Enviando...";
+        mensaje("Procesando registro. Espere un momento.");
+
         detenerCamara();
         estado();
 
         await sincronizar();
-        await cargarAsignaciones();
 
         const siguePendiente = leer(clave("cola"), []).some(item => item.envioId === envio.envioId);
 
@@ -535,12 +537,33 @@ async function registrar() {
                 : "El servicio fue recibido por el servidor."
         );
 
-        $("servicio").value = servicioActual;
+            if (!siguePendiente) {
+                seleccion = null;
+                asignaciones = [];
+                detalleActual = [];
+
+                $("asignacion").value = "";
+                $("receptor").value = "";
+                $("observaciones").value = "";
+                $("cantidades").replaceChildren();
+
+                fotosCapturadas = [];
+                pintarFotos();
+
+                firmaPad.clear();
+                cambiarResultado("ATENDIDO");
+
+                $("servicio").value = servicioActual;
+                await cargarAsignaciones();
+        } else {
+            mensaje("Registro guardado en este dispositivo, pendiente de sincronización.");
+        }
     } catch (error) {
         await mostrarModalResultado("No fue posible registrar", error.message);
     } finally {
         enviando = false;
         $("btnEnviar").disabled = false;
+        $("btnEnviar").textContent = "Enviar Registro";
         $("btnNoRealizado").disabled = false;
         estado();
     }
@@ -615,7 +638,6 @@ async function iniciar() {
     $("btnAbrirCamara").addEventListener("click", abrirCamara);
     $("btnTomarFoto").addEventListener("click", tomarFoto);
     $("btnLimpiar").addEventListener("click", () => firmaPad?.clear());
-    $("sincronizar").addEventListener("click", sincronizar);
     $("servicio").addEventListener("change", cargarAsignaciones);
     $("asignacion").addEventListener("change", mostrarSeleccion);
 
