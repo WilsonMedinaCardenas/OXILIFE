@@ -991,66 +991,92 @@ if ("serviceWorker" in navigator) {
 // ==========================================================
 
 async function cargarServicios(selectServicio) {
-    let servicios = [];
 
-    if (navigator.onLine) {
-        try {
-            const respuesta = await fetch(WORKER_URL + "?modo=serviciosParticular", { cache: "no-store" });
-            const datos = await respuesta.json();
+    let servicios = obtenerServiciosOffline();
 
-                if (!respuesta.ok || datos.ok !== true) {
-                    throw new Error(
-                        datos.error || `Error HTTP ${respuesta.status}`
-                    );
-                }
+    function pintarServicios(lista) {
+        const valorAnterior = selectServicio.value;
 
-                if (!Array.isArray(datos.servicios)) {
-                    throw new Error(
-                        "El servidor no devolvió una lista válida de servicios."
-                    );
-                }
+        selectServicio.replaceChildren(
+            new Option("Seleccione el tipo de servicio...", "")
+        );
 
-                servicios = datos.servicios;
+        lista.forEach(servicio => {
+            selectServicio.add(
+                new Option(servicio, servicio)
+            );
+        });
 
-                if (servicios.length > 0) {
-                    guardarServiciosOffline(servicios);
-                } else {
-                    console.warn(
-                        "Particular: Apps Script devolvió cero servicios. Revisar columna B de SERVICIOS."
-                    );
-                }
-                } catch (error) {
-                    console.error(
-                        "Error al cargar servicios Particular:",
-                        error
-                    );
-
-                    alert(
-                        "No fue posible consultar los servicios de Particular.\n\n" +
-                        error.message +
-                        "\n\nSe intentará utilizar la información guardada."
-                    );
-                }
+        if (lista.includes(valorAnterior)) {
+            selectServicio.value = valorAnterior;
+        }
     }
 
-    if (servicios.length === 0) servicios = obtenerServiciosOffline();
+    // Mostrar inmediatamente lo que ya está guardado.
+    pintarServicios(servicios);
+
+    if (!navigator.onLine) {
+        return;
+    }
+
+    try {
+        const controlador = new AbortController();
+
+        const temporizador = setTimeout(
+            () => controlador.abort(),
+            12000
+        );
+
+        let respuesta;
+
+        try {
+            respuesta = await fetch(
+                WORKER_URL + "?modo=serviciosParticular",
+                {
+                    cache: "no-store",
+                    signal: controlador.signal
+                }
+            );
+        } finally {
+            clearTimeout(temporizador);
+        }
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || datos.ok !== true) {
+            throw new Error(
+                datos.error || `Error HTTP ${respuesta.status}`
+            );
+        }
+
+        if (!Array.isArray(datos.servicios)) {
+            throw new Error("Lista de servicios inválida.");
+        }
+
+        if (datos.servicios.length > 0) {
+            servicios = datos.servicios;
+            guardarServiciosOffline(servicios);
+            pintarServicios(servicios);
+        } else {
+            console.warn(
+                "Particular: el servidor devolvió cero servicios."
+            );
+        }
+
+    } catch (error) {
+        console.warn(
+            "No se pudo actualizar el catálogo Particular:",
+            error
+        );
+
+        // Se conserva el catálogo local.
+    }
 
     if (servicios.length === 0) {
-        alert(
-            "No hay servicios disponibles para Particular.\n\n" +
-            "Compruebe que la columna B de la hoja SERVICIOS contenga SI " +
-            "y que el Worker esté consultando la versión publicada de Apps Script."
+        console.warn(
+            "No existen servicios Particular en la caché ni en la respuesta del servidor."
         );
     }
-
-    selectServicio.innerHTML = `<option value="">Seleccione el tipo de servicio...</option>`;
-
-    servicios.forEach(servicio => {
-        const opcion = document.createElement("option");
-        opcion.value = servicio;
-        opcion.textContent = servicio;
-        selectServicio.appendChild(opcion);
-    });
 }
 
 // ==========================================================
