@@ -827,8 +827,8 @@ async function registrar() {
 
         if (!navigator.onLine) {
             await mostrarModalResultado(
-                "Sin señal",
-                "No tiene señal. El servicio quedó guardado en este dispositivo y será enviado automáticamente cuando se restablezca la conexión.",
+                "Registro guardado",
+                "No hay conexión a internet. El registro quedó guardado de forma segura y se enviará automáticamente cuando vuelva la señal.",
                 true
             );
             return;
