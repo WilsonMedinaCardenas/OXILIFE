@@ -29,7 +29,14 @@
       color: #611e63;
     }
 
-    #receptor { margin-bottom: 12px; }
+    #receptor,
+    #observaciones {
+        text-transform: uppercase;
+    }
+
+    #receptor {
+        margin-bottom: 12px;
+    }
 
     #btnNoRealizado {
       background: #963636;
@@ -179,8 +186,8 @@
 
     </form>
 
-    <p id="resultado" role="status"></p>
-    <p id="cola" class="empresa-estado"></p>
+    <p id="resultado" role="status" hidden></p>
+    <p id="cola" hidden></p>
 
   </div>
 
@@ -228,6 +235,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-  <script src="./js/empresa.js?v=20261021-2" defer></script>
+  <script src="./js/empresa.js?v=20261021-3" defer></script>
 </body>
 </html>
