@@ -180,6 +180,216 @@ let tipoGestionActualEmpresa = "";
 let servicioGestionSeleccionadoEmpresa = null;
 let solicitudGestionIdEmpresa = "";
 let temporizadorBusquedaGestionEmpresa = null;
+// ==========================================================
+// DETALLE DEL PEDIDO EN REAGENDAMIENTO EMPRESA
+// ==========================================================
+
+let detalleOriginalGestionEmpresa = "";
+let detalleEditableGestionEmpresa = [];
+let detalleGestionModificadoEmpresa = false;
+
+const panelPedidoGestionEmpresa = document.createElement("div");
+
+panelPedidoGestionEmpresa.id = "panelPedidoGestionEmpresa";
+panelPedidoGestionEmpresa.style.cssText =
+    "margin:16px 0;padding:14px;border:1px solid #ddd;" +
+    "border-radius:10px;background:#f8f8f8;";
+
+function normalizarDetalleGestionEmpresa(servicio) {
+
+    const original = String(
+        servicio.detalleSolicitado || ""
+    ).trim();
+
+    if (!original) {
+        return [];
+    }
+
+    let datos;
+
+    try {
+        datos = JSON.parse(original);
+    } catch (_) {
+        // Algunas implementaciones antiguas guardan
+        // su tipo como texto y no como arreglo JSON.
+        return [{
+            elemento: original,
+            cantidad: 1,
+            formato: "TEXTO"
+        }];
+    }
+
+    if (!Array.isArray(datos)) {
+        throw new Error(
+            "El pedido original tiene un formato no compatible."
+        );
+    }
+
+    return datos.map(function(item) {
+
+        const cantidad = Number(item.cantidad);
+
+        if (
+            !Number.isSafeInteger(cantidad) ||
+            cantidad < 0
+        ) {
+            throw new Error(
+                "El pedido original contiene cantidades inválidas."
+            );
+        }
+
+        return {
+            ...item,
+            cantidad: cantidad
+        };
+    });
+}
+
+function pintarPedidoGestionEmpresa(servicio) {
+
+    detalleOriginalGestionEmpresa = String(
+        servicio.detalleSolicitado || ""
+    ).trim();
+
+    detalleEditableGestionEmpresa =
+        normalizarDetalleGestionEmpresa(servicio);
+
+    detalleGestionModificadoEmpresa = false;
+
+    panelPedidoGestionEmpresa.replaceChildren();
+
+    const titulo = document.createElement("h3");
+    titulo.textContent = "PEDIDO AGENDADO";
+    titulo.style.cssText =
+        "color:#611e63;margin:0 0 12px;";
+
+    panelPedidoGestionEmpresa.appendChild(titulo);
+
+    if (!detalleEditableGestionEmpresa.length) {
+
+        const aviso = document.createElement("p");
+        aviso.textContent =
+            "Este servicio no tiene elementos detallados en el registro original.";
+
+        panelPedidoGestionEmpresa.appendChild(aviso);
+        return;
+    }
+
+    detalleEditableGestionEmpresa.forEach(function(item, indice) {
+
+        const fila = document.createElement("div");
+
+        fila.style.cssText =
+            "display:flex;align-items:center;gap:10px;" +
+            "margin-bottom:12px;flex-wrap:wrap;";
+
+        const descripcion = document.createElement("span");
+
+        descripcion.style.cssText =
+            "flex:1;min-width:130px;";
+
+        descripcion.textContent =
+            item.formato === "TEXTO"
+                ? item.elemento
+                : (
+                    item.elemento ||
+                    [item.gas, item.medida]
+                        .filter(Boolean)
+                        .join(" - ") ||
+                    item.nombre ||
+                    "Elemento"
+                );
+
+        const menos = document.createElement("button");
+        menos.type = "button";
+        menos.textContent = "−";
+
+        const cantidad = document.createElement("strong");
+        cantidad.textContent = String(item.cantidad);
+        cantidad.style.cssText =
+            "min-width:30px;text-align:center;";
+
+        const mas = document.createElement("button");
+        mas.type = "button";
+        mas.textContent = "+";
+
+        [menos, mas].forEach(function(boton) {
+            boton.style.cssText =
+                "width:40px;height:40px;border:0;" +
+                "border-radius:8px;background:#611e63;" +
+                "color:white;font-size:22px;cursor:pointer;";
+        });
+
+        function cambiarCantidad(diferencia) {
+
+            const nuevaCantidad =
+                detalleEditableGestionEmpresa[indice].cantidad +
+                diferencia;
+
+            if (nuevaCantidad < 0 || nuevaCantidad > 1000) {
+                return;
+            }
+
+            detalleEditableGestionEmpresa[indice].cantidad =
+                nuevaCantidad;
+
+            cantidad.textContent = String(nuevaCantidad);
+
+            detalleGestionModificadoEmpresa = true;
+        }
+
+        menos.addEventListener("click", function() {
+            cambiarCantidad(-1);
+        });
+
+        mas.addEventListener("click", function() {
+            cambiarCantidad(1);
+        });
+
+        fila.append(
+            descripcion,
+            menos,
+            cantidad,
+            mas
+        );
+
+        panelPedidoGestionEmpresa.appendChild(fila);
+    });
+}
+
+function obtenerPedidoReagendadoEmpresa() {
+
+    if (!detalleGestionModificadoEmpresa) {
+        return {
+            modificar: "NO",
+            detalle: ""
+        };
+    }
+
+    if (!detalleEditableGestionEmpresa.some(function(item) {
+        return item.cantidad > 0;
+    })) {
+        throw new Error(
+            "El pedido debe conservar al menos un elemento."
+        );
+    }
+
+    if (detalleEditableGestionEmpresa.some(function(item) {
+        return item.formato === "TEXTO";
+    })) {
+        throw new Error(
+            "Esta implementación antigua guarda el tipo como texto. " +
+            "Su cantidad requiere adaptar primero el formato del backend."
+        );
+    }
+
+    return {
+        modificar: "SI",
+        detalle: JSON.stringify(
+            detalleEditableGestionEmpresa
+        )
+    };
+}
 
 function configurarMayusculasEmpresa() {
     const campos = [
@@ -1957,6 +2167,16 @@ async function buscarServiciosGestionEmpresa(
                     formatearFechaGestionEmpresa(servicio.fechaProgramada) + " | " + (servicio.ventanaHoraria || "");
                 item.addEventListener("click",function () {seleccionarServicioGestionEmpresa(servicio);});
                 resultadosGestionServicioEmpresa.appendChild(item);
+                panelDestinoGestionEmpresa.remove();
+                if (tipoGestionActualEmpresa === "REAGENDAR") {
+
+                    prepararDestinoGestionEmpresa();
+
+                    panelPedidoGestionEmpresa.insertAdjacentElement(
+                        "afterend",
+                        panelDestinoGestionEmpresa
+                    );
+                }
             }
         );
 
@@ -1979,31 +2199,12 @@ function seleccionarServicioGestionEmpresa(
     servicio
 ) {
 
-    servicioGestionSeleccionadoEmpresa =
-        servicio;
-
+    servicioGestionSeleccionadoEmpresa = servicio;
     solicitudGestionIdEmpresa = "";
-
-
-    ocultarEmpresa(
-        resultadosGestionServicioEmpresa
-    );
-
-    ocultarEmpresa(
-        accionesCerrarGestionEmpresa
-    );
-
-
-    const cliente =
-        servicio.cliente ||
-        servicio.nombre ||
-        "";
-
-    const paciente =
-        servicio.paciente ||
-        "";
-
-
+    ocultarEmpresa(resultadosGestionServicioEmpresa);
+    ocultarEmpresa(accionesCerrarGestionEmpresa);
+    const cliente = servicio.cliente || servicio.nombre || "";
+    const paciente = servicio.paciente || "";
     resumenGestionServicioEmpresa.innerHTML =
 
         datoResumen(
@@ -2058,9 +2259,19 @@ function seleccionarServicioGestionEmpresa(
         );
 
 
-    mostrarEmpresa(
-        detalleGestionServicioEmpresa
-    );
+    mostrarEmpresa(detalleGestionServicioEmpresa);
+
+    panelPedidoGestionEmpresa.remove();
+
+    if (tipoGestionActualEmpresa === "REAGENDAR") {
+
+        pintarPedidoGestionEmpresa(servicio);
+
+        resumenGestionServicioEmpresa.insertAdjacentElement(
+            "afterend",
+            panelPedidoGestionEmpresa
+        );
+    }
 
 
     if (
@@ -2530,6 +2741,187 @@ btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
                 payload.append("fechaProgramada",inputNuevaFechaGestionEmpresa.value);
                 payload.append("ventanaHoraria",inputAtencionInmediataGestionEmpresa.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestionEmpresa.value);
                 payload.append("operarioAsignado",selectNuevoOperarioGestionEmpresa.value);
+                const pedidoReagendado = obtenerPedidoReagendadoEmpresa();
+                payload.append("modificarDetalle",pedidoReagendado.modificar);
+                if (pedidoReagendado.modificar === "SI") {
+                    payload.append("detalleSolicitado",pedidoReagendado.detalle);
+                }
+                // ==========================================================
+                // DIRECCIÓN Y FLETE - REAGENDAMIENTO EMPRESA
+                // ==========================================================
+
+                const panelDestinoGestionEmpresa =
+                    document.createElement("div");
+
+                panelDestinoGestionEmpresa.style.cssText =
+                    "margin:16px 0;padding:14px;border:1px solid #ddd;" +
+                    "border-radius:10px;";
+
+                panelDestinoGestionEmpresa.innerHTML = `
+                    <h3 style="color:#611e63">
+                        Dirección del reagendamiento
+                    </h3>
+
+                    <label style="display:block;margin:12px 0">
+                        <input type="checkbox" id="checkDireccionGestionEmpresa">
+                        Enviar a otra dirección
+                    </label>
+
+                    <div id="camposDireccionGestionEmpresa" hidden>
+                        <label for="direccionGestionEmpresa">
+                            Nueva dirección
+                        </label>
+
+                        <input
+                            id="direccionGestionEmpresa"
+                            type="text"
+                            placeholder="Ingrese la nueva dirección"
+                            style="text-transform:uppercase"
+                        >
+
+                        <label for="comunaGestionEmpresa">
+                            Nueva comuna
+                        </label>
+
+                        <select id="comunaGestionEmpresa">
+                            <option value="">Seleccione una comuna</option>
+                        </select>
+                    </div>
+
+                    <h3 style="color:#611e63;margin-top:20px">
+                        Flete del reagendamiento
+                    </h3>
+
+                    <label for="fleteGestionEmpresa">
+                        ¿Lleva un nuevo flete?
+                    </label>
+
+                    <select id="fleteGestionEmpresa">
+                        <option value="NO">NO</option>
+                        <option value="SI">SÍ</option>
+                    </select>
+                `;
+
+                const checkDireccionGestionEmpresa =
+                    panelDestinoGestionEmpresa.querySelector(
+                        "#checkDireccionGestionEmpresa"
+                    );
+
+                const camposDireccionGestionEmpresa =
+                    panelDestinoGestionEmpresa.querySelector(
+                        "#camposDireccionGestionEmpresa"
+                    );
+
+                const direccionGestionEmpresa =
+                    panelDestinoGestionEmpresa.querySelector(
+                        "#direccionGestionEmpresa"
+                    );
+
+                const comunaGestionEmpresa =
+                    panelDestinoGestionEmpresa.querySelector(
+                        "#comunaGestionEmpresa"
+                    );
+
+                const fleteGestionEmpresa =
+                    panelDestinoGestionEmpresa.querySelector(
+                        "#fleteGestionEmpresa"
+                    );
+
+                checkDireccionGestionEmpresa.addEventListener(
+                    "change",
+                    function() {
+                        camposDireccionGestionEmpresa.hidden =
+                            !this.checked;
+                    }
+                );
+
+                direccionGestionEmpresa.addEventListener(
+                    "input",
+                    function() {
+                        this.value = this.value.toLocaleUpperCase("es-CL");
+                    }
+                );
+
+                function prepararDestinoGestionEmpresa() {
+
+                    checkDireccionGestionEmpresa.checked = false;
+                    camposDireccionGestionEmpresa.hidden = true;
+
+                    direccionGestionEmpresa.value = "";
+                    fleteGestionEmpresa.value = "NO";
+
+                    comunaGestionEmpresa.replaceChildren();
+
+                    const opcionInicial = document.createElement("option");
+                    opcionInicial.value = "";
+                    opcionInicial.textContent = "Seleccione una comuna";
+
+                    comunaGestionEmpresa.appendChild(opcionInicial);
+
+                    // Utilizar el catálogo ya cargado desde el backend.
+                    Array.from(selectComunaPacienteEmpresa.options)
+                        .forEach(function(opcion) {
+
+                            if (!opcion.value || opcion.disabled) return;
+
+                            comunaGestionEmpresa.appendChild(
+                                opcion.cloneNode(true)
+                            );
+                        });
+                }
+
+                const cambiarDireccion =
+                checkDireccionGestionEmpresa.checked;
+
+            if (cambiarDireccion) {
+
+                if (
+                    !direccionGestionEmpresa.value.trim() ||
+                    !comunaGestionEmpresa.value
+                ) {
+                    throw new Error(
+                        "Debe ingresar la nueva dirección y comuna."
+                    );
+                }
+            }
+
+            payload.append(
+                "cambiarDireccion",
+                cambiarDireccion ? "SI" : "NO"
+            );
+
+            payload.append(
+                "nuevaDireccion",
+                cambiarDireccion
+                    ? direccionGestionEmpresa.value.trim().toUpperCase()
+                    : ""
+            );
+
+            payload.append(
+                "nuevaComuna",
+                cambiarDireccion
+                    ? comunaGestionEmpresa.value
+                    : ""
+            );
+
+            payload.append(
+                "llevaNuevoFlete",
+                fleteGestionEmpresa.value
+            );
+
+            payload.append(
+                "horarioFleteReagendar",
+                fleteGestionEmpresa.value === "SI"
+                    ? "DIURNO"
+                    : ""
+            );
+
+            payload.append(
+                "convenioReagendar",
+                fleteGestionEmpresa.value === "SI"
+                    ? "NO"
+                    : ""
+            );
 
             }
 
