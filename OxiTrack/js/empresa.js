@@ -241,6 +241,9 @@ function pintarCantidades() {
     const clase = tipoServicio(seleccion.servicio);
     detalleActual = detalleLista(seleccion.detalleSolicitado);
 
+    // VENTA no requiere elementos ni contadores.
+    if (clase === "OTRO") {return;}
+
     if (!detalleActual.length) {
         const aviso = document.createElement("p");
         aviso.className = "empresa-advertencia";
@@ -723,47 +726,17 @@ async function registrar() {
     let guardadoLocalmente = false;
 
     try {
-        const observaciones = $("observaciones").value
-            .trim()
-            .toUpperCase();
-
-        const receptor = $("receptor").value
-            .trim()
-            .toUpperCase();
-
+        const observaciones = $("observaciones").value.trim().toUpperCase();
+        const receptor = $("receptor").value.trim().toUpperCase();
         const noRealizado = resultadoServicio === "NO REALIZADO";
 
-        if (fotosCapturadas.length === 0) {
-            throw Error("Debe tomar al menos una fotografía.");
-        }
-
-        if (noRealizado && !observaciones) {
-            throw Error("Debe indicar el motivo del servicio no realizado.");
-        }
-
-        if (!noRealizado && (!firmaPad || firmaPad.isEmpty())) {
-            throw Error("Debe registrar la firma del cliente.");
-        }
-
-        if (!noRealizado && !detalleActual.length) {
-            throw Error(
-                "Este servicio no tiene elementos programados. Consulte a Oficina."
-            );
-        }
-
-        const detalle = noRealizado
-            ? { entregados: [], retirados: [] }
-            : cantidades();
-
-        const resumen = [
-            ["Resultado", resultadoServicio],
-            ["Servicio", seleccion.servicio],
-            [
-                "Paciente / Empresa",
-                seleccion.paciente
-                    ? `${seleccion.paciente} | ${seleccion.empresa}`
-                    : seleccion.empresa
-            ],
+        if (fotosCapturadas.length === 0) {throw Error("Debe tomar al menos una fotografía.");}
+        if (noRealizado && !observaciones) {throw Error("Debe indicar el motivo del servicio no realizado.");}
+        if (!noRealizado && (!firmaPad || firmaPad.isEmpty())) {throw Error("Debe registrar la firma del cliente.");}
+        if (!noRealizado && clase !== "OTRO" && !detalleActual.length) {throw Error("El servicio no tiene elementos programados. Consulte a Oficina.");}
+        const detalle = (noRealizado || clase === "OTRO") ? { entregados: [], retirados: [] } : cantidades();
+        const resumen = [["Resultado", resultadoServicio],["Servicio", seleccion.servicio],
+            ["Paciente / Empresa",seleccion.paciente ? `${seleccion.paciente} | ${seleccion.empresa}` : seleccion.empresa],
             ["Recibe", receptor || "NO INFORMADO"]
         ];
 
