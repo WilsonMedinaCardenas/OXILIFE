@@ -729,6 +729,7 @@ async function registrar() {
         const observaciones = $("observaciones").value.trim().toUpperCase();
         const receptor = $("receptor").value.trim().toUpperCase();
         const noRealizado = resultadoServicio === "NO REALIZADO";
+        const clase = tipoServicio(seleccion.servicio);
 
         if (fotosCapturadas.length === 0) {throw Error("Debe tomar al menos una fotografía.");}
         if (noRealizado && !observaciones) {throw Error("Debe indicar el motivo del servicio no realizado.");}
