@@ -134,6 +134,7 @@ function mostrarModalResultado(titulo, texto, limpiarAlAceptar = false) {
 
             if (limpiarAlAceptar) {
                 limpiarFormularioEmpresa();
+                window.location.assign("./index.html");
             }
 
             resolve();

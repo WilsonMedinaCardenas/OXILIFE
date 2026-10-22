@@ -1918,164 +1918,54 @@ async function buscarServiciosGestionEmpresa(
 
     try {
 
-        const respuesta =
-            await fetch(
-
-                "/api/oxitrack/" +
-
-                "?modo=buscarServiciosPendientesOficina" +
-
-                "&buscar=" +
-                encodeURIComponent(
-                    buscar
-                ) +
-
-                "&fuente=BLANCA",
-
+        const respuesta = await fetch("/api/oxitrack/" +
+                    "?modo=buscarServiciosPendientesOficina" +
+                    "&ambito=EMPRESA" +
+                    "&buscar=" +
+                    encodeURIComponent(buscar),
                 {
                     method: "GET",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    },
-
+                    headers: {"Accept": "application/json"},
                     cache: "no-store"
                 }
 
             );
 
+        const datos = await respuesta.json();
+        if (!respuesta.ok || datos.ok !== true) {throw new Error(datos.error || "No fue posible buscar servicios.");}
 
-        const datos =
-            await respuesta.json();
+        const servicios = Array.isArray(datos.servicios) ? datos.servicios : [];
+        resultadosGestionServicioEmpresa.innerHTML ="";
+        if (!servicios.length) {
 
-
-        if (
-            !respuesta.ok ||
-            datos.ok !== true
-        ) {
-
-            throw new Error(
-                datos.error ||
-                "No fue posible buscar servicios."
-            );
-
-        }
-
-
-        const servicios =
-            Array.isArray(
-                datos.servicios
-            )
-                ? datos.servicios
-                : [];
-
-
-        resultadosGestionServicioEmpresa.innerHTML =
-            "";
-
-
-        if (
-            !servicios.length
-        ) {
-
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "resultado-busqueda-item";
-
-            item.textContent =
-                "No se encontraron servicios pendientes.";
-
-
-            resultadosGestionServicioEmpresa.appendChild(
-                item
-            );
-
-
-            mostrarEmpresa(
-                resultadosGestionServicioEmpresa
-            );
+            const item = document.createElement("div");
+            item.className ="resultado-busqueda-item";
+            item.textContent = "No se encontraron servicios pendientes.";
+            resultadosGestionServicioEmpresa.appendChild(item);
+            mostrarEmpresa(resultadosGestionServicioEmpresa);
 
             return;
 
         }
 
 
-        servicios.forEach(
-            function (servicio) {
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                item.className =
-                    "resultado-busqueda-item";
-
-
-                const nombreMostrar =
-                    servicio.paciente ||
-                    servicio.cliente ||
-                    servicio.nombre ||
-                    "";
-
-
-                item.textContent =
-                    nombreMostrar +
-                    " | " +
-                    (servicio.servicio || "") +
-                    " | " +
-                    formatearFechaGestionEmpresa(
-                        servicio.fechaProgramada
-                    ) +
-                    " | " +
-                    (servicio.ventanaHoraria || "");
-
-
-                item.addEventListener(
-                    "click",
-                    function () {
-
-                        seleccionarServicioGestionEmpresa(
-                            servicio
-                        );
-
-                    }
-                );
-
-
-                resultadosGestionServicioEmpresa.appendChild(
-                    item
-                );
-
+        servicios.forEach(function (servicio) {
+                const item = document.createElement("div");
+                item.className = "resultado-busqueda-item";
+                const nombreMostrar = servicio.paciente || servicio.cliente || servicio.nombre || "";
+                item.textContent = nombreMostrar + " | " + (servicio.servicio || "") + " | " +
+                    formatearFechaGestionEmpresa(servicio.fechaProgramada) + " | " + (servicio.ventanaHoraria || "");
+                item.addEventListener("click",function () {seleccionarServicioGestionEmpresa(servicio);});
+                resultadosGestionServicioEmpresa.appendChild(item);
             }
         );
 
 
-        mostrarEmpresa(
-            resultadosGestionServicioEmpresa
-        );
-
+        mostrarEmpresa(resultadosGestionServicioEmpresa);
 
     } catch (error) {
-
-        console.error(
-            "Error gestión Empresa:",
-            error
-        );
-
-
-        mostrarMensajeGeneral(
-            error.message ||
-            "No fue posible buscar servicios.",
-            "error"
-        );
-
+        console.error("Error gestión Empresa:",error);
+        mostrarMensajeGeneral(error.message || "No fue posible buscar servicios.","error");
     }
 
 }
@@ -2630,7 +2520,7 @@ btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
             payload.append("tipoCliente","GESTION_SERVICIO_OFICINA");
             // MUY IMPORTANTE:
             // DURANTE MARCHA BLANCA
-            payload.append("fuente","BLANCA");
+            payload.append("ambito", "EMPRESA");
             payload.append("accion",tipoGestionActualEmpresa);
             payload.append("id",servicioGestionSeleccionadoEmpresa.id);
             payload.append("solicitudGestionId",solicitudGestionIdEmpresa);
