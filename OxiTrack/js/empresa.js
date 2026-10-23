@@ -1052,6 +1052,12 @@ function sincronizar() {
                         );
                     }
 
+                    console.log(
+                        "EMPRESA: servidor confirmó el envío",
+                        registro.id,
+                        registro.envioId
+                    );
+
                     // Solo borrar cuando el servidor confirmó éxito.
                     await eliminarEnvioEmpresa(registro.envioId);
 
