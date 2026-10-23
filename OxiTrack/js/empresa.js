@@ -669,6 +669,28 @@ async function enviosPendientesEmpresa() {
         );
 }
 
+// Diagnóstico temporal: no elimina ni modifica registros.
+window.diagnosticoOfflineEmpresa = async function() {
+
+    const todos = await obtenerEnviosEmpresa();
+
+    const resumen = todos.map(item => ({
+        id: item.id,
+        envioId: item.envioId,
+        identidad: item.identidad,
+        identidadActual: identidad,
+        fechaCreacion: item.fechaCreacion,
+        ultimoError: item.ultimoError || "",
+        ultimoIntento: item.ultimoIntento || "",
+        tieneFoto: Boolean(item.fotoData),
+        tieneFirma: Boolean(item.firmaData)
+    }));
+
+    console.table(resumen);
+
+    return resumen;
+};
+
 // ==========================================================
 // ENVÍO Y ALMACENAMIENTO OFFLINE
 // ==========================================================
@@ -882,19 +904,20 @@ function sincronizar() {
                 const formulario = new FormData();
 
                 Object.entries(registro).forEach(([llave, valor]) => {
-                    if (llave !== "identidad" &&
-                        llave !== "fechaCreacion") {
-                        formulario.append(llave, valor);
-                    }
+                    if (
+                    llave !== "identidad" &&
+                    llave !== "fechaCreacion" &&
+                    llave !== "ultimoError" &&
+                    llave !== "ultimoIntento"
+                ) {
+                    formulario.append(llave, valor);
+                }
                 });
 
                 const controlador = new AbortController();
 
                 // Tiempo máximo por registro, incluyendo lectura JSON.
-                const temporizador = setTimeout(
-                    () => controlador.abort(),
-                    20000
-                );
+                const temporizador = setTimeout(() => controlador.abort(),20000);
 
                 let respuesta;
                 let datos;
@@ -908,9 +931,7 @@ function sincronizar() {
                         signal: controlador.signal
                     });
 
-                    const tipo = String(
-                        respuesta.headers.get("content-type") || ""
-                    ).toLowerCase();
+                    const tipo = String(respuesta.headers.get("content-type") || "").toLowerCase();
 
                     if (!tipo.includes("application/json")) {
                         throw Error(
@@ -934,16 +955,19 @@ function sincronizar() {
                 }
 
                 if (!respuesta.ok || datos.ok !== true) {
-                    console.error(
-                        "Empresa: servidor rechazó el registro:",
-                        registro.envioId,
-                        datos.error || respuesta.status
-                    );
 
-                    // No borrar la evidencia.
-                    // Tampoco avanzar sobre un error sin resolver.
-                    break;
-                }
+                const motivo = String(datos?.error || `HTTP ${respuesta.status}`);
+                console.error("Empresa: servidor rechazó el registro:",registro.envioId,motivo);
+                // Guardar el motivo sin eliminar el registro,
+                // la fotografía ni la firma.
+                await guardarEnvioEmpresa({
+                    ...registro,
+                    ultimoError: motivo,
+                    ultimoIntento: new Date().toISOString()
+                });
+
+                break;
+            }
 
                 // ÚNICAMENTE eliminar si el servidor confirmó ok:true.
                 await eliminarEnvioEmpresa(registro.envioId);
