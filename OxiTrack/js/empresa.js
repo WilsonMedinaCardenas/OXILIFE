@@ -690,7 +690,98 @@ window.diagnosticoOfflineEmpresa = async function() {
 
     return resumen;
 };
+// ==========================================================
+// DIAGNÓSTICO OFFLINE EMPRESA - VISIBLE EN CELULAR
+// ==========================================================
 
+let ultimoErrorSincronizacionEmpresa = "";
+
+async function mostrarDiagnosticoEmpresa() {
+
+    const registros = await obtenerEnviosEmpresa();
+
+    const propios = registros.filter(item =>
+        item.identidad === identidad
+    );
+
+    const otrasIdentidades = registros.filter(item =>
+        item.identidad !== identidad
+    );
+
+    const errores = propios
+        .map(item => item.ultimoError || "")
+        .filter(Boolean);
+
+    const texto = [
+        `Conexión del teléfono: ${navigator.onLine ? "ACTIVA" : "SIN CONEXIÓN"}`,
+        `Sesión Empresa: ${identidad ? "IDENTIFICADA" : "NO IDENTIFICADA"}`,
+        `Registros pendientes: ${propios.length}`,
+        `Registros con otra identidad: ${otrasIdentidades.length}`,
+        `Último error: ${ultimoErrorSincronizacionEmpresa || errores[0] || "NINGUNO REGISTRADO"}`,
+        `IDs pendientes: ${propios.map(item => item.id).join(", ") || "NINGUNO"}`
+    ].join("\n");
+
+    await mostrarModalResultado(
+        "Diagnóstico Empresa",
+        texto
+    );
+}
+
+function crearBotonDiagnosticoEmpresa() {
+
+    if (document.getElementById("btnDiagnosticoEmpresa")) {
+        return;
+    }
+
+    const boton = document.createElement("button");
+
+    boton.id = "btnDiagnosticoEmpresa";
+    boton.type = "button";
+    boton.textContent = "REVISAR ENVÍOS PENDIENTES";
+
+    boton.style.cssText = `
+        display:block;
+        width:100%;
+        margin:16px 0;
+        padding:14px;
+        border-radius:8px;
+        border:1px solid #611e63;
+        background:#ffffff;
+        color:#611e63;
+        font-weight:bold;
+        cursor:pointer;
+    `;
+
+    boton.addEventListener("click", async () => {
+
+        boton.disabled = true;
+        boton.textContent = "COMPROBANDO ENVÍOS...";
+
+        try {
+
+            await sincronizar();
+
+            await mostrarDiagnosticoEmpresa();
+
+        } catch (error) {
+
+            await mostrarModalResultado(
+                "Error de diagnóstico",
+                String(error.message || error)
+            );
+
+        } finally {
+
+            boton.disabled = false;
+            boton.textContent = "REVISAR ENVÍOS PENDIENTES";
+        }
+    });
+
+    $("formulario").insertAdjacentElement(
+        "afterend",
+        boton
+    );
+}
 // ==========================================================
 // ENVÍO Y ALMACENAMIENTO OFFLINE
 // ==========================================================
@@ -884,6 +975,7 @@ async function registrar() {
 }
 
 function sincronizar() {
+
     if (promesaSincronizacionEmpresa) {
         return promesaSincronizacionEmpresa;
     }
@@ -893,37 +985,43 @@ function sincronizar() {
     }
 
     promesaSincronizacionEmpresa = (async () => {
+
         sincronizando = true;
 
         try {
+
             const pendientes = await enviosPendientesEmpresa();
 
             for (const registro of pendientes) {
-                if (!navigator.onLine) break;
+
+                if (!navigator.onLine) {
+                    break;
+                }
 
                 const formulario = new FormData();
 
                 Object.entries(registro).forEach(([llave, valor]) => {
+
                     if (
-                    llave !== "identidad" &&
-                    llave !== "fechaCreacion" &&
-                    llave !== "ultimoError" &&
-                    llave !== "ultimoIntento"
-                ) {
-                    formulario.append(llave, valor);
-                }
+                        llave !== "identidad" &&
+                        llave !== "fechaCreacion" &&
+                        llave !== "ultimoError" &&
+                        llave !== "ultimoIntento"
+                    ) {
+                        formulario.append(llave, valor);
+                    }
                 });
 
                 const controlador = new AbortController();
 
-                // Tiempo máximo por registro, incluyendo lectura JSON.
-                const temporizador = setTimeout(() => controlador.abort(),20000);
-
-                let respuesta;
-                let datos;
+                const temporizador = setTimeout(
+                    () => controlador.abort(),
+                    60000
+                );
 
                 try {
-                    respuesta = await fetch(API_EMPRESA, {
+
+                    const respuesta = await fetch(API_EMPRESA, {
                         method: "POST",
                         body: formulario,
                         credentials: "same-origin",
@@ -931,78 +1029,108 @@ function sincronizar() {
                         signal: controlador.signal
                     });
 
-                    const tipo = String(respuesta.headers.get("content-type") || "").toLowerCase();
+                    const tipo = String(
+                        respuesta.headers.get("content-type") || ""
+                    ).toLowerCase();
 
                     if (!tipo.includes("application/json")) {
-                        throw Error(
-                            "El servidor no devolvió una respuesta JSON."
+                        throw new Error(
+                            `Respuesta no JSON. HTTP ${respuesta.status}. ` +
+                            "Compruebe que la sesión esté activa."
                         );
                     }
 
-                    datos = await respuesta.json();
+                    const datos = await respuesta.json();
 
-                } catch (error) {
-                    console.warn(
-                        "Empresa: envío conservado para reintento:",
-                        registro.envioId,
-                        error
+                    if (!respuesta.ok || datos.ok !== true) {
+
+                        throw new Error(
+                            String(
+                                datos.error ||
+                                `Servidor rechazó el envío. HTTP ${respuesta.status}`
+                            )
+                        );
+                    }
+
+                    // Solo borrar cuando el servidor confirmó éxito.
+                    await eliminarEnvioEmpresa(registro.envioId);
+
+                    ultimoErrorSincronizacionEmpresa = "";
+
+                    console.log(
+                        "Empresa: registro confirmado:",
+                        registro.id,
+                        registro.envioId
                     );
 
+                } catch (error) {
+
+                    const motivo = error.name === "AbortError"
+                        ? "Tiempo de espera agotado al contactar el servidor."
+                        : String(error.message || error);
+
+                    ultimoErrorSincronizacionEmpresa = motivo;
+
+                    console.error(
+                        "Empresa: envío pendiente:",
+                        registro.id,
+                        motivo
+                    );
+
+                    // Preservar toda la evidencia y registrar el error.
+                    try {
+                        await guardarEnvioEmpresa({
+                            ...registro,
+                            ultimoError: motivo,
+                            ultimoIntento: new Date().toISOString()
+                        });
+                    } catch (errorAlGuardar) {
+                        console.error(
+                            "No se pudo guardar el diagnóstico:",
+                            errorAlGuardar
+                        );
+                    }
+
+                    // No seguir enviando los siguientes registros
+                    // hasta resolver el primero.
                     break;
 
                 } finally {
+
                     clearTimeout(temporizador);
                 }
-
-                if (!respuesta.ok || datos.ok !== true) {
-
-                const motivo = String(datos?.error || `HTTP ${respuesta.status}`);
-                console.error("Empresa: servidor rechazó el registro:",registro.envioId,motivo);
-                // Guardar el motivo sin eliminar el registro,
-                // la fotografía ni la firma.
-                await guardarEnvioEmpresa({
-                    ...registro,
-                    ultimoError: motivo,
-                    ultimoIntento: new Date().toISOString()
-                });
-
-                break;
-            }
-
-                // ÚNICAMENTE eliminar si el servidor confirmó ok:true.
-                await eliminarEnvioEmpresa(registro.envioId);
-
-                console.log(
-                    datos.duplicado
-                        ? "Empresa: registro ya procesado:"
-                        : "Empresa: registro sincronizado:",
-                    registro.envioId
-                );
             }
 
         } catch (error) {
+
+            ultimoErrorSincronizacionEmpresa =
+                String(error.message || error);
+
             console.error(
                 "Empresa: error general de sincronización:",
                 error
             );
 
         } finally {
+
             sincronizando = false;
 
             try {
                 await estado();
             } catch (error) {
                 console.warn(
-                    "Empresa: no fue posible actualizar el estado:",
+                    "Empresa: error al actualizar estado:",
                     error
                 );
             }
         }
+
     })();
 
     const tarea = promesaSincronizacionEmpresa;
 
     return tarea.finally(() => {
+
         if (promesaSincronizacionEmpresa === tarea) {
             promesaSincronizacionEmpresa = null;
         }
@@ -1014,6 +1142,42 @@ function sincronizar() {
 // ==========================================================
 
 async function iniciar() {
+
+    crearBotonDiagnosticoEmpresa();
+
+    // Mientras Empresa esté abierta, revisar periódicamente
+    // si hay registros pendientes y conexión disponible.
+    setInterval(async () => {
+
+        if (
+            !navigator.onLine ||
+            !identidad ||
+            sincronizando ||
+            document.visibilityState !== "visible"
+        ) {
+            return;
+        }
+
+        try {
+
+            const pendientes = await enviosPendientesEmpresa();
+
+            if (pendientes.length > 0) {
+                await sincronizar();
+            }
+
+        } catch (error) {
+
+            ultimoErrorSincronizacionEmpresa =
+                String(error.message || error);
+
+            console.error(
+                "Empresa: reintento automático:",
+                error
+            );
+        }
+
+    }, 30000);
     $("formulario").addEventListener("submit", evento => {
         evento.preventDefault();
         registrar();
