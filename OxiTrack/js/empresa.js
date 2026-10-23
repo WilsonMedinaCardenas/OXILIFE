@@ -976,6 +976,7 @@ async function registrar() {
 
 function sincronizar() {
 
+    // Una sola sincronización a la vez.
     if (promesaSincronizacionEmpresa) {
         return promesaSincronizacionEmpresa;
     }
@@ -984,7 +985,7 @@ function sincronizar() {
         return Promise.resolve();
     }
 
-    promesaSincronizacionEmpresa = (async () => {
+    const tarea = (async () => {
 
         sincronizando = true;
 
@@ -994,23 +995,44 @@ function sincronizar() {
 
             for (const registro of pendientes) {
 
-                if (!navigator.onLine) {
+                if (!navigator.onLine) break;
+
+                // Validar que el registro local sea íntegro.
+                if (
+                    !registro.envioId ||
+                    !registro.id ||
+                    !registro.identidad ||
+                    !registro.fotoData
+                ) {
+                    ultimoErrorSincronizacionEmpresa =
+                        `Registro local incompleto: ${registro.id || "SIN ID"}`;
+
+                    console.error(
+                        "Empresa: registro local incompleto.",
+                        registro
+                    );
+
                     break;
                 }
 
                 const formulario = new FormData();
 
-                Object.entries(registro).forEach(([llave, valor]) => {
+                const camposExcluidos = new Set([
+                    "identidad",
+                    "fechaCreacion",
+                    "ultimoError",
+                    "ultimoIntento",
+                    "intentos"
+                ]);
 
-                    if (
-                        llave !== "identidad" &&
-                        llave !== "fechaCreacion" &&
-                        llave !== "ultimoError" &&
-                        llave !== "ultimoIntento"
-                    ) {
-                        formulario.append(llave, valor);
-                    }
-                });
+                for (const [llave, valor] of Object.entries(registro)) {
+
+                    if (camposExcluidos.has(llave)) continue;
+
+                    if (valor === undefined || valor === null) continue;
+
+                    formulario.append(llave, String(valor));
+                }
 
                 const controlador = new AbortController();
 
@@ -1029,76 +1051,102 @@ function sincronizar() {
                         signal: controlador.signal
                     });
 
-                    const tipo = String(
+                    const tipoContenido = String(
                         respuesta.headers.get("content-type") || ""
                     ).toLowerCase();
 
-                    if (!tipo.includes("application/json")) {
+                    if (!tipoContenido.includes("application/json")) {
                         throw new Error(
-                            `Respuesta no JSON. HTTP ${respuesta.status}. ` +
-                            "Compruebe que la sesión esté activa."
+                            `Respuesta no JSON (HTTP ${respuesta.status}). ` +
+                            "El envío permanece guardado."
                         );
                     }
 
-                    const datos = await respuesta.json();
+                    let datos;
+
+                    try {
+                        datos = await respuesta.json();
+                    } catch {
+                        throw new Error(
+                            "El servidor devolvió un JSON inválido."
+                        );
+                    }
 
                     if (!respuesta.ok || datos.ok !== true) {
-
                         throw new Error(
                             String(
                                 datos.error ||
-                                `Servidor rechazó el envío. HTTP ${respuesta.status}`
+                                `El servidor rechazó el envío (HTTP ${respuesta.status}).`
                             )
                         );
                     }
 
-                    console.log(
-                        "EMPRESA: servidor confirmó el envío",
-                        registro.id,
-                        registro.envioId
-                    );
+                    // Confirmación estricta: no basta con ok:true.
+                    if (
+                        String(datos.id || "") !== String(registro.id) ||
+                        String(datos.envioId || "") !== String(registro.envioId) ||
+                        datos.confirmadoEnHoja !== true
+                    ) {
+                        throw new Error(
+                            "El servidor no confirmó el ID del servicio, " +
+                            "el ID del envío y su registro en la hoja. " +
+                            "Se conservará la evidencia para reintentar."
+                        );
+                    }
 
-                    // Solo borrar cuando el servidor confirmó éxito.
+                    // Solo ahora existe una confirmación verificable
+                    // del backend sobre este envío concreto.
                     await eliminarEnvioEmpresa(registro.envioId);
 
                     ultimoErrorSincronizacionEmpresa = "";
 
-                    console.log(
-                        "Empresa: registro confirmado:",
+                    console.info(
+                        "Empresa: servicio confirmado y retirado de la cola.",
                         registro.id,
-                        registro.envioId
+                        registro.envioId,
+                        datos.duplicado === true
+                            ? "YA PROCESADO"
+                            : "PROCESADO"
                     );
 
                 } catch (error) {
 
                     const motivo = error.name === "AbortError"
-                        ? "Tiempo de espera agotado al contactar el servidor."
+                        ? "Tiempo de espera agotado. Se conservará el registro."
                         : String(error.message || error);
 
                     ultimoErrorSincronizacionEmpresa = motivo;
 
                     console.error(
-                        "Empresa: envío pendiente:",
+                        "Empresa: registro conservado para reintento.",
                         registro.id,
+                        registro.envioId,
                         motivo
                     );
 
-                    // Preservar toda la evidencia y registrar el error.
+                    // El mismo envioId se mantiene.
+                    // Nunca generar uno nuevo en el reintento.
                     try {
+
                         await guardarEnvioEmpresa({
                             ...registro,
                             ultimoError: motivo,
-                            ultimoIntento: new Date().toISOString()
+                            ultimoIntento: new Date().toISOString(),
+                            intentos: Number(registro.intentos || 0) + 1
                         });
+
                     } catch (errorAlGuardar) {
+
                         console.error(
-                            "No se pudo guardar el diagnóstico:",
+                            "No se pudo actualizar el diagnóstico local.",
                             errorAlGuardar
                         );
+
+                        // El registro original no se elimina.
                     }
 
-                    // No seguir enviando los siguientes registros
-                    // hasta resolver el primero.
+                    // Evita una cadena de reintentos inmediatos
+                    // cuando el servidor está rechazando solicitudes.
                     break;
 
                 } finally {
@@ -1113,7 +1161,7 @@ function sincronizar() {
                 String(error.message || error);
 
             console.error(
-                "Empresa: error general de sincronización:",
+                "Empresa: error general de sincronización.",
                 error
             );
 
@@ -1125,7 +1173,7 @@ function sincronizar() {
                 await estado();
             } catch (error) {
                 console.warn(
-                    "Empresa: error al actualizar estado:",
+                    "Empresa: no fue posible actualizar el estado.",
                     error
                 );
             }
@@ -1133,7 +1181,7 @@ function sincronizar() {
 
     })();
 
-    const tarea = promesaSincronizacionEmpresa;
+    promesaSincronizacionEmpresa = tarea;
 
     return tarea.finally(() => {
 
