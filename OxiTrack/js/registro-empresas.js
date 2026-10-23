@@ -188,6 +188,93 @@ let detalleOriginalGestionEmpresa = "";
 let detalleEditableGestionEmpresa = [];
 let detalleGestionModificadoEmpresa = false;
 
+// ==========================================================
+// DIRECCIÓN Y FLETE DEL REAGENDAMIENTO EMPRESA
+// ==========================================================
+
+const panelDestinoGestionEmpresa = document.createElement("div");
+
+panelDestinoGestionEmpresa.id = "panelDestinoGestionEmpresa";
+panelDestinoGestionEmpresa.style.cssText =
+    "margin:16px 0;padding:14px;border:1px solid #ddd;" +
+    "border-radius:10px;background:#f8f8f8;";
+
+panelDestinoGestionEmpresa.innerHTML = `
+    <h3 style="color:#611e63;margin:0 0 12px">
+        Dirección del reagendamiento
+    </h3>
+
+    <p id="direccionActualGestionEmpresa"></p>
+
+    <label style="display:block;margin:12px 0">
+        <input type="checkbox" id="checkDireccionGestionEmpresa">
+        Enviar a otra dirección
+    </label>
+
+    <div id="camposDireccionGestionEmpresa" hidden>
+        <label for="direccionGestionEmpresa">Nueva dirección</label>
+        <input
+            id="direccionGestionEmpresa"
+            type="text"
+            placeholder="Ingrese la nueva dirección"
+            style="text-transform:uppercase"
+        >
+
+        <label for="comunaGestionEmpresa">Nueva comuna</label>
+        <select id="comunaGestionEmpresa">
+            <option value="">Seleccione una comuna</option>
+        </select>
+    </div>
+
+    <h3 style="color:#611e63;margin-top:20px">
+        Flete del reagendamiento
+    </h3>
+
+    <label for="fleteGestionEmpresa">
+        ¿Contabilizar un nuevo flete?
+    </label>
+
+    <select id="fleteGestionEmpresa">
+        <option value="NO">NO</option>
+        <option value="SI">SÍ</option>
+    </select>
+
+    <p style="font-size:12px;color:#666">
+        Si selecciona SÍ, se contabilizará según la comuna,
+        el servicio y la tarifa diurna de Empresa.
+    </p>
+`;
+
+const checkDireccionGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#checkDireccionGestionEmpresa");
+const camposDireccionGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#camposDireccionGestionEmpresa");
+const direccionGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#direccionGestionEmpresa");
+const comunaGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#comunaGestionEmpresa");
+const fleteGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#fleteGestionEmpresa");
+checkDireccionGestionEmpresa.addEventListener("change", function () {
+    camposDireccionGestionEmpresa.hidden = !this.checked;
+    if (!this.checked) {direccionGestionEmpresa.value = "";comunaGestionEmpresa.value = "";}
+});
+direccionGestionEmpresa.addEventListener("input", function () {this.value = this.value.toLocaleUpperCase("es-CL");});
+
+function prepararDestinoGestionEmpresa(servicio) {
+    checkDireccionGestionEmpresa.checked = false;
+    camposDireccionGestionEmpresa.hidden = true;
+    direccionGestionEmpresa.value = "";
+    fleteGestionEmpresa.value = "NO";
+
+    panelDestinoGestionEmpresa.querySelector("#direccionActualGestionEmpresa"
+    ).textContent = `Dirección actual: ${servicio.direccion || "NO INFORMADA"} - ` + `${servicio.comuna || "COMUNA NO INFORMADA"}`;
+    comunaGestionEmpresa.replaceChildren();
+    const inicial = document.createElement("option");
+    inicial.value = "";
+    inicial.textContent = "Seleccione una comuna";
+    comunaGestionEmpresa.appendChild(inicial);
+
+    Array.from(selectComunaPacienteEmpresa.options).forEach(function (opcion) {
+        if (opcion.value && !opcion.disabled) {comunaGestionEmpresa.appendChild(opcion.cloneNode(true));}
+    });
+}
+
 const panelPedidoGestionEmpresa = document.createElement("div");
 
 panelPedidoGestionEmpresa.id = "panelPedidoGestionEmpresa";
@@ -2122,9 +2209,7 @@ inputBuscarGestionEmpresa.addEventListener(
 // BUSCAR SERVICIOS PENDIENTES
 // ==========================================================
 
-async function buscarServiciosGestionEmpresa(
-    buscar
-) {
+async function buscarServiciosGestionEmpresa(buscar) {
 
     try {
 
@@ -2167,16 +2252,6 @@ async function buscarServiciosGestionEmpresa(
                     formatearFechaGestionEmpresa(servicio.fechaProgramada) + " | " + (servicio.ventanaHoraria || "");
                 item.addEventListener("click",function () {seleccionarServicioGestionEmpresa(servicio);});
                 resultadosGestionServicioEmpresa.appendChild(item);
-                panelDestinoGestionEmpresa.remove();
-                if (tipoGestionActualEmpresa === "REAGENDAR") {
-
-                    prepararDestinoGestionEmpresa();
-
-                    panelPedidoGestionEmpresa.insertAdjacentElement(
-                        "afterend",
-                        panelDestinoGestionEmpresa
-                    );
-                }
             }
         );
 
@@ -2195,9 +2270,7 @@ async function buscarServiciosGestionEmpresa(
 // SELECCIONAR SERVICIO
 // ==========================================================
 
-function seleccionarServicioGestionEmpresa(
-    servicio
-) {
+function seleccionarServicioGestionEmpresa(servicio) {
 
     servicioGestionSeleccionadoEmpresa = servicio;
     solicitudGestionIdEmpresa = "";
@@ -2207,129 +2280,45 @@ function seleccionarServicioGestionEmpresa(
     const paciente = servicio.paciente || "";
     resumenGestionServicioEmpresa.innerHTML =
 
-        datoResumen(
-            "ID",
-            servicio.id || ""
-        ) +
-
-        datoResumen(
-            "Empresa",
-            cliente
-        ) +
-
-        (
-            paciente
-                ? datoResumen(
-                    "Paciente",
-                    paciente
-                )
-                : ""
-        ) +
-
-        datoResumen(
-            "Servicio",
-            servicio.servicio || ""
-        ) +
-
-        datoResumen(
-            "Dirección",
-            servicio.direccion || ""
-        ) +
-
-        datoResumen(
-            "Comuna",
-            servicio.comuna || ""
-        ) +
-
-        datoResumen(
-            "Fecha actual",
-            formatearFechaGestionEmpresa(
-                servicio.fechaProgramada
-            )
-        ) +
-
-        datoResumen(
-            "Programación actual",
-            servicio.ventanaHoraria || ""
-        ) +
-
-        datoResumen(
-            "Operario actual",
-            servicio.operarioAsignado || ""
-        );
-
+        datoResumen("ID",servicio.id || "") + datoResumen("Empresa",cliente) +
+        (paciente ? datoResumen("Paciente", paciente) : "") +
+        datoResumen("Servicio",servicio.servicio || "") +
+        datoResumen("Dirección", servicio.direccion || "") +
+        datoResumen("Comuna",servicio.comuna || "") +
+        datoResumen("Fecha actual",formatearFechaGestionEmpresa(servicio.fechaProgramada)) +
+        datoResumen("Programación actual",servicio.ventanaHoraria || "") +
+        datoResumen("Operario actual", servicio.operarioAsignado || "");
 
     mostrarEmpresa(detalleGestionServicioEmpresa);
-
     panelPedidoGestionEmpresa.remove();
 
-    if (tipoGestionActualEmpresa === "REAGENDAR") {
+   if (tipoGestionActualEmpresa === "REAGENDAR") {
 
         pintarPedidoGestionEmpresa(servicio);
+        resumenGestionServicioEmpresa.insertAdjacentElement("afterend",panelPedidoGestionEmpresa);
+        prepararDestinoGestionEmpresa(servicio);
+        panelPedidoGestionEmpresa.insertAdjacentElement("afterend", panelDestinoGestionEmpresa);
 
-        resumenGestionServicioEmpresa.insertAdjacentElement(
-            "afterend",
-            panelPedidoGestionEmpresa
-        );
-    }
-
-
-    if (
-        tipoGestionActualEmpresa ===
-        "REAGENDAR"
-    ) {
-
-        mostrarEmpresa(
-            nuevaProgramacionGestionEmpresa
-        );
+    } else {panelDestinoGestionEmpresa.remove();}
 
 
-        inputAtencionInmediataGestionEmpresa.value =
-            "NO";
+    if (tipoGestionActualEmpresa ==="REAGENDAR") {
 
-        btnAtencionInmediataGestionEmpresa
-            .classList
-            .remove(
-                "activo"
-            );
-
-
-        selectNuevaVentanaGestionEmpresa.disabled =
-            false;
-
-
-        const hoy =
-            obtenerFechaLocalEmpresa();
-
-
-        inputNuevaFechaGestionEmpresa.value =
-            hoy;
-
-        inputNuevaFechaGestionEmpresa.min =
-            hoy;
-
-
-        cargarOperariosGestionEmpresa(
-            servicio.operarioAsignado
-        );
-
-
+        mostrarEmpresa(nuevaProgramacionGestionEmpresa);
+        inputAtencionInmediataGestionEmpresa.value ="NO";
+        btnAtencionInmediataGestionEmpresa.classList.remove("activo");
+        selectNuevaVentanaGestionEmpresa.disabled = false;
+        const hoy = obtenerFechaLocalEmpresa();
+        inputNuevaFechaGestionEmpresa.value =hoy;
+        inputNuevaFechaGestionEmpresa.min = hoy;
+        cargarOperariosGestionEmpresa(servicio.operarioAsignado);
         actualizarDisponibilidadGestionEmpresa();
-
-
-        btnConfirmarGestionServicioEmpresa.textContent =
-            "Confirmar reagendamiento";
-
+        btnConfirmarGestionServicioEmpresa.textContent = "Confirmar reagendamiento";
 
     } else {
 
-        ocultarEmpresa(
-            nuevaProgramacionGestionEmpresa
-        );
-
-
-        btnConfirmarGestionServicioEmpresa.textContent =
-            "Confirmar cancelación";
+        ocultarEmpresa(nuevaProgramacionGestionEmpresa);
+        btnConfirmarGestionServicioEmpresa.textContent ="Confirmar cancelación";
 
     }
 
@@ -2692,11 +2681,7 @@ function cargarVentanasGestionEmpresa(
 
 btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
 
-        if (!servicioGestionSeleccionadoEmpresa) {
-            return;
-        }
-
-
+        if (!servicioGestionSeleccionadoEmpresa) {return;}
         if (tipoGestionActualEmpresa === "REAGENDAR" &&
             (
                 !inputNuevaFechaGestionEmpresa.value ||
@@ -2704,24 +2689,13 @@ btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
                 !selectNuevaVentanaGestionEmpresa.value
             )
         ) {
-
-            mostrarMensajeGeneral(
-                "Debe seleccionar nueva fecha, operario y ventana horaria.",
-                "error"
-            );
-
+            mostrarMensajeGeneral("Debe seleccionar nueva fecha, operario y ventana horaria.","error");
             return;
 
         }
 
 
-        if (!solicitudGestionIdEmpresa) {
-
-            solicitudGestionIdEmpresa = generarIdSolicitudEmpresa();
-
-        }
-
-
+        if (!solicitudGestionIdEmpresa) {solicitudGestionIdEmpresa = generarIdSolicitudEmpresa();}
         btnConfirmarGestionServicioEmpresa.disabled = true;
 
         try {
@@ -2750,179 +2724,19 @@ btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
                 // DIRECCIÓN Y FLETE - REAGENDAMIENTO EMPRESA
                 // ==========================================================
 
-                const panelDestinoGestionEmpresa =
-                    document.createElement("div");
-
-                panelDestinoGestionEmpresa.style.cssText =
-                    "margin:16px 0;padding:14px;border:1px solid #ddd;" +
-                    "border-radius:10px;";
-
-                panelDestinoGestionEmpresa.innerHTML = `
-                    <h3 style="color:#611e63">
-                        Dirección del reagendamiento
-                    </h3>
-
-                    <label style="display:block;margin:12px 0">
-                        <input type="checkbox" id="checkDireccionGestionEmpresa">
-                        Enviar a otra dirección
-                    </label>
-
-                    <div id="camposDireccionGestionEmpresa" hidden>
-                        <label for="direccionGestionEmpresa">
-                            Nueva dirección
-                        </label>
-
-                        <input
-                            id="direccionGestionEmpresa"
-                            type="text"
-                            placeholder="Ingrese la nueva dirección"
-                            style="text-transform:uppercase"
-                        >
-
-                        <label for="comunaGestionEmpresa">
-                            Nueva comuna
-                        </label>
-
-                        <select id="comunaGestionEmpresa">
-                            <option value="">Seleccione una comuna</option>
-                        </select>
-                    </div>
-
-                    <h3 style="color:#611e63;margin-top:20px">
-                        Flete del reagendamiento
-                    </h3>
-
-                    <label for="fleteGestionEmpresa">
-                        ¿Lleva un nuevo flete?
-                    </label>
-
-                    <select id="fleteGestionEmpresa">
-                        <option value="NO">NO</option>
-                        <option value="SI">SÍ</option>
-                    </select>
-                `;
-
-                const checkDireccionGestionEmpresa =
-                    panelDestinoGestionEmpresa.querySelector(
-                        "#checkDireccionGestionEmpresa"
-                    );
-
-                const camposDireccionGestionEmpresa =
-                    panelDestinoGestionEmpresa.querySelector(
-                        "#camposDireccionGestionEmpresa"
-                    );
-
-                const direccionGestionEmpresa =
-                    panelDestinoGestionEmpresa.querySelector(
-                        "#direccionGestionEmpresa"
-                    );
-
-                const comunaGestionEmpresa =
-                    panelDestinoGestionEmpresa.querySelector(
-                        "#comunaGestionEmpresa"
-                    );
-
-                const fleteGestionEmpresa =
-                    panelDestinoGestionEmpresa.querySelector(
-                        "#fleteGestionEmpresa"
-                    );
-
-                checkDireccionGestionEmpresa.addEventListener(
-                    "change",
-                    function() {
-                        camposDireccionGestionEmpresa.hidden =
-                            !this.checked;
-                    }
-                );
-
-                direccionGestionEmpresa.addEventListener(
-                    "input",
-                    function() {
-                        this.value = this.value.toLocaleUpperCase("es-CL");
-                    }
-                );
-
-                function prepararDestinoGestionEmpresa() {
-
-                    checkDireccionGestionEmpresa.checked = false;
-                    camposDireccionGestionEmpresa.hidden = true;
-
-                    direccionGestionEmpresa.value = "";
-                    fleteGestionEmpresa.value = "NO";
-
-                    comunaGestionEmpresa.replaceChildren();
-
-                    const opcionInicial = document.createElement("option");
-                    opcionInicial.value = "";
-                    opcionInicial.textContent = "Seleccione una comuna";
-
-                    comunaGestionEmpresa.appendChild(opcionInicial);
-
-                    // Utilizar el catálogo ya cargado desde el backend.
-                    Array.from(selectComunaPacienteEmpresa.options)
-                        .forEach(function(opcion) {
-
-                            if (!opcion.value || opcion.disabled) return;
-
-                            comunaGestionEmpresa.appendChild(
-                                opcion.cloneNode(true)
-                            );
-                        });
-                }
-
-                const cambiarDireccion =
-                checkDireccionGestionEmpresa.checked;
+                const cambiarDireccion = checkDireccionGestionEmpresa.checked;
 
             if (cambiarDireccion) {
-
-                if (
-                    !direccionGestionEmpresa.value.trim() ||
-                    !comunaGestionEmpresa.value
-                ) {
-                    throw new Error(
-                        "Debe ingresar la nueva dirección y comuna."
-                    );
-                }
+                if (!direccionGestionEmpresa.value.trim() || !comunaGestionEmpresa.value
+                ) {throw new Error("Debe ingresar la nueva dirección y comuna.");}
             }
 
-            payload.append(
-                "cambiarDireccion",
-                cambiarDireccion ? "SI" : "NO"
-            );
-
-            payload.append(
-                "nuevaDireccion",
-                cambiarDireccion
-                    ? direccionGestionEmpresa.value.trim().toUpperCase()
-                    : ""
-            );
-
-            payload.append(
-                "nuevaComuna",
-                cambiarDireccion
-                    ? comunaGestionEmpresa.value
-                    : ""
-            );
-
-            payload.append(
-                "llevaNuevoFlete",
-                fleteGestionEmpresa.value
-            );
-
-            payload.append(
-                "horarioFleteReagendar",
-                fleteGestionEmpresa.value === "SI"
-                    ? "DIURNO"
-                    : ""
-            );
-
-            payload.append(
-                "convenioReagendar",
-                fleteGestionEmpresa.value === "SI"
-                    ? "NO"
-                    : ""
-            );
-
+            payload.append("cambiarDireccion",cambiarDireccion ? "SI" : "NO");
+            payload.append("nuevaDireccion",cambiarDireccion ? direccionGestionEmpresa.value.trim().toUpperCase() : "");
+            payload.append("nuevaComuna",cambiarDireccion ? comunaGestionEmpresa.value : "");
+            payload.append("llevaNuevoFlete",fleteGestionEmpresa.value);
+            payload.append("horarioFleteReagendar",fleteGestionEmpresa.value === "SI" ? "DIURNO" : "");
+            payload.append("convenioReagendar",fleteGestionEmpresa.value === "SI" ? "NO" : "");
             }
 
             const respuesta = await fetch("/api/oxitrack/", {method: "POST",body: payload});

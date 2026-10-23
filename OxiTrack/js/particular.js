@@ -1595,12 +1595,14 @@ function limpiarFormularioParticular() {
     const selectPaciente = document.getElementById("pacienteParticular");
     const inputPacienteId = document.getElementById("pacienteId");
     const obs = document.getElementById("obs");
+    const receptorParticular = document.getElementById("receptorParticular");
 
     // ------------------------------------------------------
     // FORMULARIO BASE
     // ------------------------------------------------------
 
     if (formulario) {formulario.reset();}
+    if (receptorParticular) {receptorParticular.value = "";}
 
     // ------------------------------------------------------
     // SERVICIO
@@ -2127,8 +2129,8 @@ function inicializarFormulario() {
     }
 
     formulario.addEventListener("submit", async event => {
-        event.preventDefault();
 
+        event.preventDefault();
         const btnEnviar = document.getElementById("btnEnviar");
         const servicio = document.getElementById("servicioParticular").value.trim();
         const pacienteId = document.getElementById("pacienteId").value.trim();
@@ -2139,12 +2141,12 @@ function inicializarFormulario() {
         const e10 = document.getElementById("e10").value;
         const r07 = document.getElementById("r07").value;
         const r10 = document.getElementById("r10").value;
-        const observaciones = document.getElementById("obs").value.trim().toUpperCase();
+        const receptorParticular = document.getElementById("receptorParticular").value.trim().toLocaleUpperCase("es-CL");
+        const observaciones = document.getElementById("obs").value.trim().toLocaleUpperCase("es-CL");
+        const observacionesFinales = [receptorParticular ? `RECIBE: ${receptorParticular}` : "",observaciones].filter(Boolean).join("\n");
         const esNoRealizado = resultadoServicioParticular === "NO REALIZADO";
-
         if (!servicio) {alert("Debe seleccionar un servicio."); return;}
         if (!pacienteId) {alert("Debe seleccionar un paciente válido.");return;}
-
         const servicioNormalizado = servicio.toLowerCase();
         const esImplementacion = servicioNormalizado.includes("implement");
         const esRetiro = servicioNormalizado.includes("retiro");
@@ -2152,41 +2154,22 @@ function inicializarFormulario() {
         const esVisitaTecnica = servicioNormalizado.includes("visita técnica") || servicioNormalizado.includes("visita tecnica");
         const retiroConOrigen = esRetiro && pacienteActual && pacienteActual.idOrigen && pacienteActual.elementosOrigen;
         const requiereFoto = esImplementacion || servicioNormalizado.includes("recarga") || servicioNormalizado.includes("venta");
-
-        if ((requiereFoto || esNoRealizado) && fotosCapturadas.length === 0) {
-            alert("Debe tomar al menos una fotografía antes de enviar el registro.");
-            return;
-        }
+        if ((requiereFoto || esNoRealizado) && fotosCapturadas.length === 0) {alert("Debe tomar al menos una fotografía antes de enviar el registro.");return;}
         if (esNoRealizado && !observaciones) {alert("Debe explicar por qué no se realizó el servicio.");return;}
         if (fotosCapturadas.length > 2) {alert("Solo se permite un máximo de 2 fotografías.");return;}
         if (esVisitaTecnica && !observaciones.trim()) {alert("Debe registrar las observaciones de la visita técnica.");return;}
-
         const recargaRealizada = esRecarga && !esNoRealizado ? obtenerRecargaRealizada() : [];
-
-        if (esRecarga && !esNoRealizado && recargaRealizada.length === 0) {
-            alert("No se cargaron los cilindros programados para esta recarga.");
-            return;
-        }
-
+        if (esRecarga && !esNoRealizado && recargaRealizada.length === 0) {alert("No se cargaron los cilindros programados para esta recarga.");return;}
         if (esRecarga && recargaRealizada.some(item =>
             !item.elemento ||
             !Number.isInteger(item.entregados) ||
             !Number.isInteger(item.retirados) ||
             item.entregados < 0 ||
             item.retirados < 0
-        )) {
-            alert("Las cantidades de recarga no son válidas.");
-            return;
-        }
+        )) {alert("Las cantidades de recarga no son válidas.");return;}
         const elementosSeleccionados = esNoRealizado ? [] : esImplementacion ? obtenerElementosSeleccionados() : retiroConOrigen ? obtenerElementosRetiro() : [];
-
-        if (esImplementacion && !esNoRealizado && elementosSeleccionados.length === 0) {
-            alert("Debe registrar al menos un elemento entregado en la implementación.");
-            return;
-        }
-
+        if (esImplementacion && !esNoRealizado && elementosSeleccionados.length === 0) {alert("Debe registrar al menos un elemento entregado en la implementación.");return;}
         if (!esNoRealizado && (!signaturePad || signaturePad.isEmpty())) {alert("Debe solicitar la firma del cliente.");return;}
-
         const confirmado = await confirmarEnvioParticular({
             servicio,
             paciente: pacienteNombre,
@@ -2196,17 +2179,14 @@ function inicializarFormulario() {
             e10,
             r07,
             r10,
-            observaciones,
+            observaciones: observacionesFinales,
             fotos: fotosCapturadas.length,
             resultadoServicio: resultadoServicioParticular,
         });
-
         if (!confirmado) return;
         if (!envioIdParticularActual) {envioIdParticularActual = generarEnvioIdParticular();}
-
         btnEnviar.disabled = true;
         btnEnviar.textContent = "Enviando...";
-
         try {
 
             let blobFirma = null;
@@ -2226,7 +2206,7 @@ function inicializarFormulario() {
                 entrega10:e10,
                 retiro07:r07,
                 retiro10:r10,
-                observaciones:observaciones,
+                observaciones:observacionesFinales,
                 gps:coordenadasGPS,
                 dispositivo:navigator.userAgent,
                 firma:blobFirma,
