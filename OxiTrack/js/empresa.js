@@ -977,18 +977,10 @@ async function registrar() {
 function sincronizar() {
 
     // Una sola sincronización a la vez.
-    if (promesaSincronizacionEmpresa) {
-        return promesaSincronizacionEmpresa;
-    }
-
-    if (!navigator.onLine || !identidad) {
-        return Promise.resolve();
-    }
-
+    if (promesaSincronizacionEmpresa) {return promesaSincronizacionEmpresa;}
+    if (!navigator.onLine || !identidad) {return Promise.resolve();}
     const tarea = (async () => {
-
         sincronizando = true;
-
         try {
 
             const pendientes = await enviosPendientesEmpresa();
@@ -998,25 +990,14 @@ function sincronizar() {
                 if (!navigator.onLine) break;
 
                 // Validar que el registro local sea íntegro.
-                if (
-                    !registro.envioId ||
-                    !registro.id ||
-                    !registro.identidad ||
-                    !registro.fotoData
-                ) {
-                    ultimoErrorSincronizacionEmpresa =
-                        `Registro local incompleto: ${registro.id || "SIN ID"}`;
-
-                    console.error(
-                        "Empresa: registro local incompleto.",
-                        registro
-                    );
+                if (!registro.envioId || !registro.id || !registro.identidad || !registro.fotoData) {
+                    ultimoErrorSincronizacionEmpresa = `Registro local incompleto: ${registro.id || "SIN ID"}`;
+                    console.error("Empresa: registro local incompleto.", registro);
 
                     break;
                 }
 
                 const formulario = new FormData();
-
                 const camposExcluidos = new Set([
                     "identidad",
                     "fechaCreacion",
@@ -1035,11 +1016,7 @@ function sincronizar() {
                 }
 
                 const controlador = new AbortController();
-
-                const temporizador = setTimeout(
-                    () => controlador.abort(),
-                    60000
-                );
+                const temporizador = setTimeout(() => controlador.abort(),60000);
 
                 try {
 
@@ -1051,32 +1028,21 @@ function sincronizar() {
                         signal: controlador.signal
                     });
 
-                    const tipoContenido = String(
-                        respuesta.headers.get("content-type") || ""
-                    ).toLowerCase();
-
+                    const tipoContenido = String(respuesta.headers.get("content-type") || "").toLowerCase();
                     if (!tipoContenido.includes("application/json")) {
-                        throw new Error(
-                            `Respuesta no JSON (HTTP ${respuesta.status}). ` +
-                            "El envío permanece guardado."
-                        );
-                    }
+                        throw new Error(`Respuesta no JSON (HTTP ${respuesta.status}). ` + "El envío permanece guardado.");}
 
                     let datos;
 
                     try {
                         datos = await respuesta.json();
                     } catch {
-                        throw new Error(
-                            "El servidor devolvió un JSON inválido."
-                        );
+                        throw new Error("El servidor devolvió un JSON inválido.");
                     }
 
                     if (!respuesta.ok || datos.ok !== true) {
                         throw new Error(
-                            String(
-                                datos.error ||
-                                `El servidor rechazó el envío (HTTP ${respuesta.status}).`
+                            String(datos.error || `El servidor rechazó el envío (HTTP ${respuesta.status}).`
                             )
                         );
                     }
@@ -1145,26 +1111,26 @@ function sincronizar() {
                         // El registro original no se elimina.
                     }
 
-                    // Evita una cadena de reintentos inmediatos
-                    // cuando el servidor está rechazando solicitudes.
+                    // Si un servicio no existe en el backend,
+                    // conservarlo y continuar con el siguiente.
+                    if (
+                        motivo.includes("No se encontró el servicio") ||
+                        motivo.includes("No se encontro el servicio")
+                    ) {
+                        console.warn("Empresa: servicio no encontrado. Se conserva y continúa:",registro.id);
+
+                        continue;
+                    }
+
+                    // Para otros errores, detener esta ronda.
                     break;
 
-                } finally {
-
-                    clearTimeout(temporizador);
-                }
+                } finally {clearTimeout(temporizador);}
             }
 
         } catch (error) {
-
-            ultimoErrorSincronizacionEmpresa =
-                String(error.message || error);
-
-            console.error(
-                "Empresa: error general de sincronización.",
-                error
-            );
-
+            ultimoErrorSincronizacionEmpresa = String(error.message || error);
+            console.error("Empresa: error general de sincronización.",error);
         } finally {
 
             sincronizando = false;
@@ -1172,22 +1138,14 @@ function sincronizar() {
             try {
                 await estado();
             } catch (error) {
-                console.warn(
-                    "Empresa: no fue posible actualizar el estado.",
-                    error
-                );
+                console.warn("Empresa: no fue posible actualizar el estado.",error);
             }
         }
 
     })();
-
     promesaSincronizacionEmpresa = tarea;
-
     return tarea.finally(() => {
-
-        if (promesaSincronizacionEmpresa === tarea) {
-            promesaSincronizacionEmpresa = null;
-        }
+        if (promesaSincronizacionEmpresa === tarea) {promesaSincronizacionEmpresa = null;}
     });
 }
 
