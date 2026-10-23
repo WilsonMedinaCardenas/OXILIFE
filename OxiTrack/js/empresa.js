@@ -669,6 +669,38 @@ async function enviosPendientesEmpresa() {
         );
 }
 
+// Eliminar exclusivamente un envío de prueba de la cola.
+async function eliminarPruebaEmpresa0025() {
+
+    const pendientes = await obtenerEnviosEmpresa();
+
+    const registros = pendientes.filter(
+        item => String(item.id).trim() === "EMP-000025"
+    );
+
+    if (!registros.length) {
+        alert("EMP-000025 ya no está en la cola.");
+        return;
+    }
+
+    const confirmar = confirm(
+        "Se eliminarán " + registros.length +
+        " envío(s) locales de EMP-000025.\n\n" +
+        "Esta acción es irreversible y elimina sus evidencias guardadas.\n" +
+        "¿Confirmas?"
+    );
+
+    if (!confirmar) return;
+
+    for (const registro of registros) {
+        await eliminarEnvioEmpresa(registro.envioId);
+    }
+
+    alert("EMP-000025 eliminado de la cola offline.");
+
+    await estado();
+}
+
 // Diagnóstico temporal: no elimina ni modifica registros.
 window.diagnosticoOfflineEmpresa = async function() {
 
@@ -780,6 +812,21 @@ function crearBotonDiagnosticoEmpresa() {
     $("formulario").insertAdjacentElement(
         "afterend",
         boton
+    );
+    const botonEliminarPrueba = document.createElement("button");
+
+    botonEliminarPrueba.type = "button";
+    botonEliminarPrueba.textContent = "ELIMINAR PRUEBA EMP-000025";
+
+    botonEliminarPrueba.style.cssText =
+        "display:block;width:100%;margin:12px 0;padding:14px;" +
+        "background:#963636;color:white;border:0;border-radius:8px;";
+
+    botonEliminarPrueba.onclick = eliminarPruebaEmpresa0025;
+
+    boton.insertAdjacentElement(
+        "afterend",
+        botonEliminarPrueba
     );
 }
 // ==========================================================
