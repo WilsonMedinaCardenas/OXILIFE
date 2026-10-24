@@ -576,3 +576,96 @@ label:has(#checkOtraDireccionEmpresa) {
         min-width: 20px !important;
     }
 }
+
+/* ==========================================
+   EMPRESA - REAGENDAMIENTO
+   Igualar presentación a Particular
+   ========================================== */
+
+/* Checkbox a la izquierda del texto */
+#panelDestinoGestionEmpresa .campo-direccion-check {
+    display: block !important;
+    width: 100% !important;
+    margin: 16px 0 !important;
+}
+
+#panelDestinoGestionEmpresa .campo-direccion-check label {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    text-align: left !important;
+}
+
+/* Checkbox pequeño, sin ocupar una fila */
+#panelDestinoGestionEmpresa
+.campo-direccion-check input[type="checkbox"] {
+    appearance: checkbox !important;
+    -webkit-appearance: checkbox !important;
+    display: inline-block !important;
+    position: static !important;
+    flex: 0 0 18px !important;
+    width: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    max-height: 18px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    accent-color: #611e63;
+}
+
+/* Texto normal, nunca en negrita */
+#panelDestinoGestionEmpresa .campo-direccion-check span,
+#panelDestinoGestionEmpresa .campo-direccion-check strong {
+    display: inline !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+}
+
+/* Botones de flete lado a lado */
+#panelDestinoGestionEmpresa .selector-tipo-paciente {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+}
+
+/* Ambos botones con igual tamaño */
+#panelDestinoGestionEmpresa .selector-tipo-paciente .btn-selector {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 10px 8px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+/* Botón seleccionado */
+#panelDestinoGestionEmpresa
+.selector-tipo-paciente .btn-selector.activo {
+    background: #611e63 !important;
+    color: #ffffff !important;
+}
+
+/* Mantener dos columnas también en móviles */
+@media (max-width: 600px) {
+    #panelDestinoGestionEmpresa .selector-tipo-paciente {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
