@@ -146,6 +146,160 @@ const accionesCerrarGestion = document.getElementById("accionesCerrarGestion");
 let tipoGestionActual = "";
 let servicioGestionSeleccionado = null;
 let solicitudGestionId = "";
+// ==========================================================
+// PEDIDO EDITABLE - REAGENDAMIENTO PARTICULAR
+// ==========================================================
+
+const panelPedidoGestionParticular =
+    document.getElementById("panelPedidoGestionParticular");
+
+let detalleEditableGestionParticular = [];
+let detalleOriginalGestionParticular = "";
+let detalleGestionModificadoParticular = false;
+let pedidoEditableGestionParticular = false;
+
+function pintarPedidoGestionParticular(servicio) {
+
+    panelPedidoGestionParticular.replaceChildren();
+
+    detalleEditableGestionParticular = [];
+    detalleOriginalGestionParticular =
+        String(servicio.detalleSolicitado || "").trim();
+
+    detalleGestionModificadoParticular = false;
+    pedidoEditableGestionParticular = false;
+
+    const tipoServicio = String(servicio.servicio || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+
+    // Solo estos servicios tienen un pedido de elementos
+    // que corresponde editar mediante cantidades.
+    if (
+        !tipoServicio.includes("IMPLEMENT") &&
+        !tipoServicio.includes("RECARGA")
+    ) {
+        panelPedidoGestionParticular.hidden = true;
+        return;
+    }
+
+    panelPedidoGestionParticular.hidden = false;
+
+    const titulo = document.createElement("h2");
+    titulo.className = "ox-pedido-titulo";
+    titulo.textContent = "Pedido agendado";
+    panelPedidoGestionParticular.appendChild(titulo);
+
+    if (!detalleOriginalGestionParticular) {
+        const aviso = document.createElement("p");
+        aviso.textContent =
+            "Este servicio no tiene un pedido de elementos registrado.";
+        panelPedidoGestionParticular.appendChild(aviso);
+        return;
+    }
+
+    let datos;
+
+    try {
+        datos = JSON.parse(detalleOriginalGestionParticular);
+    } catch (error) {
+        const aviso = document.createElement("p");
+        aviso.textContent =
+            "El pedido original tiene un formato antiguo. " +
+            "No se pueden editar sus cantidades desde esta pantalla.";
+        panelPedidoGestionParticular.appendChild(aviso);
+        return;
+    }
+
+    if (
+        !Array.isArray(datos) ||
+        !datos.length ||
+        datos.some(item =>
+            !item ||
+            typeof item !== "object" ||
+            !String(item.elemento || "").trim() ||
+            !Number.isSafeInteger(Number(item.cantidad)) ||
+            Number(item.cantidad) < 0
+        )
+    ) {
+        const aviso = document.createElement("p");
+        aviso.textContent =
+            "El pedido original no tiene un formato válido para edición.";
+        panelPedidoGestionParticular.appendChild(aviso);
+        return;
+    }
+
+    pedidoEditableGestionParticular = true;
+
+    detalleEditableGestionParticular = datos.map(item => ({
+        ...item,
+        cantidad: Number(item.cantidad)
+    }));
+
+    detalleEditableGestionParticular.forEach(function(item, indice) {
+
+        const fila = document.createElement("div");
+        fila.className = "ox-pedido-fila";
+
+        const descripcion = document.createElement("span");
+        descripcion.className = "ox-pedido-descripcion";
+        descripcion.textContent = String(item.elemento);
+
+        const controles = document.createElement("div");
+        controles.className = "ox-pedido-controles";
+
+        const menos = document.createElement("button");
+        menos.type = "button";
+        menos.className = "ox-pedido-boton";
+        menos.textContent = "−";
+
+        const cantidad = document.createElement("strong");
+        cantidad.className = "ox-pedido-cantidad";
+        cantidad.textContent = String(item.cantidad);
+
+        const mas = document.createElement("button");
+        mas.type = "button";
+        mas.className = "ox-pedido-boton";
+        mas.textContent = "+";
+
+        function modificarCantidad(diferencia) {
+
+            const nueva =
+                detalleEditableGestionParticular[indice].cantidad +
+                diferencia;
+
+            if (nueva < 0 || nueva > 1000) return;
+
+            detalleEditableGestionParticular[indice].cantidad = nueva;
+            cantidad.textContent = String(nueva);
+
+            detalleGestionModificadoParticular = true;
+        }
+
+        menos.addEventListener("click", function() {
+            modificarCantidad(-1);
+        });
+
+        mas.addEventListener("click", function() {
+            modificarCantidad(1);
+        });
+
+        controles.append(menos, cantidad, mas);
+        fila.append(descripcion, controles);
+
+        panelPedidoGestionParticular.appendChild(fila);
+    });
+}
+
+function obtenerPedidoReagendadoParticular() {
+
+    if (!detalleGestionModificadoParticular) {return {modificar: "NO",detalle: ""};}
+    if (!pedidoEditableGestionParticular) {throw new Error("El pedido de este servicio no admite edición.");}
+    if (!detalleEditableGestionParticular.some(item => item.cantidad > 0)) {throw new Error("El pedido debe conservar al menos un elemento.");}
+    return {modificar: "SI",detalle: JSON.stringify(detalleEditableGestionParticular)};
+}
+
 let temporizadorBusquedaGestion = null;
 
 // PACIENTE NUEVO / REGISTRADO
@@ -1691,105 +1845,36 @@ async function buscarServiciosGestion(
 }
 
 
-function seleccionarServicioGestion(
-    servicio
-) {
+function seleccionarServicioGestion(servicio) {
 
-    servicioGestionSeleccionado =
-        servicio;
-
+    servicioGestionSeleccionado = servicio;
     solicitudGestionId = "";
+    ocultar(resultadosGestionServicio);
+    ocultar(accionesCerrarGestion);
 
-    ocultar(
-        resultadosGestionServicio
-    );
-
-    ocultar(
-        accionesCerrarGestion
-    );
-
-
-    resumenGestionServicio.innerHTML =
-        crearFilaResumen(
-            "ID",
-            servicio.id
-        ) +
-        crearFilaResumen(
-            "Paciente",
-            servicio.nombre
-        ) +
-        crearFilaResumen(
-            "Servicio",
-            servicio.servicio
-        ) +
-        crearFilaResumen(
-            "Dirección",
-            servicio.direccion
-        ) +
-        crearFilaResumen(
-            "Comuna",
-            servicio.comuna
-        ) +
-        crearFilaResumen(
-            "Fecha actual",
-            formatearFechaVisual(
-                servicio.fechaProgramada
-            )
-        ) +
-        crearFilaResumen(
-            "Programación actual",
-            servicio.ventanaHoraria
-        ) +
-        crearFilaResumen(
-            "Operario actual",
-            servicio.operarioAsignado
-        );
+    resumenGestionServicio.innerHTML = crearFilaResumen("ID",servicio.id) + crearFilaResumen(
+        "Paciente",servicio.nombre) + crearFilaResumen("Servicio",servicio.servicio) +
+        crearFilaResumen("Dirección",servicio.direccion) + crearFilaResumen(
+        "Comuna",servicio.comuna) + crearFilaResumen("Fecha actual",formatearFechaVisual(servicio.fechaProgramada)) +
+        crearFilaResumen("Programación actual",servicio.ventanaHoraria) + crearFilaResumen("Operario actual",servicio.operarioAsignado);
+    mostrar(detalleGestionServicio);
 
 
-    mostrar(
-        detalleGestionServicio
-    );
+    if (tipoGestionActual ==="REAGENDAR") {mostrar(nuevaProgramacionGestion);
 
-
-    if (
-        tipoGestionActual ===
-        "REAGENDAR"
-    ) {
-
-        mostrar(
-            nuevaProgramacionGestion
-        );
-
+        pintarPedidoGestionParticular(servicio);
         inputAtencionInmediataGestion.value = "NO";
         btnAtencionInmediataGestion.classList.remove("activo");
         selectNuevaVentanaGestion.disabled = false;
-
-        inputNuevaFechaGestion.value =
-            obtenerFechaLocal();
-
-        inputNuevaFechaGestion.min =
-            obtenerFechaLocal();
-
-
-        cargarOperariosGestion(
-            servicio.operarioAsignado
-        );
-
+        inputNuevaFechaGestion.value =obtenerFechaLocal();
+        inputNuevaFechaGestion.min =obtenerFechaLocal();
+        cargarOperariosGestion(servicio.operarioAsignado);
         actualizarDisponibilidadGestion();
+        btnConfirmarGestionServicio.textContent = "Confirmar reagendamiento";
 
-        btnConfirmarGestionServicio.textContent =
-            "Confirmar reagendamiento";
-
-    } else {
-
-        ocultar(
-            nuevaProgramacionGestion
-        );
-
-        btnConfirmarGestionServicio.textContent =
-            "Confirmar cancelación";
-
-    }
+    } else {ocultar(nuevaProgramacionGestion);
+        panelPedidoGestionParticular.hidden = true;
+        btnConfirmarGestionServicio.textContent ="Confirmar cancelación";}
 
 }
 
@@ -2053,6 +2138,9 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
                 payload.append("fechaProgramada",inputNuevaFechaGestion.value);
                 payload.append("ventanaHoraria",inputAtencionInmediataGestion.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestion.value);
                 payload.append("operarioAsignado",selectNuevoOperarioGestion.value);
+                const pedidoReagendado = obtenerPedidoReagendadoParticular();
+                payload.append("modificarDetalle",pedidoReagendado.modificar);
+                if (pedidoReagendado.modificar === "SI") {payload.append("detalleSolicitado",pedidoReagendado.detalle);}
                 if (checkOtraDireccionReagendar.checked) {
                     if (!direccionReagendar.value.trim() || !comunaReagendar.value) {throw new Error("Debe ingresar la nueva dirección y seleccionar la comuna.");}}
                 payload.append("cambiarDireccion",checkOtraDireccionReagendar.checked ? "SI" : "NO");

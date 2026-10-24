@@ -200,49 +200,72 @@ panelDestinoGestionEmpresa.style.cssText =
     "border-radius:10px;background:#f8f8f8;";
 
 panelDestinoGestionEmpresa.innerHTML = `
-    <h3 style="color:#611e63;margin:0 0 12px">
-        Dirección del reagendamiento
-    </h3>
+    <h2 class="ox-gestion-titulo">
+        Dirección del servicio
+    </h2>
 
-    <p id="direccionActualGestionEmpresa"></p>
+    <div class="ox-direccion-actual"
+         id="direccionActualGestionEmpresa"></div>
 
-    <label style="display:block;margin:12px 0">
-        <input type="checkbox" id="checkDireccionGestionEmpresa">
-        Enviar a otra dirección
+    <label class="ox-direccion-check"
+           for="checkDireccionGestionEmpresa">
+        <input type="checkbox"
+               id="checkDireccionGestionEmpresa">
+        <span>Realizar este servicio en otra dirección</span>
     </label>
 
     <div id="camposDireccionGestionEmpresa" hidden>
-        <label for="direccionGestionEmpresa">Nueva dirección</label>
-        <input
-            id="direccionGestionEmpresa"
-            type="text"
-            placeholder="Ingrese la nueva dirección"
-            style="text-transform:uppercase"
-        >
 
-        <label for="comunaGestionEmpresa">Nueva comuna</label>
-        <select id="comunaGestionEmpresa">
-            <option value="">Seleccione una comuna</option>
-        </select>
+        <div class="campo">
+            <label for="direccionGestionEmpresa">
+                Nueva dirección
+            </label>
+
+            <input
+                type="text"
+                id="direccionGestionEmpresa"
+                maxlength="200"
+                placeholder="Calle, número, departamento..."
+            >
+        </div>
+
+        <div class="campo">
+            <label for="comunaGestionEmpresa">
+                Nueva comuna
+            </label>
+
+            <select id="comunaGestionEmpresa">
+                <option value="">Seleccione una comuna</option>
+            </select>
+        </div>
+
     </div>
 
-    <h3 style="color:#611e63;margin-top:20px">
-        Flete del reagendamiento
-    </h3>
+    <h2 class="ox-gestion-titulo">
+        Flete
+    </h2>
 
-    <label for="fleteGestionEmpresa">
-        ¿Contabilizar un nuevo flete?
-    </label>
+    <div class="campo">
+        <label>¿Este reagendamiento lleva nuevo flete?</label>
 
-    <select id="fleteGestionEmpresa">
-        <option value="NO">NO</option>
-        <option value="SI">SÍ</option>
-    </select>
+        <div class="selector-tipo-paciente">
+            <button type="button"
+                    id="btnFleteSiGestionEmpresa"
+                    class="btn-selector">
+                Sí
+            </button>
 
-    <p style="font-size:12px;color:#666">
-        Si selecciona SÍ, se contabilizará según la comuna,
-        el servicio y la tarifa diurna de Empresa.
-    </p>
+            <button type="button"
+                    id="btnFleteNoGestionEmpresa"
+                    class="btn-selector">
+                No
+            </button>
+        </div>
+
+        <input type="hidden"
+               id="fleteGestionEmpresa"
+               value="NO">
+    </div>
 `;
 
 const checkDireccionGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#checkDireccionGestionEmpresa");
@@ -250,6 +273,15 @@ const camposDireccionGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#
 const direccionGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#direccionGestionEmpresa");
 const comunaGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#comunaGestionEmpresa");
 const fleteGestionEmpresa =panelDestinoGestionEmpresa.querySelector("#fleteGestionEmpresa");
+const btnFleteSiGestionEmpresa = panelDestinoGestionEmpresa.querySelector("#btnFleteSiGestionEmpresa");
+const btnFleteNoGestionEmpresa = panelDestinoGestionEmpresa.querySelector("#btnFleteNoGestionEmpresa");
+function seleccionarFleteGestionEmpresa(valor) {
+    fleteGestionEmpresa.value = valor;
+    btnFleteSiGestionEmpresa.classList.toggle("activo", valor === "SI");
+    btnFleteNoGestionEmpresa.classList.toggle("activo", valor === "NO");
+}
+btnFleteSiGestionEmpresa.addEventListener("click", function() {seleccionarFleteGestionEmpresa("SI");});
+btnFleteNoGestionEmpresa.addEventListener("click", function() {seleccionarFleteGestionEmpresa("NO");});
 checkDireccionGestionEmpresa.addEventListener("change", function () {
     camposDireccionGestionEmpresa.hidden = !this.checked;
     if (!this.checked) {direccionGestionEmpresa.value = "";comunaGestionEmpresa.value = "";}
@@ -260,7 +292,7 @@ function prepararDestinoGestionEmpresa(servicio) {
     checkDireccionGestionEmpresa.checked = false;
     camposDireccionGestionEmpresa.hidden = true;
     direccionGestionEmpresa.value = "";
-    fleteGestionEmpresa.value = "NO";
+    seleccionarFleteGestionEmpresa("NO");
 
     panelDestinoGestionEmpresa.querySelector("#direccionActualGestionEmpresa"
     ).textContent = `Dirección actual: ${servicio.direccion || "NO INFORMADA"} - ` + `${servicio.comuna || "COMUNA NO INFORMADA"}`;
@@ -278,86 +310,45 @@ function prepararDestinoGestionEmpresa(servicio) {
 const panelPedidoGestionEmpresa = document.createElement("div");
 
 panelPedidoGestionEmpresa.id = "panelPedidoGestionEmpresa";
-panelPedidoGestionEmpresa.style.cssText =
-    "margin:16px 0;padding:14px;border:1px solid #ddd;" +
-    "border-radius:10px;background:#f8f8f8;";
+panelPedidoGestionEmpresa.className = "ox-pedido-panel";
 
 function normalizarDetalleGestionEmpresa(servicio) {
 
-    const original = String(
-        servicio.detalleSolicitado || ""
-    ).trim();
-
-    if (!original) {
-        return [];
-    }
-
+    const original = String(servicio.detalleSolicitado || "").trim();
+    if (!original) {return [];}
     let datos;
-
-    try {
-        datos = JSON.parse(original);
+    try {datos = JSON.parse(original);
     } catch (_) {
         // Algunas implementaciones antiguas guardan
         // su tipo como texto y no como arreglo JSON.
-        return [{
-            elemento: original,
-            cantidad: 1,
-            formato: "TEXTO"
-        }];
+        return [{elemento: original,cantidad: 1,formato: "TEXTO"}];
     }
 
-    if (!Array.isArray(datos)) {
-        throw new Error(
-            "El pedido original tiene un formato no compatible."
-        );
-    }
-
+    if (!Array.isArray(datos)) {throw new Error("El pedido original tiene un formato no compatible.");}
     return datos.map(function(item) {
 
         const cantidad = Number(item.cantidad);
 
-        if (
-            !Number.isSafeInteger(cantidad) ||
-            cantidad < 0
-        ) {
-            throw new Error(
-                "El pedido original contiene cantidades inválidas."
-            );
-        }
-
-        return {
-            ...item,
-            cantidad: cantidad
-        };
+        if (!Number.isSafeInteger(cantidad) || cantidad < 0) {throw new Error("El pedido original contiene cantidades inválidas.");}
+        return {...item,cantidad: cantidad};
     });
 }
 
 function pintarPedidoGestionEmpresa(servicio) {
 
-    detalleOriginalGestionEmpresa = String(
-        servicio.detalleSolicitado || ""
-    ).trim();
-
-    detalleEditableGestionEmpresa =
-        normalizarDetalleGestionEmpresa(servicio);
-
+    detalleOriginalGestionEmpresa = String(servicio.detalleSolicitado || "").trim();
+    detalleEditableGestionEmpresa = normalizarDetalleGestionEmpresa(servicio);
     detalleGestionModificadoEmpresa = false;
-
     panelPedidoGestionEmpresa.replaceChildren();
-
-    const titulo = document.createElement("h3");
-    titulo.textContent = "PEDIDO AGENDADO";
-    titulo.style.cssText =
-        "color:#611e63;margin:0 0 12px;";
-
+    const titulo = document.createElement("h2");
+    titulo.textContent = "Pedido agendado";
+    titulo.className = "ox-pedido-titulo";
     panelPedidoGestionEmpresa.appendChild(titulo);
 
     if (!detalleEditableGestionEmpresa.length) {
-
         const aviso = document.createElement("p");
         aviso.textContent =
-            "Este servicio no tiene elementos detallados en el registro original.";
-
+            "Este servicio no tiene elementos detallados en el pedido original.";
         panelPedidoGestionEmpresa.appendChild(aviso);
         return;
     }
@@ -365,63 +356,47 @@ function pintarPedidoGestionEmpresa(servicio) {
     detalleEditableGestionEmpresa.forEach(function(item, indice) {
 
         const fila = document.createElement("div");
-
-        fila.style.cssText =
-            "display:flex;align-items:center;gap:10px;" +
-            "margin-bottom:12px;flex-wrap:wrap;";
+        fila.className = "ox-pedido-fila";
 
         const descripcion = document.createElement("span");
-
-        descripcion.style.cssText =
-            "flex:1;min-width:130px;";
+        descripcion.className = "ox-pedido-descripcion";
 
         descripcion.textContent =
-            item.formato === "TEXTO"
-                ? item.elemento
-                : (
-                    item.elemento ||
-                    [item.gas, item.medida]
-                        .filter(Boolean)
-                        .join(" - ") ||
-                    item.nombre ||
-                    "Elemento"
-                );
+            item.elemento ||
+            [item.gas, item.medida].filter(Boolean).join(" - ") ||
+            item.nombre ||
+            "Elemento";
+
+        const controles = document.createElement("div");
+        controles.className = "ox-pedido-controles";
 
         const menos = document.createElement("button");
         menos.type = "button";
+        menos.className = "ox-pedido-boton";
         menos.textContent = "−";
+        menos.setAttribute("aria-label", "Disminuir cantidad");
 
         const cantidad = document.createElement("strong");
+        cantidad.className = "ox-pedido-cantidad";
         cantidad.textContent = String(item.cantidad);
-        cantidad.style.cssText =
-            "min-width:30px;text-align:center;";
 
         const mas = document.createElement("button");
         mas.type = "button";
+        mas.className = "ox-pedido-boton";
         mas.textContent = "+";
-
-        [menos, mas].forEach(function(boton) {
-            boton.style.cssText =
-                "width:40px;height:40px;border:0;" +
-                "border-radius:8px;background:#611e63;" +
-                "color:white;font-size:22px;cursor:pointer;";
-        });
+        mas.setAttribute("aria-label", "Aumentar cantidad");
 
         function cambiarCantidad(diferencia) {
-
             const nuevaCantidad =
                 detalleEditableGestionEmpresa[indice].cantidad +
                 diferencia;
 
-            if (nuevaCantidad < 0 || nuevaCantidad > 1000) {
-                return;
-            }
+            if (nuevaCantidad < 0 || nuevaCantidad > 1000) return;
 
             detalleEditableGestionEmpresa[indice].cantidad =
                 nuevaCantidad;
 
             cantidad.textContent = String(nuevaCantidad);
-
             detalleGestionModificadoEmpresa = true;
         }
 
@@ -433,13 +408,8 @@ function pintarPedidoGestionEmpresa(servicio) {
             cambiarCantidad(1);
         });
 
-        fila.append(
-            descripcion,
-            menos,
-            cantidad,
-            mas
-        );
-
+        controles.append(menos, cantidad, mas);
+        fila.append(descripcion, controles);
         panelPedidoGestionEmpresa.appendChild(fila);
     });
 }
@@ -2295,11 +2265,14 @@ function seleccionarServicioGestionEmpresa(servicio) {
    if (tipoGestionActualEmpresa === "REAGENDAR") {
 
         pintarPedidoGestionEmpresa(servicio);
-        resumenGestionServicioEmpresa.insertAdjacentElement("afterend",panelPedidoGestionEmpresa);
         prepararDestinoGestionEmpresa(servicio);
-        panelPedidoGestionEmpresa.insertAdjacentElement("afterend", panelDestinoGestionEmpresa);
+        nuevaProgramacionGestionEmpresa.insertAdjacentElement("afterend",panelPedidoGestionEmpresa);
+        panelPedidoGestionEmpresa.insertAdjacentElement("afterend",panelDestinoGestionEmpresa);
 
-    } else {panelDestinoGestionEmpresa.remove();}
+    } else {
+        panelPedidoGestionEmpresa.remove();
+        panelDestinoGestionEmpresa.remove();
+    }
 
 
     if (tipoGestionActualEmpresa ==="REAGENDAR") {
