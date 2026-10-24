@@ -195,21 +195,19 @@ let detalleGestionModificadoEmpresa = false;
 const panelDestinoGestionEmpresa = document.createElement("div");
 
 panelDestinoGestionEmpresa.id = "panelDestinoGestionEmpresa";
+panelDestinoGestionEmpresa.className = "form-seccion";
 panelDestinoGestionEmpresa.style.cssText =
-    "margin:16px 0;padding:14px;border:1px solid #ddd;" +
-    "border-radius:10px;background:#f8f8f8;";
+    "margin:16px 0;padding:0;border:none;" +
+    "border-radius:0;background:transparent;box-shadow:none;";
 
 panelDestinoGestionEmpresa.innerHTML = `
-    <h2 class="ox-gestion-titulo">
-        Dirección del servicio
-    </h2>
-
-    <label class="ox-direccion-check"
-           for="checkDireccionGestionEmpresa">
-        <input type="checkbox"
-               id="checkDireccionGestionEmpresa">
-        <span>Realizar este servicio en otra dirección</span>
-    </label>
+    <div class="campo-direccion-check">
+        <label for="checkDireccionGestionEmpresa">
+            <input type="checkbox"
+                   id="checkDireccionGestionEmpresa">
+            <span>Realizar este servicio en otra dirección</span>
+        </label>
+    </div>
 
     <div id="camposDireccionGestionEmpresa" hidden>
 
@@ -238,10 +236,7 @@ panelDestinoGestionEmpresa.innerHTML = `
 
     </div>
 
-    <h2 class="ox-gestion-titulo">
-        Flete
-    </h2>
-
+    <h2 style="margin-top:22px;">Flete</h2>
     <div class="campo">
         <label>¿Este reagendamiento lleva nuevo flete?</label>
 
