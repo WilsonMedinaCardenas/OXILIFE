@@ -669,3 +669,48 @@ label:has(#checkOtraDireccionEmpresa) {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
+
+/* CORRECCIÓN CHECKBOX REAGENDAMIENTO EMPRESA */
+
+/* Contenedor del checkbox y texto */
+#panelDestinoGestionEmpresa .campo-direccion-check,
+#panelDestinoGestionEmpresa label:has(input[type="checkbox"]) {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-weight: 400 !important;
+}
+
+/* Checkbox a la izquierda */
+#panelDestinoGestionEmpresa input[type="checkbox"] {
+    display: inline-block !important;
+    position: static !important;
+    appearance: checkbox !important;
+    -webkit-appearance: checkbox !important;
+    flex: 0 0 18px !important;
+    width: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    max-height: 18px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    accent-color: #611e63;
+}
+
+/* Eliminar negrita */
+#panelDestinoGestionEmpresa .campo-direccion-check,
+#panelDestinoGestionEmpresa .campo-direccion-check label,
+#panelDestinoGestionEmpresa .campo-direccion-check span,
+#panelDestinoGestionEmpresa label:has(input[type="checkbox"]),
+#panelDestinoGestionEmpresa label:has(input[type="checkbox"]) span {
+    font-weight: 400 !important;
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+}
