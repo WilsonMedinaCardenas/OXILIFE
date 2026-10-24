@@ -974,9 +974,58 @@ button.btn-contador-empresa {
     }
 }
 
-.campo-direccion-check label{display:flex;align-items:center;justify-content:flex-start;gap:12px;cursor:pointer;font-weight:500;}
-.campo-direccion-check input[type="checkbox"]{width:18px;height:18px;min-width:18px;margin:0;flex:none;accent-color:#611e63;}
-.campo-direccion-check span{display:inline;}
+/* Checkbox de reagendamiento Empresa */
+#panelDestinoGestionEmpresa .campo-direccion-check {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 16px 0;
+}
+
+#panelDestinoGestionEmpresa .campo-direccion-check label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+
+    width: 100%;
+    margin: 0;
+
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.4;
+    text-align: left;
+    cursor: pointer;
+}
+
+#panelDestinoGestionEmpresa .campo-direccion-check input[type="checkbox"] {
+    appearance: auto;
+    -webkit-appearance: checkbox;
+
+    display: inline-block;
+    position: static;
+
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+
+    flex: 0 0 20px;
+
+    margin: 0;
+    padding: 0;
+
+    accent-color: #611e63;
+    cursor: pointer;
+}
+
+#panelDestinoGestionEmpresa .campo-direccion-check span {
+    display: inline;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.4;
+}
 
 /* Checkbox de dirección alternativa — Empresa */
 #seccionDireccionAlternativaEmpresa label:has(#checkOtraDireccionEmpresa){display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;cursor:pointer;}
@@ -1110,31 +1159,6 @@ button.btn-contador-empresa {
     color: #666;
     font-size: 14px;
     margin-bottom: 12px;
-}
-
-.ox-direccion-check {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
-    cursor: pointer;
-    margin: 16px 0;
-    width: 100%;
-}
-
-.ox-direccion-check input[type="checkbox"] {
-    display: inline-block;
-    flex: 0 0 22px;
-    width: 22px;
-    height: 22px;
-    margin: 0;
-}
-
-.ox-direccion-check span {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.4;
 }
 
 #panelDestinoGestionEmpresa .selector-tipo-paciente {
