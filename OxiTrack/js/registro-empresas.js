@@ -204,9 +204,6 @@ panelDestinoGestionEmpresa.innerHTML = `
         Dirección del servicio
     </h2>
 
-    <div class="ox-direccion-actual"
-         id="direccionActualGestionEmpresa"></div>
-
     <label class="ox-direccion-check"
            for="checkDireccionGestionEmpresa">
         <input type="checkbox"
@@ -293,9 +290,6 @@ function prepararDestinoGestionEmpresa(servicio) {
     camposDireccionGestionEmpresa.hidden = true;
     direccionGestionEmpresa.value = "";
     seleccionarFleteGestionEmpresa("NO");
-
-    panelDestinoGestionEmpresa.querySelector("#direccionActualGestionEmpresa"
-    ).textContent = `Dirección actual: ${servicio.direccion || "NO INFORMADA"} - ` + `${servicio.comuna || "COMUNA NO INFORMADA"}`;
     comunaGestionEmpresa.replaceChildren();
     const inicial = document.createElement("option");
     inicial.value = "";
