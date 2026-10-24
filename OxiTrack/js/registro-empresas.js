@@ -201,13 +201,19 @@ panelDestinoGestionEmpresa.style.cssText =
     "border-radius:0;background:transparent;box-shadow:none;";
 
 panelDestinoGestionEmpresa.innerHTML = `
+   
     <div class="campo-direccion-check">
-        <label for="checkDireccionGestionEmpresa">
+        <label for="checkDireccionGestionEmpresa"
+            style="display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:8px!important;width:100%!important;margin:0!important;font-size:14px!important;font-weight:400!important;text-align:left!important;">
             <input type="checkbox"
-                   id="checkDireccionGestionEmpresa">
-            <span>Realizar este servicio en otra dirección</span>
+                id="checkDireccionGestionEmpresa"
+                style="display:inline-block!important;position:static!important;appearance:checkbox!important;-webkit-appearance:checkbox!important;flex:0 0 16px!important;width:16px!important;min-width:16px!important;max-width:16px!important;height:16px!important;min-height:16px!important;max-height:16px!important;margin:0!important;padding:0!important;accent-color:#611e63;">
+            <span style="display:inline!important;flex:1 1 auto!important;min-width:0!important;font-size:14px!important;font-weight:400!important;">
+                Realizar este servicio en otra dirección
+            </span>
         </label>
     </div>
+
 
     <div id="camposDireccionGestionEmpresa" hidden>
 
