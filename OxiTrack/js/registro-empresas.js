@@ -2717,8 +2717,8 @@ btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
             }
 
             ocultarEmpresa(modalGestionServicioEmpresa);
-            mostrarMensajeGeneral(tipoGestionActualEmpresa === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.", "exito");
-
+            mostrarMensajeGeneral(tipoGestionActualEmpresa === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.","exito");
+            setTimeout(function () {window.location.assign("./index.html");}, 10000);
             servicioGestionSeleccionadoEmpresa = null;
             solicitudGestionIdEmpresa = "";
 

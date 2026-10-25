@@ -2162,10 +2162,11 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
                 throw new Error(resultado.error || "No fue posible gestionar el servicio.");
             }
 
+            
             const gestionRealizada = tipoGestionActual;
             ocultarModal(modalGestionServicio);
             mostrarMensaje(gestionRealizada === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.","exito");
-            setTimeout(function () {ocultarMensaje();}, 30000);
+            setTimeout(function () {window.location.assign("./index.html");}, 10000);
             servicioGestionSeleccionado = null;
             solicitudGestionId = "";
             resultadosGestionServicio.innerHTML = "";
