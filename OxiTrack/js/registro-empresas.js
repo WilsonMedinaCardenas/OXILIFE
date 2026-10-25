@@ -188,6 +188,24 @@ let detalleOriginalGestionEmpresa = "";
 let detalleEditableGestionEmpresa = [];
 let detalleGestionModificadoEmpresa = false;
 
+let productosAutorizadosGestionEmpresa = [];
+
+async function cargarProductosGestionEmpresa(servicio) {
+
+    productosAutorizadosGestionEmpresa = [];
+    const rut = String(servicio.rut || "").trim();
+    if (!rut) {throw new Error("No se encontró el RUT de la empresa del servicio.");}
+    const respuesta = await fetch("/api/oxitrack/?modo=buscarEmpresaRegistro&rut=" +
+        encodeURIComponent(rut),{method: "GET",headers: { Accept: "application/json" },cache: "no-store"});
+    const datos = await respuesta.json();
+    if (!respuesta.ok || datos.ok !== true || !datos.empresa) {throw new Error(datos.error || "No fue posible consultar la empresa.");}
+    const normalizarRut = valor => String(valor || "").replace(/[^0-9kK]/g, "").toUpperCase();
+    if (normalizarRut(datos.empresa.rut) !== normalizarRut(rut)) {throw new Error("La consulta devolvió una empresa diferente.");}
+    if (String(datos.empresa.estado || "").trim().toUpperCase() !== "ACTIVO") {throw new Error("La empresa no está activa.");}
+    productosAutorizadosGestionEmpresa =filtrarProductosPorServicio(parsearProductosEmpresa(datos.empresa.productos),normalizarTextoEmpresa(servicio.servicio || ""));
+    return productosAutorizadosGestionEmpresa;
+}
+
 // ==========================================================
 // DIRECCIÓN Y FLETE DEL REAGENDAMIENTO EMPRESA
 // ==========================================================
@@ -302,8 +320,22 @@ function prepararDestinoGestionEmpresa(servicio) {
     });
 }
 
+const observacionesReagendarEmpresa = document.createElement("div");
+observacionesReagendarEmpresa.className = "campo";
+observacionesReagendarEmpresa.innerHTML = `
+    <label for="inputObservacionesReagendarEmpresa">
+        Observaciones del reagendamiento
+    </label>
+    <textarea
+        id="inputObservacionesReagendarEmpresa"
+        rows="4"
+        maxlength="2000"
+        placeholder="Ingrese indicaciones adicionales para este servicio"
+        style="width:100%;box-sizing:border-box;min-height:100px;"
+    ></textarea>
+`;
+nuevaProgramacionGestionEmpresa.appendChild(observacionesReagendarEmpresa);
 const panelPedidoGestionEmpresa = document.createElement("div");
-
 panelPedidoGestionEmpresa.id = "panelPedidoGestionEmpresa";
 panelPedidoGestionEmpresa.className = "ox-pedido-panel";
 
@@ -345,7 +377,6 @@ function pintarPedidoGestionEmpresa(servicio) {
         aviso.textContent =
             "Este servicio no tiene elementos detallados en el pedido original.";
         panelPedidoGestionEmpresa.appendChild(aviso);
-        return;
     }
 
     detalleEditableGestionEmpresa.forEach(function(item, indice) {
@@ -357,6 +388,7 @@ function pintarPedidoGestionEmpresa(servicio) {
         descripcion.className = "ox-pedido-descripcion";
 
         descripcion.textContent =
+            item.tipoImplementacion ||
             item.elemento ||
             [item.gas, item.medida].filter(Boolean).join(" - ") ||
             item.nombre ||
@@ -395,52 +427,71 @@ function pintarPedidoGestionEmpresa(servicio) {
             detalleGestionModificadoEmpresa = true;
         }
 
-        menos.addEventListener("click", function() {
-            cambiarCantidad(-1);
-        });
-
-        mas.addEventListener("click", function() {
-            cambiarCantidad(1);
-        });
-
+        menos.addEventListener("click", function() {cambiarCantidad(-1);});
+        mas.addEventListener("click", function() {cambiarCantidad(1);});
         controles.append(menos, cantidad, mas);
         fila.append(descripcion, controles);
-        panelPedidoGestionEmpresa.appendChild(fila);
+                panelPedidoGestionEmpresa.appendChild(fila);
     });
+    const tipoServicio = String(servicio.servicio || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    if (!tipoServicio.includes("RECARGA") && !tipoServicio.includes("IMPLEMENT")) {return;}
+    const contenedorAgregar = document.createElement("div");
+    contenedorAgregar.className = "campo";
+    const etiqueta = document.createElement("label");
+    etiqueta.textContent = tipoServicio.includes("IMPLEMENT") ? "Agregar tipo de implementación" : "Agregar gas y medida autorizados";
+    const selector = document.createElement("select");
+    const inicial = document.createElement("option");
+    inicial.value = "";
+    inicial.textContent = "Seleccione una opción";
+    selector.appendChild(inicial);
+
+    if (tipoServicio.includes("RECARGA")) {
+
+        productosAutorizadosGestionEmpresa.forEach(producto => {
+            producto.medidas.forEach(medida => {
+                const opcion = document.createElement("option");
+                opcion.value = JSON.stringify({ gas: producto.gas, medida: medida});
+                opcion.textContent = producto.gas + " — " + medida;
+                selector.appendChild(opcion);
+            });
+        });
+
+    } else {
+
+        Array.from(selectTipoImplementacionEmpresa.options)
+            .filter(opcion => opcion.value && !opcion.disabled)
+            .forEach(opcion => {
+                const nueva = document.createElement("option");
+                nueva.value = JSON.stringify({tipoImplementacion: opcion.value});
+                nueva.textContent = opcion.textContent;
+                selector.appendChild(nueva);});
+    }
+
+    selector.addEventListener("change", function() {
+
+        if (!this.value) return;
+        const nuevo = JSON.parse(this.value);
+        const existente = detalleEditableGestionEmpresa.find(item => {
+            if (nuevo.tipoImplementacion) {return item.tipoImplementacion === nuevo.tipoImplementacion;}
+            return item.gas === nuevo.gas && item.medida === nuevo.medida;});
+        if (existente) {("El elemento ya está incluido. Modifique su cantidad con + y −.");this.value = "";return;}
+        detalleEditableGestionEmpresa.push({...nuevo,cantidad: 1});
+        const pedidoActualizado = detalleEditableGestionEmpresa.map(item => ({ ...item }));
+        pintarPedidoGestionEmpresa({...servicio,detalleSolicitado: JSON.stringify(pedidoActualizado)});
+        detalleGestionModificadoEmpresa = true;});
+    contenedorAgregar.append(etiqueta, selector);
+    panelPedidoGestionEmpresa.appendChild(contenedorAgregar);
+
 }
 
 function obtenerPedidoReagendadoEmpresa() {
 
-    if (!detalleGestionModificadoEmpresa) {
-        return {
-            modificar: "NO",
-            detalle: ""
-        };
-    }
+    if (!detalleGestionModificadoEmpresa) {return { modificar: "NO", detalle: "" };}
+    const pedidoFinal = detalleEditableGestionEmpresa.filter(item => Number(item.cantidad) > 0).map(item => ({ ...item }));
+    if (!pedidoFinal.length) {throw new Error("Debe mantener o agregar al menos un elemento con cantidad mayor que cero.");}
+    if (pedidoFinal.some(item => item.formato === "TEXTO")) {throw new Error("El pedido original tiene un formato antiguo que no admite modificación directa.");}
+    return {modificar: "SI",detalle: JSON.stringify(pedidoFinal)};
 
-    if (!detalleEditableGestionEmpresa.some(function(item) {
-        return item.cantidad > 0;
-    })) {
-        throw new Error(
-            "El pedido debe conservar al menos un elemento."
-        );
-    }
-
-    if (detalleEditableGestionEmpresa.some(function(item) {
-        return item.formato === "TEXTO";
-    })) {
-        throw new Error(
-            "Esta implementación antigua guarda el tipo como texto. " +
-            "Su cantidad requiere adaptar primero el formato del backend."
-        );
-    }
-
-    return {
-        modificar: "SI",
-        detalle: JSON.stringify(
-            detalleEditableGestionEmpresa
-        )
-    };
 }
 
 function configurarMayusculasEmpresa() {
@@ -2235,7 +2286,7 @@ async function buscarServiciosGestionEmpresa(buscar) {
 // SELECCIONAR SERVICIO
 // ==========================================================
 
-function seleccionarServicioGestionEmpresa(servicio) {
+async function seleccionarServicioGestionEmpresa(servicio) {
 
     servicioGestionSeleccionadoEmpresa = servicio;
     solicitudGestionIdEmpresa = "";
@@ -2257,9 +2308,26 @@ function seleccionarServicioGestionEmpresa(servicio) {
     mostrarEmpresa(detalleGestionServicioEmpresa);
     panelPedidoGestionEmpresa.remove();
 
-   if (tipoGestionActualEmpresa === "REAGENDAR") {
+      if (tipoGestionActualEmpresa === "REAGENDAR") {
 
-        pintarPedidoGestionEmpresa(servicio);
+        const tipoServicio = String(servicio.servicio || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+
+        try {
+            if (tipoServicio.includes("RECARGA")) {await cargarProductosGestionEmpresa(servicio);}
+            if (tipoServicio.includes("IMPLEMENT")) {
+                const respuestaCatalogo = await fetch("/api/oxitrack/?modo=catalogoRegistro",{ cache: "no-store" });
+                const catalogo = await respuestaCatalogo.json();
+                if (!respuestaCatalogo.ok || catalogo.ok !== true) {throw new Error("No se pudo cargar el catálogo de implementaciones.");}
+                selectTipoImplementacionEmpresa.replaceChildren();
+                const inicial = new Option("Seleccione un tipo", "");
+                selectTipoImplementacionEmpresa.appendChild(inicial);
+                (catalogo.tiposImplementacion || []).forEach(tipo => {
+                    const valor = String(tipo || "").trim();
+                    if (valor) {selectTipoImplementacionEmpresa.appendChild(new Option(valor, valor));}
+                });
+            }
+            pintarPedidoGestionEmpresa(servicio);
+        } catch (error) {mostrarMensajeGeneral(error.message || "No fue posible cargar los productos autorizados.","error");return;}
         prepararDestinoGestionEmpresa(servicio);
         nuevaProgramacionGestionEmpresa.insertAdjacentElement("afterend",panelPedidoGestionEmpresa);
         panelPedidoGestionEmpresa.insertAdjacentElement("afterend",panelDestinoGestionEmpresa);
@@ -2683,6 +2751,7 @@ btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
                 payload.append("fechaProgramada",inputNuevaFechaGestionEmpresa.value);
                 payload.append("ventanaHoraria",inputAtencionInmediataGestionEmpresa.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestionEmpresa.value);
                 payload.append("operarioAsignado",selectNuevoOperarioGestionEmpresa.value);
+                payload.append("observacionesReagendamiento",document.getElementById("inputObservacionesReagendarEmpresa").value.trim());
                 const pedidoReagendado = obtenerPedidoReagendadoEmpresa();
                 payload.append("modificarDetalle",pedidoReagendado.modificar);
                 if (pedidoReagendado.modificar === "SI") {

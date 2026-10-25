@@ -150,8 +150,22 @@ let solicitudGestionId = "";
 // PEDIDO EDITABLE - REAGENDAMIENTO PARTICULAR
 // ==========================================================
 
-const panelPedidoGestionParticular =
-    document.getElementById("panelPedidoGestionParticular");
+const panelPedidoGestionParticular = document.getElementById("panelPedidoGestionParticular");
+const observacionesReagendarParticular = document.createElement("div");
+observacionesReagendarParticular.className = "campo";
+observacionesReagendarParticular.innerHTML = `
+    <label for="inputObservacionesReagendarParticular">
+        Observaciones del reagendamiento
+    </label>
+    <textarea
+        id="inputObservacionesReagendarParticular"
+        rows="4"
+        maxlength="2000"
+        placeholder="Ingrese indicaciones adicionales para este servicio"
+        style="width:100%;box-sizing:border-box;min-height:100px;"
+    ></textarea>
+`;
+nuevaProgramacionGestion.appendChild(observacionesReagendarParticular);
 
 let detalleEditableGestionParticular = [];
 let detalleOriginalGestionParticular = "";
@@ -163,8 +177,7 @@ function pintarPedidoGestionParticular(servicio) {
     panelPedidoGestionParticular.replaceChildren();
 
     detalleEditableGestionParticular = [];
-    detalleOriginalGestionParticular =
-        String(servicio.detalleSolicitado || "").trim();
+    detalleOriginalGestionParticular = String(servicio.detalleSolicitado || "").trim();
 
     detalleGestionModificadoParticular = false;
     pedidoEditableGestionParticular = false;
@@ -237,27 +250,53 @@ function pintarPedidoGestionParticular(servicio) {
         cantidad: Number(item.cantidad)
     }));
 
+    const selectorAgregar = document.createElement("div");
+    selectorAgregar.className = "campo";
+    const etiquetaAgregar = document.createElement("label");
+    etiquetaAgregar.textContent = tipoServicio.includes("IMPLEMENT") ? "Agregar otro tipo de implementación" : "Agregar otra medida de recarga";
+    const selectAgregar = document.createElement("select");
+    const opcionInicial = document.createElement("option");
+    opcionInicial.value = "";
+    opcionInicial.textContent = "Seleccione una opción";
+    selectAgregar.appendChild(opcionInicial);
+    const catalogo = tipoServicio.includes("IMPLEMENT") ? Array.from(selectTipoImplementacion.options)
+            .filter(opcion => !opcion.disabled).map(opcion => String(opcion.value || "").trim()).filter(Boolean)
+        : catalogoCilindrosRecarga.map(elemento => String(elemento || "").trim()).filter(Boolean);
+    [...new Set(catalogo)].forEach(function(elemento) {
+        const opcion = document.createElement("option");
+        opcion.value = elemento;
+        opcion.textContent = elemento;
+        selectAgregar.appendChild(opcion);
+    });
+    selectorAgregar.append(etiquetaAgregar, selectAgregar);
+        selectAgregar.addEventListener("change", function() {
+        const elemento = String(this.value || "").trim();
+        if (!elemento) return;
+        const existente = detalleEditableGestionParticular.find(item => String(item.elemento || "").trim() === elemento);
+        if (existente) {alert("Este elemento ya está incluido. Modifique su cantidad con + y −.");this.value = "";return;}
+        const pedidoActualizado = detalleEditableGestionParticular.map(item => ({ ...item }));
+        pedidoActualizado.push({elemento: elemento,cantidad: 1});
+        pintarPedidoGestionParticular({...servicio,detalleSolicitado: JSON.stringify(pedidoActualizado)});
+        detalleGestionModificadoParticular = true;
+        pedidoEditableGestionParticular = true;
+    });
+
     detalleEditableGestionParticular.forEach(function(item, indice) {
 
         const fila = document.createElement("div");
         fila.className = "ox-pedido-fila";
-
         const descripcion = document.createElement("span");
         descripcion.className = "ox-pedido-descripcion";
         descripcion.textContent = String(item.elemento);
-
         const controles = document.createElement("div");
         controles.className = "ox-pedido-controles";
-
         const menos = document.createElement("button");
         menos.type = "button";
         menos.className = "ox-pedido-boton";
         menos.textContent = "−";
-
         const cantidad = document.createElement("strong");
         cantidad.className = "ox-pedido-cantidad";
         cantidad.textContent = String(item.cantidad);
-
         const mas = document.createElement("button");
         mas.type = "button";
         mas.className = "ox-pedido-boton";
@@ -265,39 +304,31 @@ function pintarPedidoGestionParticular(servicio) {
 
         function modificarCantidad(diferencia) {
 
-            const nueva =
-                detalleEditableGestionParticular[indice].cantidad +
-                diferencia;
-
+            const nueva = detalleEditableGestionParticular[indice].cantidad + diferencia;
             if (nueva < 0 || nueva > 1000) return;
-
             detalleEditableGestionParticular[indice].cantidad = nueva;
             cantidad.textContent = String(nueva);
-
             detalleGestionModificadoParticular = true;
+
         }
 
-        menos.addEventListener("click", function() {
-            modificarCantidad(-1);
-        });
-
-        mas.addEventListener("click", function() {
-            modificarCantidad(1);
-        });
-
+        menos.addEventListener("click", function() {modificarCantidad(-1);});
+        mas.addEventListener("click", function() {modificarCantidad(1);});
         controles.append(menos, cantidad, mas);
         fila.append(descripcion, controles);
-
         panelPedidoGestionParticular.appendChild(fila);
     });
+    panelPedidoGestionParticular.appendChild(selectorAgregar);
 }
 
 function obtenerPedidoReagendadoParticular() {
 
-    if (!detalleGestionModificadoParticular) {return {modificar: "NO",detalle: ""};}
+    if (!detalleGestionModificadoParticular) {return { modificar: "NO", detalle: "" };}
     if (!pedidoEditableGestionParticular) {throw new Error("El pedido de este servicio no admite edición.");}
-    if (!detalleEditableGestionParticular.some(item => item.cantidad > 0)) {throw new Error("El pedido debe conservar al menos un elemento.");}
-    return {modificar: "SI",detalle: JSON.stringify(detalleEditableGestionParticular)};
+    const pedidoFinal = detalleEditableGestionParticular.filter(item => Number(item.cantidad) > 0);
+    if (!pedidoFinal.length) {throw new Error("Debe conservar o agregar al menos un elemento con cantidad mayor que cero.");}
+    return {modificar: "SI",detalle: JSON.stringify(pedidoFinal)};
+
 }
 
 let temporizadorBusquedaGestion = null;
@@ -2138,6 +2169,7 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
                 payload.append("fechaProgramada",inputNuevaFechaGestion.value);
                 payload.append("ventanaHoraria",inputAtencionInmediataGestion.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestion.value);
                 payload.append("operarioAsignado",selectNuevoOperarioGestion.value);
+                payload.append("observacionesReagendamiento",document.getElementById("inputObservacionesReagendarParticular").value.trim());
                 const pedidoReagendado = obtenerPedidoReagendadoParticular();
                 payload.append("modificarDetalle",pedidoReagendado.modificar);
                 if (pedidoReagendado.modificar === "SI") {payload.append("detalleSolicitado",pedidoReagendado.detalle);}
