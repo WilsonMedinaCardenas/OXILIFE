@@ -334,7 +334,15 @@ observacionesReagendarEmpresa.innerHTML = `
         style="width:100%;box-sizing:border-box;min-height:100px;"
     ></textarea>
 `;
-nuevaProgramacionGestionEmpresa.appendChild(observacionesReagendarEmpresa);
+
+// BLOQUE INDEPENDIENTE PARA LA DIRECCIÓN DEL REAGENDAMIENTO
+const panelDireccionGestionEmpresa = document.createElement("div");
+panelDireccionGestionEmpresa.id = "panelDireccionGestionEmpresa";
+panelDireccionGestionEmpresa.className = "form-seccion";
+panelDireccionGestionEmpresa.style.cssText = "margin:16px 0;padding:0;border:none;" + "border-radius:0;background:transparent;box-shadow:none;";
+
+// Mover los controles existentes, conservando sus eventos.
+panelDireccionGestionEmpresa.append(panelDestinoGestionEmpresa.querySelector(".campo-direccion-check"),camposDireccionGestionEmpresa);
 const panelPedidoGestionEmpresa = document.createElement("div");
 panelPedidoGestionEmpresa.id = "panelPedidoGestionEmpresa";
 panelPedidoGestionEmpresa.className = "ox-pedido-panel";
@@ -2329,11 +2337,18 @@ async function seleccionarServicioGestionEmpresa(servicio) {
             pintarPedidoGestionEmpresa(servicio);
         } catch (error) {mostrarMensajeGeneral(error.message || "No fue posible cargar los productos autorizados.","error");return;}
         prepararDestinoGestionEmpresa(servicio);
-        nuevaProgramacionGestionEmpresa.insertAdjacentElement("afterend",panelPedidoGestionEmpresa);
-        panelPedidoGestionEmpresa.insertAdjacentElement("afterend",panelDestinoGestionEmpresa);
+        
+        // DIRECCIÓN → PEDIDO → OBSERVACIONES → FLETE
+
+        nuevaProgramacionGestionEmpresa.insertAdjacentElement("afterend",panelDireccionGestionEmpresa);
+        panelDireccionGestionEmpresa.insertAdjacentElement("afterend",panelPedidoGestionEmpresa);
+        panelPedidoGestionEmpresa.insertAdjacentElement("afterend",observacionesReagendarEmpresa);
+        observacionesReagendarEmpresa.insertAdjacentElement("afterend",panelDestinoGestionEmpresa);
 
     } else {
+        panelDireccionGestionEmpresa.remove();
         panelPedidoGestionEmpresa.remove();
+        observacionesReagendarEmpresa.remove();
         panelDestinoGestionEmpresa.remove();
     }
 

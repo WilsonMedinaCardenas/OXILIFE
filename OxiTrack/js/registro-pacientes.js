@@ -165,7 +165,17 @@ observacionesReagendarParticular.innerHTML = `
         style="width:100%;box-sizing:border-box;min-height:100px;"
     ></textarea>
 `;
-nuevaProgramacionGestion.appendChild(observacionesReagendarParticular);
+// ORDEN DEL REAGENDAMIENTO PARTICULAR:
+// DIRECCIÓN → PEDIDO → OBSERVACIONES → FLETE
+
+const opcionesReagendamientoParticular = document.getElementById("opcionesReagendamiento");
+const bloqueDireccionReagendarParticular = opcionesReagendamientoParticular.querySelector(".campo-direccion-check");
+
+// Mover dirección y sus campos antes del pedido.
+panelPedidoGestionParticular.before(bloqueDireccionReagendarParticular,camposOtraDireccionReagendar);
+
+// Colocar observaciones después del pedido y antes del flete.
+opcionesReagendamientoParticular.before(observacionesReagendarParticular);
 
 let detalleEditableGestionParticular = [];
 let detalleOriginalGestionParticular = "";
