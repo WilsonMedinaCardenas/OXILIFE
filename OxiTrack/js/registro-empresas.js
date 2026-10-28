@@ -344,6 +344,36 @@ panelDireccionGestionEmpresa.style.cssText = "margin:16px 0;padding:0;border:non
 // Mover los controles existentes, conservando sus eventos.
 panelDireccionGestionEmpresa.append(panelDestinoGestionEmpresa.querySelector(".campo-direccion-check"),camposDireccionGestionEmpresa);
 const panelPedidoGestionEmpresa = document.createElement("div");
+// Estilos compactos del pedido de reagendamiento Empresa.
+const estiloPedidoGestionEmpresa = document.createElement("style");
+
+estiloPedidoGestionEmpresa.textContent = `
+    #panelPedidoGestionEmpresa .ox-pedido-fila {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    #panelPedidoGestionEmpresa .ox-pedido-descripcion {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+
+    #panelPedidoGestionEmpresa .ox-pedido-controles {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+`;
+
+document.head.appendChild(estiloPedidoGestionEmpresa);
 panelPedidoGestionEmpresa.id = "panelPedidoGestionEmpresa";
 panelPedidoGestionEmpresa.className = "ox-pedido-panel";
 
@@ -2316,6 +2346,30 @@ async function seleccionarServicioGestionEmpresa(servicio) {
     mostrarEmpresa(detalleGestionServicioEmpresa);
     panelPedidoGestionEmpresa.remove();
 
+    // Mostrar programación y botones sin esperar el catálogo.
+    if (tipoGestionActualEmpresa === "REAGENDAR") {
+        mostrarEmpresa(nuevaProgramacionGestionEmpresa);
+
+        inputAtencionInmediataGestionEmpresa.value = "NO";
+        btnAtencionInmediataGestionEmpresa.classList.remove("activo");
+        selectNuevaVentanaGestionEmpresa.disabled = false;
+        const hoy = obtenerFechaLocalEmpresa();
+        inputNuevaFechaGestionEmpresa.value = hoy;
+        inputNuevaFechaGestionEmpresa.min = hoy;
+
+        cargarOperariosGestionEmpresa(servicio.operarioAsignado);
+        actualizarDisponibilidadGestionEmpresa();
+        btnConfirmarGestionServicioEmpresa.textContent = "Confirmar reagendamiento";
+
+        // Evitar confirmar mientras se comprueban productos.
+        btnConfirmarGestionServicioEmpresa.disabled = true;
+        btnConfirmarGestionServicioEmpresa.textContent = "Cargando pedido...";
+        panelPedidoGestionEmpresa.replaceChildren();
+        const aviso = document.createElement("p");
+        aviso.textContent = "Consultando productos autorizados...";
+        panelPedidoGestionEmpresa.appendChild(aviso);
+    }
+
       if (tipoGestionActualEmpresa === "REAGENDAR") {
 
         const tipoServicio = String(servicio.servicio || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -2344,6 +2398,8 @@ async function seleccionarServicioGestionEmpresa(servicio) {
         panelDireccionGestionEmpresa.insertAdjacentElement("afterend",panelPedidoGestionEmpresa);
         panelPedidoGestionEmpresa.insertAdjacentElement("afterend",observacionesReagendarEmpresa);
         observacionesReagendarEmpresa.insertAdjacentElement("afterend",panelDestinoGestionEmpresa);
+        btnConfirmarGestionServicioEmpresa.disabled = false;
+        btnConfirmarGestionServicioEmpresa.textContent = "Confirmar reagendamiento";
 
     } else {
         panelDireccionGestionEmpresa.remove();

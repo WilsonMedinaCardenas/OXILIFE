@@ -151,6 +151,60 @@ let solicitudGestionId = "";
 // ==========================================================
 
 const panelPedidoGestionParticular = document.getElementById("panelPedidoGestionParticular");
+// Estilos compactos del modal de reagendamiento Particular.
+const estiloGestionParticular = document.createElement("style");
+
+estiloGestionParticular.textContent = `
+    #modalGestionServicio .ox-pedido-fila {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    #modalGestionServicio .ox-pedido-descripcion {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+
+    #modalGestionServicio .ox-pedido-controles {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    #modalGestionServicio .campo-direccion-check label {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: 100%;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        text-align: left !important;
+    }
+
+    #modalGestionServicio .campo-direccion-check span {
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        line-height: 1.4;
+    }
+
+    #modalGestionServicio .campo-direccion-check input[type="checkbox"] {
+        flex: 0 0 18px;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+    }
+`;
+
+document.head.appendChild(estiloGestionParticular);
 const observacionesReagendarParticular = document.createElement("div");
 observacionesReagendarParticular.className = "campo";
 observacionesReagendarParticular.innerHTML = `
