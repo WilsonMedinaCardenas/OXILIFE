@@ -922,38 +922,18 @@ btnDestinoPaciente.addEventListener("click",function () {
 
 function pintarDetalleServicioEmpresa() {
 
-    contenedorProductosEmpresa.innerHTML =
-        "";
-
-    ocultarEmpresa(
-        seccionTipoImplementacionEmpresa
-    );
-
-    const servicio =
-        servicioEmpresaActual;
-
+    contenedorProductosEmpresa.innerHTML = "";
+    ocultarEmpresa(seccionTipoImplementacionEmpresa);
+    const servicio = servicioEmpresaActual;
 
     // IMPLEMENTACIÓN
     // posteriormente TIPOS vendrá del catálogo real
 
-    if (
-        servicio.includes(
-            "IMPLEMENTACIÓN"
-        )
-    ) {
-
-        mostrarEmpresa(
-            seccionTipoImplementacionEmpresa
-        );
-
+    if (servicio.includes("IMPLEMENTACIÓN")) {
+        mostrarEmpresa(seccionTipoImplementacionEmpresa);
         cargarTiposImplementacionPrueba();
-
-        ocultarEmpresa(
-            seccionDetalleEmpresa
-        );
-
+        ocultarEmpresa(seccionDetalleEmpresa);
         return;
-
     }
 
 
@@ -961,60 +941,27 @@ function pintarDetalleServicioEmpresa() {
     // La lógica específica se conectará después
     // según catálogo.
 
-    if (
-        servicio === "RETIRO" ||
-        servicio === "VENTA" ||
-        servicio === "VISITA TÉCNICA"
-    ) {
-
-        ocultarEmpresa(
-            seccionDetalleEmpresa
-        );
-
+    if (servicio === "VENTA" || servicio === "VISITA TÉCNICA") {
+        ocultarEmpresa(seccionDetalleEmpresa);
         return;
-
     }
 
 
-    if (
-        !servicio.includes("RECARGA")
-    ) {
-
-        ocultarEmpresa(
-            seccionDetalleEmpresa
-        );
-
+    if (!servicio.includes("RECARGA") && servicio !== "RETIRO") {
+        ocultarEmpresa(seccionDetalleEmpresa);
         return;
-
     }
 
-
-    const productos =
-        parsearProductosEmpresa(
-            empresaSeleccionada.productos
-        );
-
-
-    const filtrados =
-        filtrarProductosPorServicio(
-            productos,
-            servicio
-        );
-
+    const productos = parsearProductosEmpresa(empresaSeleccionada.productos);
+    const filtrados = filtrarProductosPorServicio(productos,servicio);
 
     if (!filtrados.length) {
-
-        ocultarEmpresa(
-            seccionDetalleEmpresa
-        );
-
+        ocultarEmpresa(seccionDetalleEmpresa);
         mostrarMensajeGeneral(
             "La empresa no tiene productos habilitados para el servicio seleccionado.",
             "error"
         );
-
         return;
-
     }
 
 
@@ -1161,9 +1108,7 @@ function crearGrupoProducto(producto) {
      * OXÍGENO / AIRE / NITRÓGENO / CO₂...
      */
     const titulo = document.createElement("h3");
-
-    titulo.textContent =
-        String(producto.gas || "").trim();
+    titulo.textContent = String(producto.gas || "").trim();
 
     /*
      * Dejamos el layout crítico directamente aquí.
@@ -1182,7 +1127,6 @@ function crearGrupoProducto(producto) {
 
     grupo.appendChild(titulo);
 
-
     /*
      * UNA FILA POR CADA MEDIDA
      *
@@ -1192,15 +1136,9 @@ function crearGrupoProducto(producto) {
     producto.medidas.forEach(function (medida) {
 
         const fila = document.createElement("div");
-
         fila.className = "fila-producto-empresa";
-
-        fila.dataset.gas =
-            String(producto.gas || "").trim();
-
-        fila.dataset.medida =
-            String(medida || "").trim();
-
+        fila.dataset.gas = String(producto.gas || "").trim();
+        fila.dataset.medida = String(medida || "").trim();
 
         /*
          * ESTE ES EL CAMBIO IMPORTANTE.
@@ -1228,13 +1166,8 @@ function crearGrupoProducto(producto) {
         // =====================================================
 
         const nombre = document.createElement("span");
-
-        nombre.className =
-            "nombre-medida-empresa";
-
-        nombre.textContent =
-            String(medida || "").trim();
-
+        nombre.className = "nombre-medida-empresa";
+        nombre.textContent = String(medida || "").trim();
         nombre.style.cssText = `
             display:flex;
             align-items:center;
@@ -1255,16 +1188,10 @@ function crearGrupoProducto(producto) {
         // BOTÓN MENOS
         // =====================================================
 
-        const menos =
-            document.createElement("button");
-
+        const menos = document.createElement("button");
         menos.type = "button";
-
-        menos.className =
-            "btn-contador-empresa";
-
+        menos.className = "btn-contador-empresa";
         menos.textContent = "−";
-
         menos.style.cssText = `
             display:flex;
             align-items:center;
@@ -1288,21 +1215,14 @@ function crearGrupoProducto(producto) {
             box-sizing:border-box;
         `;
 
-
         // =====================================================
         // CONTADOR
         // =====================================================
 
-        const cantidad =
-            document.createElement("span");
-
-        cantidad.className =
-            "cantidad-producto-empresa";
-
+        const cantidad = document.createElement("span");
+        cantidad.className = "cantidad-producto-empresa";
         cantidad.textContent = "0";
-
         cantidad.dataset.cantidad = "0";
-
         cantidad.style.cssText = `
             display:flex;
             align-items:center;
@@ -1322,21 +1242,14 @@ function crearGrupoProducto(producto) {
             box-sizing:border-box;
         `;
 
-
         // =====================================================
         // BOTÓN MÁS
         // =====================================================
 
-        const mas =
-            document.createElement("button");
-
+        const mas = document.createElement("button");
         mas.type = "button";
-
-        mas.className =
-            "btn-contador-empresa";
-
+        mas.className = "btn-contador-empresa";
         mas.textContent = "+";
-
         mas.style.cssText = `
             display:flex;
             align-items:center;
@@ -1360,84 +1273,46 @@ function crearGrupoProducto(producto) {
             box-sizing:border-box;
         `;
 
-
         // =====================================================
         // EVENTOS
         // =====================================================
 
-        menos.addEventListener(
-            "click",
-            function () {
-
-                modificarCantidad(
-                    cantidad,
-                    -1
-                );
-
-            }
-        );
-
-
-        mas.addEventListener(
-            "click",
-            function () {
-
-                modificarCantidad(
-                    cantidad,
-                    1
-                );
-
-            }
-        );
-
+        menos.addEventListener("click",function () {modificarCantidad(cantidad,-1);});
+        mas.addEventListener("click",function () {modificarCantidad(cantidad,1);});
 
         /*
          * ORDEN EXACTO DE IZQUIERDA A DERECHA:
          *
          * MEDIDA | MENOS | CONTADOR | MÁS
          */
-        fila.append(
-            nombre,
-            menos,
-            cantidad,
-            mas
-        );
+        fila.append(nombre,menos,cantidad,mas);
 
+        if (servicioEmpresaActual === "RETIRO") {
+            const eliminar = document.createElement("button");
+            eliminar.type = "button";
+            eliminar.title = "Quitar esta medida del retiro";
+            eliminar.setAttribute("aria-label","Quitar " + producto.gas + " " + medida);
+            eliminar.textContent = "🗑";
+            eliminar.style.cssText =
+                "width:34px;height:38px;border:0;" +
+                "border-radius:8px;background:#963636;" +
+                "color:white;cursor:pointer;font-size:17px;";
+            fila.style.gridTemplateColumns = "minmax(60px,1fr) 38px 32px 38px 34px";
+            eliminar.addEventListener("click", function () {fila.remove();});
+            fila.appendChild(eliminar);
+        }
 
         grupo.appendChild(fila);
 
     });
-
-
-    contenedorProductosEmpresa.appendChild(
-        grupo
-    );
-
+    contenedorProductosEmpresa.appendChild(grupo);
 }
 
-
-function modificarCantidad(
-    elemento,
-    cambio
-) {
-
-    const actual =
-        Number(
-            elemento.dataset.cantidad || 0
-        );
-
-    const nuevo =
-        Math.max(
-            0,
-            actual + cambio
-        );
-
-    elemento.dataset.cantidad =
-        String(nuevo);
-
-    elemento.textContent =
-        String(nuevo);
-
+function modificarCantidad(elemento,cambio) {
+    const actual =Number(elemento.dataset.cantidad || 0);
+    const nuevo =Math.max( 0, actual + cambio);
+    elemento.dataset.cantidad = String(nuevo);
+    elemento.textContent = String(nuevo);
 }
 
 
@@ -1894,8 +1769,11 @@ function validarFormularioEmpresa() {
             throw new Error("Complete la dirección y comuna del paciente.");
         }
     }
-    if (servicioEmpresaActual.includes("RECARGA") && !obtenerDetalleSolicitado().length) {
-        throw new Error("Indique al menos una cantidad para la recarga.");
+    if ((servicioEmpresaActual.includes("RECARGA") || servicioEmpresaActual === "RETIRO") && !obtenerDetalleSolicitado().length) {
+        throw new Error(servicioEmpresaActual === "RETIRO"
+                ? "Debe seleccionar al menos un cilindro para retirar."
+                : "Indique al menos una cantidad para la recarga."
+        );
     }
 
     if (servicioEmpresaActual.includes("IMPLEMENTACIÓN") && !selectTipoImplementacionEmpresa.value) {
