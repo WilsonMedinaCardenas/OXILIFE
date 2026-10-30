@@ -236,6 +236,44 @@ let detalleOriginalGestionParticular = "";
 let detalleGestionModificadoParticular = false;
 let pedidoEditableGestionParticular = false;
 
+function mostrarAvisoPedidoParticular(mensaje) {
+    let modal = document.getElementById("modalAvisoPedidoParticular");
+
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "modalAvisoPedidoParticular";
+        modal.className = "modal";
+        modal.hidden = true;
+
+        const contenido = document.createElement("div");
+        contenido.className = "modal-contenido";
+        contenido.style.cssText = "max-width:400px;text-align:center;";
+
+        const titulo = document.createElement("h2");
+        titulo.textContent = "Aviso de OxiTrack";
+        titulo.style.color = "#611e63";
+
+        const texto = document.createElement("p");
+        texto.id = "textoAvisoPedidoParticular";
+        texto.style.cssText = "margin:20px 0;line-height:1.5;";
+
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = "btn-principal";
+        boton.textContent = "Aceptar";
+        boton.addEventListener("click", function () {
+            modal.hidden = true;
+        });
+
+        contenido.append(titulo, texto, boton);
+        modal.appendChild(contenido);
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById("textoAvisoPedidoParticular").textContent = mensaje;
+    modal.hidden = false;
+}
+
 function pintarPedidoGestionParticular(servicio) {
 
     panelPedidoGestionParticular.replaceChildren();
@@ -291,7 +329,6 @@ function pintarPedidoGestionParticular(servicio) {
 
     if (
         !Array.isArray(datos) ||
-        !datos.length ||
         datos.some(item =>
             !item ||
             typeof item !== "object" ||
@@ -337,7 +374,14 @@ function pintarPedidoGestionParticular(servicio) {
         const elemento = String(this.value || "").trim();
         if (!elemento) return;
         const existente = detalleEditableGestionParticular.find(item => String(item.elemento || "").trim() === elemento);
-        if (existente) {alert("Este elemento ya está incluido. Modifique su cantidad con + y −.");this.value = "";return;}
+        if (existente) {
+            this.value = "";
+            mostrarAvisoPedidoParticular(
+                "Este elemento ya está incluido en el pedido. " +
+                "Puede modificar su cantidad utilizando los botones + y −."
+            );
+            return;
+        }
         const pedidoActualizado = detalleEditableGestionParticular.map(item => ({ ...item }));
         pedidoActualizado.push({elemento: elemento,cantidad: 1});
         pintarPedidoGestionParticular({...servicio,detalleSolicitado: JSON.stringify(pedidoActualizado)});
@@ -378,7 +422,44 @@ function pintarPedidoGestionParticular(servicio) {
 
         menos.addEventListener("click", function() {modificarCantidad(-1);});
         mas.addEventListener("click", function() {modificarCantidad(1);});
-        controles.append(menos, cantidad, mas);
+        const eliminar = document.createElement("button");
+        eliminar.type = "button";
+        eliminar.className = "ox-pedido-boton";
+        eliminar.title = "Eliminar este elemento del pedido";
+        eliminar.setAttribute("aria-label", "Eliminar " + item.elemento);
+        eliminar.style.cssText =
+            "background:#b42335;color:#fff;flex:0 0 34px;" +
+            "width:34px;min-width:34px;height:38px;" +
+            "display:inline-flex;align-items:center;justify-content:center;";
+
+        eliminar.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="17" height="17" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 10v7"/>
+                <path d="M14 10v7"/>
+            </svg>
+        `;
+
+        eliminar.addEventListener("click", function () {
+            const pedidoActualizado = detalleEditableGestionParticular
+                .filter((_, posicion) => posicion !== indice)
+                .map(elemento => ({ ...elemento }));
+
+            pintarPedidoGestionParticular({
+                ...servicio,
+                detalleSolicitado: JSON.stringify(pedidoActualizado)
+            });
+
+            detalleGestionModificadoParticular = true;
+        });
+
+        controles.append(menos, cantidad, mas, eliminar);
         fila.append(descripcion, controles);
         panelPedidoGestionParticular.appendChild(fila);
     });
