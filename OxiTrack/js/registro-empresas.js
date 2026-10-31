@@ -564,6 +564,7 @@ document.addEventListener("DOMContentLoaded",inicializarRegistroEmpresa);
 
 async function inicializarRegistroEmpresa() {
 
+    seccionDireccionAlternativaEmpresa.before(seccionProgramacionEmpresa);
     const hoy = obtenerFechaLocalEmpresa();
     configurarMayusculasEmpresa();
 
@@ -818,43 +819,23 @@ function pintarEmpresaSeleccionada() {
 
     if (!empresaSeleccionada) return;
 
-    empresaNombre.textContent =
-        empresaSeleccionada.nombre || "-";
-
-    empresaRut.textContent =
-        ocultarRutEmpresa(
-            empresaSeleccionada.rut
-        );
-
-    empresaDireccion.textContent =
-        empresaSeleccionada.direccion || "-";
-
-    empresaComuna.textContent =
-        empresaSeleccionada.comuna || "-";
-
-    mostrarEmpresa(
-        seccionEmpresaSeleccionada
-    );
-
+    empresaNombre.textContent = empresaSeleccionada.nombre || "-";
+    empresaRut.textContent = ocultarRutEmpresa(empresaSeleccionada.rut);
+    empresaDireccion.textContent = empresaSeleccionada.direccion || "-";
+    empresaComuna.textContent = empresaSeleccionada.comuna || "-";
+    mostrarEmpresa(seccionEmpresaSeleccionada);
     procesarModalidadEmpresa();
-
     pintarDetalleServicioEmpresa();
-
-    mostrarEmpresa(
-        seccionProgramacionEmpresa
-    );
-
-    mostrarEmpresa(
-        seccionFleteEmpresa
-    );
-
-    mostrarEmpresa(
-        seccionObservacionesEmpresa
-    );
-
-    mostrarEmpresa(
-        seccionBotonEmpresa
-    );
+    mostrarEmpresa(seccionProgramacionEmpresa);
+    if (servicioEmpresaActual === "RETIRO") {
+        // Los retiros no generan flete.
+        llevaFleteEmpresa = "NO";
+        btnFleteSiEmpresa.classList.remove("activo");
+        btnFleteNoEmpresa.classList.add("activo");
+        ocultarEmpresa(seccionFleteEmpresa);
+    } else {mostrarEmpresa(seccionFleteEmpresa);}
+    mostrarEmpresa(seccionObservacionesEmpresa);
+    mostrarEmpresa(seccionBotonEmpresa);
 
 }
 
@@ -1297,8 +1278,37 @@ function crearGrupoProducto(producto) {
                 "width:34px;height:38px;border:0;" +
                 "border-radius:8px;background:#963636;" +
                 "color:white;cursor:pointer;font-size:17px;";
-            fila.style.gridTemplateColumns = "minmax(60px,1fr) 38px 32px 38px 34px";
-            eliminar.addEventListener("click", function () {fila.remove();});
+                        // Cinco columnas con dimensiones coherentes:
+            // MEDIDA | MENOS | CANTIDAD | MÁS | PAPELERA
+            fila.style.gridTemplateColumns =
+                "minmax(0,1fr) 38px 32px 38px 34px";
+
+            fila.style.columnGap = "8px";
+
+            [menos, mas].forEach(function (boton) {
+                boton.style.width = "38px";
+                boton.style.minWidth = "38px";
+                boton.style.maxWidth = "38px";
+            });
+
+            cantidad.style.width = "32px";
+            cantidad.style.minWidth = "32px";
+            cantidad.style.maxWidth = "32px";
+
+            eliminar.style.width = "34px";
+            eliminar.style.minWidth = "34px";
+            eliminar.style.maxWidth = "34px";
+            eliminar.style.padding = "0";
+            eliminar.style.display = "flex";
+            eliminar.style.alignItems = "center";
+            eliminar.style.justifyContent = "center";
+            eliminar.style.boxSizing = "border-box";
+            eliminar.style.flexShrink = "0";
+
+            eliminar.addEventListener("click", function () {
+                fila.remove();
+            });
+
             fila.appendChild(eliminar);
         }
 
@@ -1776,17 +1786,11 @@ function validarFormularioEmpresa() {
         );
     }
 
-    if (servicioEmpresaActual.includes("IMPLEMENTACIÓN") && !selectTipoImplementacionEmpresa.value) {
-        throw new Error( "Seleccione el tipo de implementación.");
-    }
-    if (
-        !inputFechaEmpresa.value ||
-        !selectOperarioEmpresa.value ||
-        !selectVentanaEmpresa.value
-    ) {throw new Error("Complete la programación del servicio.");}
-
-    if (!llevaFleteEmpresa) {throw new Error( "Indique si el servicio contabiliza flete.");}
-
+    if (servicioEmpresaActual.includes("IMPLEMENTACIÓN") && !selectTipoImplementacionEmpresa.value) {throw new Error( "Seleccione el tipo de implementación.");}
+    if (!inputFechaEmpresa.value || !selectOperarioEmpresa.value || !selectVentanaEmpresa.value) {throw new Error("Complete la programación del servicio.");}
+        if (servicioEmpresaActual === "RETIRO") {
+        llevaFleteEmpresa = "NO";
+    } else if (!llevaFleteEmpresa) {throw new Error("Indique si el servicio contabiliza flete.");}
     obtenerDestinoFinalEmpresa();
 
 }
@@ -1821,7 +1825,7 @@ function pintarResumenConfirmacion() {
         ${datoResumen( "Fecha", inputFechaEmpresa.value)}
         ${datoResumen( "Ventana", selectVentanaEmpresa.value)}
         ${datoResumen( "Operario", selectOperarioEmpresa.value)}
-        ${datoResumen( "Flete", llevaFleteEmpresa)}
+        ${servicioEmpresaActual === "RETIRO" ? "" : datoResumen("Flete", llevaFleteEmpresa)}
     `;
 
 }
@@ -1947,7 +1951,7 @@ function construirPayloadEmpresa() {
         ventanaHoraria: selectVentanaEmpresa.value,
         operarioAsignado: selectOperarioEmpresa.value,
         observaciones: inputObservacionesEmpresa.value.trim(),
-        llevaFlete: llevaFleteEmpresa,
+        llevaFlete: servicioEmpresaActual === "RETIRO" ? "NO" : llevaFleteEmpresa,
         sheet:"BLANCA"
 
     };
