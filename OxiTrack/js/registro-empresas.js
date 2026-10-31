@@ -1106,7 +1106,7 @@ function crearGrupoProducto(producto) {
         text-align:center;
     `;
 
-    grupo.appendChild(titulo);
+    if (servicioEmpresaActual !== "RETIRO") {grupo.appendChild(titulo);}
 
     /*
      * UNA FILA POR CADA MEDIDA
@@ -1140,6 +1140,12 @@ function crearGrupoProducto(producto) {
             padding:0;
             box-sizing:border-box;
         `;
+
+        if (servicioEmpresaActual === "RETIRO") {
+            fila.style.gridTemplateColumns =
+                "minmax(0,1.5fr) minmax(0,1fr) 36px 28px 36px 36px";
+            fila.style.columnGap = "6px";
+        }
 
 
         // =====================================================
@@ -1266,46 +1272,72 @@ function crearGrupoProducto(producto) {
          *
          * MEDIDA | MENOS | CONTADOR | MÁS
          */
-        fila.append(nombre,menos,cantidad,mas);
+        if (servicioEmpresaActual === "RETIRO") {
+            const gas = document.createElement("span");
+            gas.textContent = String(producto.gas || "").trim();
+
+            gas.style.cssText =
+                "min-width:0;overflow-wrap:anywhere;" +
+                "font-size:14px;font-weight:700;color:#611e63;" +
+                "text-align:left;";
+
+            nombre.style.fontSize = "14px";
+            nombre.style.overflowWrap = "anywhere";
+
+            [menos, mas].forEach(function(boton) {
+                boton.style.width = "36px";
+                boton.style.minWidth = "36px";
+                boton.style.maxWidth = "36px";
+                boton.style.height = "38px";
+                boton.style.minHeight = "38px";
+                boton.style.maxHeight = "38px";
+            });
+
+            cantidad.style.width = "28px";
+            cantidad.style.minWidth = "28px";
+            cantidad.style.maxWidth = "28px";
+
+            fila.append(gas, nombre, menos, cantidad, mas);
+        } else {
+            fila.append(nombre, menos, cantidad, mas);
+        }
 
         if (servicioEmpresaActual === "RETIRO") {
             const eliminar = document.createElement("button");
             eliminar.type = "button";
             eliminar.title = "Quitar esta medida del retiro";
-            eliminar.setAttribute("aria-label","Quitar " + producto.gas + " " + medida);
-            eliminar.textContent = "🗑";
+            eliminar.setAttribute(
+                "aria-label",
+                "Quitar " + producto.gas + " " + medida
+            );
+
+            eliminar.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    width="18" height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="M3 6h18"/>
+                    <path d="M8 6V4h8v2"/>
+                    <path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 10v6"/>
+                    <path d="M14 10v6"/>
+                </svg>
+            `;
+
             eliminar.style.cssText =
-                "width:34px;height:38px;border:0;" +
-                "border-radius:8px;background:#963636;" +
-                "color:white;cursor:pointer;font-size:17px;";
-                        // Cinco columnas con dimensiones coherentes:
-            // MEDIDA | MENOS | CANTIDAD | MÁS | PAPELERA
-            fila.style.gridTemplateColumns =
-                "minmax(0,1fr) 38px 32px 38px 34px";
+                "display:flex;align-items:center;justify-content:center;" +
+                "width:36px;min-width:36px;max-width:36px;" +
+                "height:38px;min-height:38px;max-height:38px;" +
+                "padding:0;margin:0;border:0;border-radius:8px;" +
+                "background:#611e63;color:#ffffff;cursor:pointer;" +
+                "box-sizing:border-box;";
 
-            fila.style.columnGap = "8px";
-
-            [menos, mas].forEach(function (boton) {
-                boton.style.width = "38px";
-                boton.style.minWidth = "38px";
-                boton.style.maxWidth = "38px";
-            });
-
-            cantidad.style.width = "32px";
-            cantidad.style.minWidth = "32px";
-            cantidad.style.maxWidth = "32px";
-
-            eliminar.style.width = "34px";
-            eliminar.style.minWidth = "34px";
-            eliminar.style.maxWidth = "34px";
-            eliminar.style.padding = "0";
-            eliminar.style.display = "flex";
-            eliminar.style.alignItems = "center";
-            eliminar.style.justifyContent = "center";
-            eliminar.style.boxSizing = "border-box";
-            eliminar.style.flexShrink = "0";
-
-            eliminar.addEventListener("click", function () {
+            eliminar.addEventListener("click", function() {
                 fila.remove();
             });
 
