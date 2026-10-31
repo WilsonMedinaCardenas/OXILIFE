@@ -946,20 +946,11 @@ function pintarDetalleServicioEmpresa() {
     }
 
 
-    filtrados.forEach(
-        function (producto) {
-
-            crearGrupoProducto(
-                producto
-            );
-
-        }
-    );
-
-
-    mostrarEmpresa(
-        seccionDetalleEmpresa
-    );
+    filtrados.forEach(function (producto) { crearGrupoProducto(producto);});
+    if (servicio === "RETIRO") { contenedorProductosEmpresa._filasRetiroEliminadas = new Map();
+        actualizarSelectorRetiroEmpresa();
+    }
+    mostrarEmpresa( seccionDetalleEmpresa);
 
 }
 
@@ -1338,7 +1329,16 @@ function crearGrupoProducto(producto) {
                 "box-sizing:border-box;";
 
             eliminar.addEventListener("click", function() {
+
+                const filasVisibles = contenedorProductosEmpresa.querySelectorAll(".fila-producto-empresa");
+
+                // Nunca permitir eliminar la última fila.
+                if (filasVisibles.length <= 1) {return;}
+                const clave = JSON.stringify([fila.dataset.gas,fila.dataset.medida]);
+                if (!contenedorProductosEmpresa._filasRetiroEliminadas) {contenedorProductosEmpresa._filasRetiroEliminadas = new Map();}
+                contenedorProductosEmpresa._filasRetiroEliminadas.set(clave,{fila: fila,grupo: grupo});
                 fila.remove();
+                actualizarSelectorRetiroEmpresa();
             });
 
             fila.appendChild(eliminar);
@@ -1348,6 +1348,176 @@ function crearGrupoProducto(producto) {
 
     });
     contenedorProductosEmpresa.appendChild(grupo);
+}
+
+// ==========================================================
+// RETIRO EMPRESA
+// PROTEGER ÚLTIMA FILA Y RECUPERAR MEDIDAS ELIMINADAS
+// ==========================================================
+
+function actualizarSelectorRetiroEmpresa() {
+
+    if (servicioEmpresaActual !== "RETIRO") {
+        return;
+    }
+
+    const filasVisibles = Array.from(
+        contenedorProductosEmpresa.querySelectorAll(
+            ".fila-producto-empresa"
+        )
+    );
+
+    const soloUnaFila = filasVisibles.length <= 1;
+
+    // Activar o desactivar las papeleras.
+    filasVisibles.forEach(function(fila) {
+
+        const papelera = fila.querySelector(
+            'button[aria-label^="Quitar "]'
+        );
+
+        if (!papelera) {
+            return;
+        }
+
+        papelera.disabled = soloUnaFila;
+        papelera.style.opacity = soloUnaFila ? "0.35" : "1";
+        papelera.style.cursor =
+            soloUnaFila ? "not-allowed" : "pointer";
+
+        papelera.title = soloUnaFila
+            ? "Debe permanecer al menos una medida disponible"
+            : "Quitar esta medida del retiro";
+    });
+
+    // Crear el selector solo una vez.
+    let controles = document.getElementById(
+        "controlesAgregarRetiroEmpresa"
+    );
+
+    if (!controles) {
+
+        controles = document.createElement("div");
+        controles.id = "controlesAgregarRetiroEmpresa";
+
+        controles.style.cssText = `
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:8px;
+            width:100%;
+            margin:12px 0 16px 0;
+            box-sizing:border-box;
+        `;
+
+        const selector = document.createElement("select");
+        selector.id = "selectorAgregarRetiroEmpresa";
+        selector.setAttribute(
+            "aria-label",
+            "Seleccionar cilindro para agregar al retiro"
+        );
+
+        selector.style.cssText = `
+            flex:1 1 190px;
+            min-width:0;
+            height:42px;
+            padding:0 10px;
+            border:1px solid #611e63;
+            border-radius:8px;
+            background:#ffffff;
+            color:#333333;
+            font-size:14px;
+            box-sizing:border-box;
+        `;
+
+        const agregar = document.createElement("button");
+        agregar.type = "button";
+        agregar.textContent = "+ Agregar cilindro";
+
+        agregar.style.cssText = `
+            flex:0 0 auto;
+            min-height:42px;
+            padding:8px 12px;
+            border:0;
+            border-radius:8px;
+            background:#611e63;
+            color:#ffffff;
+            font-size:14px;
+            font-weight:700;
+            cursor:pointer;
+        `;
+
+        agregar.addEventListener("click", function() {
+
+            const clave = selector.value;
+
+            const eliminadas =
+                contenedorProductosEmpresa
+                    ._filasRetiroEliminadas;
+
+            if (!clave || !eliminadas ||
+                !eliminadas.has(clave)) {
+                return;
+            }
+
+            const registro = eliminadas.get(clave);
+
+            eliminadas.delete(clave);
+
+            // Recuperar la fila original.
+            registro.grupo.appendChild(registro.fila);
+
+            actualizarSelectorRetiroEmpresa();
+        });
+
+        controles.append(selector, agregar);
+
+        contenedorProductosEmpresa.appendChild(controles);
+    }
+
+    const selector = document.getElementById(
+        "selectorAgregarRetiroEmpresa"
+    );
+
+    const botonAgregar = controles.querySelector("button");
+
+    const eliminadas =
+        contenedorProductosEmpresa._filasRetiroEliminadas
+        || new Map();
+
+    selector.replaceChildren();
+
+    const opcionInicial = document.createElement("option");
+    opcionInicial.value = "";
+    opcionInicial.textContent = eliminadas.size
+        ? "Seleccionar gas y medida..."
+        : "No hay medidas eliminadas";
+
+    selector.appendChild(opcionInicial);
+
+    eliminadas.forEach(function(registro, clave) {
+
+        const opcion = document.createElement("option");
+
+        opcion.value = clave;
+        opcion.textContent =
+            registro.fila.dataset.gas +
+            " — " +
+            registro.fila.dataset.medida;
+
+        selector.appendChild(opcion);
+    });
+
+    selector.disabled = eliminadas.size === 0;
+    botonAgregar.disabled = eliminadas.size === 0;
+
+    botonAgregar.style.opacity =
+        eliminadas.size === 0 ? "0.45" : "1";
+
+    botonAgregar.style.cursor =
+        eliminadas.size === 0
+            ? "not-allowed"
+            : "pointer";
 }
 
 function modificarCantidad(elemento,cambio) {
