@@ -2085,34 +2085,25 @@ btnConfirmarEmpresa.addEventListener("click", async function () {
             }
 
             ocultarEmpresa(modalConfirmacionEmpresa);
-
+            if (datos.estadoNotificacion !== "COMPLETA") {
+                mostrarMensajeGeneral(
+                    "El servicio " + datos.id +
+                    " quedó registrado, pero no se confirmó el envío de todas las notificaciones. " +
+                    "No vuelva a registrar este servicio. Informe a Oficina para revisar los correos pendientes.",
+                    "error"
+                );
+                return;
+            }
             const titulo = modalExitoEmpresa.querySelector("h2");
             const parrafo = modalExitoEmpresa.querySelector("p");
-
-            if (titulo) {
-                titulo.textContent = "Servicio registrado";
-            }
-
-            if (parrafo) {
-                parrafo.textContent =
-                    "El servicio fue registrado exitosamente: " + datos.id;
-            }
-
+            if (titulo) {titulo.textContent = "Servicio registrado";}
+            if (parrafo) {parrafo.textContent ="El servicio fue registrado exitosamente: " + datos.id;}
             mostrarEmpresa(modalExitoEmpresa);
-
         } catch (error) {
-
             console.error("Error registro Empresa:", error);
-
-            mostrarMensajeGeneral(
-                error.message || "Error al registrar el servicio.",
-                "error"
-            );
-
+            mostrarMensajeGeneral(error.message || "Error al registrar el servicio.", "error");
             ocultarEmpresa(modalConfirmacionEmpresa);
-
             // Se conserva solicitudIdEmpresa para un reintento seguro.
-
         } finally {
 
             btnConfirmarEmpresa.disabled = false;
