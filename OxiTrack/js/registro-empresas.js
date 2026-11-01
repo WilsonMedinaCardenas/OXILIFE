@@ -2183,51 +2183,19 @@ btnNuevoServicioEmpresa.addEventListener("click", function () {
 function abrirGestionServicioEmpresa(tipo) {
 
     tipoGestionActualEmpresa = tipo;
-
     servicioGestionSeleccionadoEmpresa = null;
-
     solicitudGestionIdEmpresa = "";
-
+    const errorModal = document.getElementById("errorModalGestionEmpresa");
+    if (errorModal) {errorModal.textContent = ""; errorModal.hidden = true;}
     inputBuscarGestionEmpresa.value = "";
-
     resultadosGestionServicioEmpresa.innerHTML = "";
-
-    ocultarEmpresa(
-        resultadosGestionServicioEmpresa
-    );
-
-    ocultarEmpresa(
-        detalleGestionServicioEmpresa
-    );
-
-    ocultarEmpresa(
-        nuevaProgramacionGestionEmpresa
-    );
-
-    mostrarEmpresa(
-        accionesCerrarGestionEmpresa
-    );
-
-
-    tituloGestionServicioEmpresa.textContent =
-        tipo === "REAGENDAR"
-            ? "Reagendar servicio"
-            : "Cancelar servicio";
-
-
-    mostrarEmpresa(
-        modalGestionServicioEmpresa
-    );
-
-
-    setTimeout(
-        function () {
-
-            inputBuscarGestionEmpresa.focus();
-
-        },
-        0
-    );
+    ocultarEmpresa(resultadosGestionServicioEmpresa);
+    ocultarEmpresa(detalleGestionServicioEmpresa);
+    ocultarEmpresa(nuevaProgramacionGestionEmpresa);
+    mostrarEmpresa(accionesCerrarGestionEmpresa);
+    tituloGestionServicioEmpresa.textContent = tipo === "REAGENDAR" ? "Reagendar servicio" : "Cancelar servicio";
+    mostrarEmpresa(modalGestionServicioEmpresa);
+    setTimeout(function () {inputBuscarGestionEmpresa.focus();},0);
 
 }
 
@@ -3261,27 +3229,21 @@ function ocultarMensajeBusqueda() {
 
 }
 
+function mostrarMensajeGeneral(texto, tipo) {
 
-function mostrarMensajeGeneral(
-    texto,
-    tipo
-) {
+    const modalGestion = document.getElementById("modalGestionServicioEmpresa");
+    const errorModal = document.getElementById("errorModalGestionEmpresa");
 
-    mensajeEmpresa.textContent =
-        texto;
+    if (tipo === "error" && modalGestion && !modalGestion.hidden && errorModal) {
+        errorModal.textContent = texto;
+        errorModal.hidden = false;
+        errorModal.scrollIntoView({ block: "nearest" });
+        return;
+    }
 
-    mensajeEmpresa.className =
-        "mensaje-registro " + tipo;
-
-    mensajeEmpresa.hidden =
-        false;
-
+    mensajeEmpresa.textContent = texto;
+    mensajeEmpresa.className = "mensaje-registro " + tipo;
+    mensajeEmpresa.hidden = false;
 }
 
-
-function ocultarMensajeGeneral() {
-
-    mensajeEmpresa.hidden =
-        true;
-
-}
+function ocultarMensajeGeneral() {mensajeEmpresa.hidden = true;}

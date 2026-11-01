@@ -1815,23 +1815,16 @@ function abrirGestionServicio(tipo) {
     servicioGestionSeleccionado = null;
     solicitudGestionId = "";
     reiniciarOpcionesReagendamiento();
-
+    const errorModal = document.getElementById("errorModalGestionParticular");
+    if (errorModal) {errorModal.textContent = "";errorModal.hidden = true;}
     inputBuscarGestion.value = "";
     resultadosGestionServicio.innerHTML = "";
-
     ocultar(resultadosGestionServicio);
     ocultar(detalleGestionServicio);
     ocultar(nuevaProgramacionGestion);
-
     mostrar(accionesCerrarGestion);
-
-    tituloGestionServicio.textContent =
-        tipo === "REAGENDAR"
-            ? "Reagendar servicio"
-            : "Cancelar servicio";
-
+    tituloGestionServicio.textContent = tipo === "REAGENDAR" ? "Reagendar servicio" : "Cancelar servicio";
     mostrarModal(modalGestionServicio);
-
     inputBuscarGestion.focus();
 
 }
@@ -2332,14 +2325,9 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
                 payload.append("convenioReagendar",fleteReagendar.value === "SI"? convenioReagendar.value: "");
 
             }
-
             const respuesta = await fetch("/api/oxitrack/",{method: "POST",body: payload});
             const resultado = await respuesta.json();
-            if (!respuesta.ok || resultado.ok !== true) {
-                throw new Error(resultado.error || "No fue posible gestionar el servicio.");
-            }
-
-            
+            if (!respuesta.ok || resultado.ok !== true) {throw new Error(resultado.error || "No fue posible gestionar el servicio.");}
             const gestionRealizada = tipoGestionActual;
             ocultarModal(modalGestionServicio);
             mostrarMensaje(gestionRealizada === "REAGENDAR" ? "Servicio reagendado correctamente." : "Servicio cancelado correctamente.","exito");
@@ -2351,28 +2339,12 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
             ocultar(detalleGestionServicio);
             ocultar(nuevaProgramacionGestion);
             mostrar(accionesCerrarGestion);
-
             // La próxima búsqueda consultará nuevamente al backend.
         } catch (error) {
             console.error("Error gestión servicio:", error);
-
-            const mensaje =
-                error.message || "No fue posible gestionar el servicio.";
-
-            if (tipoGestionActual === "REAGENDAR") {
-                errorReagendamiento.textContent = mensaje;
-                errorReagendamiento.hidden = false;
-                errorReagendamiento.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest"
-                });
-            } else {
-                mostrarError(mensaje);
-            }
-
-        } finally {
-            btnConfirmarGestionServicio.disabled = false;
-        }
+            const mensaje = error.message || "No fue posible gestionar el servicio.";
+            mostrarError(mensaje);
+        } finally {btnConfirmarGestionServicio.disabled = false;}
 
     }
 );
@@ -3420,11 +3392,15 @@ function mostrarMensaje(texto, tipo) {
 
 function mostrarError(texto) {
 
-    mostrarMensaje(
-        texto,
-        "error"
-    );
-
+    const modalGestion = document.getElementById("modalGestionServicio");
+    const errorModal = document.getElementById("errorModalGestionParticular");
+    if (modalGestion && !modalGestion.hidden && errorModal) {
+        errorModal.textContent = texto;
+        errorModal.hidden = false;
+        errorModal.scrollIntoView({ block: "nearest" });
+        return;
+    }
+    mostrarMensaje(texto, "error");
 }
 
 
