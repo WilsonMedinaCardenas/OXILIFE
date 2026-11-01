@@ -2085,15 +2085,6 @@ btnConfirmarEmpresa.addEventListener("click", async function () {
             }
 
             ocultarEmpresa(modalConfirmacionEmpresa);
-            if (datos.estadoNotificacion !== "COMPLETA") {
-                mostrarMensajeGeneral(
-                    "El servicio " + datos.id +
-                    " quedó registrado, pero no se confirmó el envío de todas las notificaciones. " +
-                    "No vuelva a registrar este servicio. Informe a Oficina para revisar los correos pendientes.",
-                    "error"
-                );
-                return;
-            }
             const titulo = modalExitoEmpresa.querySelector("h2");
             const parrafo = modalExitoEmpresa.querySelector("p");
             if (titulo) {titulo.textContent = "Servicio registrado";}

@@ -2560,16 +2560,6 @@ btnConfirmarRegistro.addEventListener("click", async function () {
                 );
             }
             if (!respuesta.ok || resultado.ok !== true) {throw new Error(resultado.error || "El servidor rechazó el registro.");}
-            if (resultado.estadoNotificacion !== "COMPLETA") {
-                ocultarModal(modalConfirmacionRegistro);
-                mostrarError(
-                    "El servicio " + resultado.id +
-                    " quedó registrado, pero no se confirmó el envío de todas las notificaciones. " +
-                    "No vuelva a registrar este servicio. Informe a Oficina para revisar los correos pendientes."
-                );
-                mensajeRegistro.scrollIntoView({behavior: "smooth", block: "center"});
-                return;
-            }
 
             // ==================================================
             // ÉXITO
