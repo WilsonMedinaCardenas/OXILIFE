@@ -218,67 +218,51 @@ let filasProductosEmpresa = {
 };
 
 function crearFilaProductoEmpresa(item, grupo) {
+
     const fila = document.createElement("div");
     const nombre = document.createElement("label");
     const contador = document.createElement("div");
     const menos = document.createElement("button");
     const cantidad = document.createElement("input");
     const mas = document.createElement("button");
-
-    fila.className = "elemento-fila";
+    fila.className = "elemento-fila empresa-producto-fila";
     nombre.className = "elemento-nombre";
-    contador.className = "contador elemento-contador";
-
+    contador.className = "contador elemento-contador empresa-producto-contador";
     nombre.textContent = item.nombre;
-
     menos.type = "button";
     menos.textContent = "−";
-
     mas.type = "button";
     mas.textContent = "+";
-
     cantidad.type = "text";
     cantidad.readOnly = true;
     cantidad.value = String(item.cantidad);
-
-    menos.onclick = () => {
-        item.cantidad = Math.max(0, item.cantidad - 1);
-        cantidad.value = String(item.cantidad);
-    };
-
-    mas.onclick = () => {
-        item.cantidad = Math.min(50, item.cantidad + 1);
-        cantidad.value = String(item.cantidad);
-    };
-
+    menos.onclick = () => {item.cantidad = Math.max(0, item.cantidad - 1);cantidad.value = String(item.cantidad);};
+    mas.onclick = () => {item.cantidad = Math.min(50, item.cantidad + 1);cantidad.value = String(item.cantidad);};
     contador.append(menos, cantidad, mas);
     fila.append(nombre, contador);
-
-    const permiteEliminar =
-        !item.original ||
-        (grupo === "RETIRADOS" &&
-         filasProductosEmpresa.RETIRADOS.some(otro => !otro.original));
-
+    const permiteEliminar = !item.original || (grupo === "RETIRADOS" && filasProductosEmpresa.RETIRADOS.some(otro => !otro.original));
     if (permiteEliminar) {
         const eliminar = document.createElement("button");
         eliminar.type = "button";
-        eliminar.textContent = "🗑";
+        eliminar.className = "empresa-boton-papelera";
         eliminar.title = "Eliminar producto";
         eliminar.setAttribute("aria-label", "Eliminar " + item.nombre);
-        eliminar.style.flex = "0 0 auto";
-        eliminar.style.width = "36px";
-        eliminar.style.padding = "8px 4px";
-
-        eliminar.onclick = () => {
-            filasProductosEmpresa[grupo] =
-                filasProductosEmpresa[grupo].filter(otro => otro !== item);
-
-            pintarSeccionesProductosEmpresa();
-        };
-
+        eliminar.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="17" height="17" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 10v7"/>
+                <path d="M14 10v7"/>
+            </svg>
+        `;
+        eliminar.onclick = () => {filasProductosEmpresa[grupo] = filasProductosEmpresa[grupo].filter(otro => otro !== item); pintarSeccionesProductosEmpresa();};
         fila.appendChild(eliminar);
     }
-
     return fila;
 }
 

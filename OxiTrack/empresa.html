@@ -50,6 +50,86 @@
 
     #firma { display: block; }
 
+      /* CONTADORES Y PAPELERAS - TERRENO EMPRESA */
+
+  #cantidades .empresa-producto-fila {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 36px;
+    column-gap: 6px;
+    row-gap: 5px;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+  }
+
+  #cantidades .empresa-producto-fila > .elemento-nombre {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  #cantidades .empresa-producto-contador {
+    grid-column: 1;
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  #cantidades .empresa-producto-contador > button {
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+  }
+
+  #cantidades .empresa-producto-contador > input {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+    height: 40px;
+    margin: 0;
+    padding: 0 4px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  #cantidades .empresa-boton-papelera {
+    grid-column: 2;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 40px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #b42335 !important;
+    color: #ffffff !important;
+    border: none;
+    border-radius: 7px;
+    box-sizing: border-box;
+  }
+
+  #cantidades .empresa-boton-papelera svg {
+    display: block;
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+  }
+
+  #cantidades .empresa-producto-fila:not(:has(.empresa-boton-papelera))
+    > .empresa-producto-contador {
+    grid-column: 1 / -1;
+  }
+
     .elemento-contador input {
       flex: 1;
       min-width: 0;
@@ -235,6 +315,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-  <script src="./js/empresa.js?v=20261062-7" defer></script>
+  <script src="./js/empresa.js?v=20261062-8" defer></script>
 </body>
 </html>
