@@ -2083,12 +2083,8 @@ btnConfirmarEmpresa.addEventListener("click", async function () {
                     "No fue posible registrar el servicio."
                 );
             }
-
             ocultarEmpresa(modalConfirmacionEmpresa);
-            const titulo = modalExitoEmpresa.querySelector("h2");
-            const parrafo = modalExitoEmpresa.querySelector("p");
-            if (titulo) {titulo.textContent = "Servicio registrado";}
-            if (parrafo) {parrafo.textContent ="El servicio fue registrado exitosamente: " + datos.id;}
+            document.getElementById("idRegistroCreadoEmpresa").textContent = datos.id;
             mostrarEmpresa(modalExitoEmpresa);
         } catch (error) {
             console.error("Error registro Empresa:", error);
