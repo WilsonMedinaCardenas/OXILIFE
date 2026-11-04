@@ -750,9 +750,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         const fotos = document.getElementById("seccionFotos");
-        fotos.hidden = esNoRealizado
-            ? false
-            : selectServicio.value.toLowerCase().includes("retiro");
+        fotos.hidden = false;
 
         btnNoRealizado.hidden = esNoRealizado || !selectPaciente.value;
     }
@@ -1704,7 +1702,7 @@ function actualizarVistaSegunServicio(servicio) {
     const pacienteSeleccionado = Boolean(
     document.getElementById("pacienteParticular")?.value);
     const mostrarCilindros = esRetiro && pacienteSeleccionado;
-    const mostrarFotos = !esRetiro;
+    const mostrarFotos = true;
 
     const seccionCilindros = document.getElementById("seccionCilindros");
     const seccionFotos = document.getElementById("seccionFotos");
@@ -2153,7 +2151,12 @@ function inicializarFormulario() {
         const esRecarga = servicioNormalizado.includes("recarga");
         const esVisitaTecnica = servicioNormalizado.includes("visita técnica") || servicioNormalizado.includes("visita tecnica");
         const retiroConOrigen = esRetiro && pacienteActual && pacienteActual.idOrigen && pacienteActual.elementosOrigen;
-        const requiereFoto = esImplementacion || servicioNormalizado.includes("recarga") || servicioNormalizado.includes("venta");
+        const requiereFoto =
+            esImplementacion ||
+            esRecarga ||
+            esRetiro ||
+            esVisitaTecnica ||
+            servicioNormalizado.includes("venta");
         if ((requiereFoto || esNoRealizado) && fotosCapturadas.length === 0) {alert("Debe tomar al menos una fotografía antes de enviar el registro.");return;}
         if (esNoRealizado && !observaciones) {alert("Debe explicar por qué no se realizó el servicio.");return;}
         if (fotosCapturadas.length > 2) {alert("Solo se permite un máximo de 2 fotografías.");return;}
