@@ -181,7 +181,43 @@ function tipoServicio(servicio) {
     return "OTRO";
 }
 
-function crearContador(item, indice, grupo, inicial) {
+function claveProductoEmpresa(nombre) {
+    return normalizar(nombre)
+        .replace(/[^A-Z0-9.]/g, "")
+        .replace(/(\d),(\d)/g, "$1.$2");
+}
+
+function catalogoProductosEmpresa() {
+    const productos = Array.isArray(seleccion?.productosDisponibles)
+        ? seleccion.productosDisponibles
+        : [];
+
+    const catalogo = [];
+    const vistos = new Set();
+
+    productos.forEach(producto => {
+        const gas = normalizar(producto.gas);
+
+        (producto.medidas || []).forEach(medida => {
+            const nombre = `${gas} ${String(medida).trim().toUpperCase()}`;
+            const clave = claveProductoEmpresa(nombre);
+
+            if (!gas || !medida || vistos.has(clave)) return;
+
+            vistos.add(clave);
+            catalogo.push({ nombre, clave });
+        });
+    });
+
+    return catalogo;
+}
+
+let filasProductosEmpresa = {
+    ENTREGADOS: [],
+    RETIRADOS: []
+};
+
+function crearFilaProductoEmpresa(item, grupo) {
     const fila = document.createElement("div");
     const nombre = document.createElement("label");
     const contador = document.createElement("div");
@@ -192,102 +228,235 @@ function crearContador(item, indice, grupo, inicial) {
     fila.className = "elemento-fila";
     nombre.className = "elemento-nombre";
     contador.className = "contador elemento-contador";
+
     nombre.textContent = item.nombre;
 
     menos.type = "button";
     menos.textContent = "−";
+
     mas.type = "button";
     mas.textContent = "+";
 
     cantidad.type = "text";
     cantidad.readOnly = true;
-    cantidad.value = String(inicial);
-    cantidad.dataset.grupo = grupo;
-    cantidad.dataset.indice = String(indice);
+    cantidad.value = String(item.cantidad);
 
-    menos.addEventListener("click", () => {
-        cantidad.value = String(Math.max(0, Number(cantidad.value) - 1));
-    });
+    menos.onclick = () => {
+        item.cantidad = Math.max(0, item.cantidad - 1);
+        cantidad.value = String(item.cantidad);
+    };
 
-    mas.addEventListener("click", () => {
-        cantidad.value = String(Math.min(50, Number(cantidad.value) + 1));
-    });
+    mas.onclick = () => {
+        item.cantidad = Math.min(50, item.cantidad + 1);
+        cantidad.value = String(item.cantidad);
+    };
 
     contador.append(menos, cantidad, mas);
     fila.append(nombre, contador);
+
+    const permiteEliminar =
+        !item.original ||
+        (grupo === "RETIRADOS" &&
+         filasProductosEmpresa.RETIRADOS.some(otro => !otro.original));
+
+    if (permiteEliminar) {
+        const eliminar = document.createElement("button");
+        eliminar.type = "button";
+        eliminar.textContent = "🗑";
+        eliminar.title = "Eliminar producto";
+        eliminar.setAttribute("aria-label", "Eliminar " + item.nombre);
+        eliminar.style.flex = "0 0 auto";
+        eliminar.style.width = "36px";
+        eliminar.style.padding = "8px 4px";
+
+        eliminar.onclick = () => {
+            filasProductosEmpresa[grupo] =
+                filasProductosEmpresa[grupo].filter(otro => otro !== item);
+
+            pintarSeccionesProductosEmpresa();
+        };
+
+        fila.appendChild(eliminar);
+    }
+
     return fila;
 }
 
-function crearSeccion(titulo, grupo, elementos, cantidadInicial) {
+function agregarProductoEmpresa(grupo, clave) {
+    const producto = catalogoProductosEmpresa()
+        .find(item => item.clave === clave);
+
+    if (!producto) return;
+
+    if (filasProductosEmpresa[grupo].some(
+        item => claveProductoEmpresa(item.nombre) === clave
+    )) return;
+
+    filasProductosEmpresa[grupo].push({
+        nombre: producto.nombre,
+        cantidad: 0,
+        original: false
+    });
+
+    pintarSeccionesProductosEmpresa();
+}
+
+function crearSeccionProductosEmpresa(titulo, grupo) {
     const seccion = document.createElement("div");
     const encabezado = document.createElement("div");
+
     encabezado.className = "titulo";
     encabezado.textContent = titulo;
     seccion.appendChild(encabezado);
 
-    elementos.forEach((item, indice) => {
-        seccion.appendChild(crearContador(item, indice, grupo, cantidadInicial(item)));
+    filasProductosEmpresa[grupo].forEach(item => {
+        seccion.appendChild(crearFilaProductoEmpresa(item, grupo));
     });
 
+    const disponibles = (tipoServicio(seleccion?.servicio) === "RECARGA" ? catalogoProductosEmpresa() : []).filter(producto =>
+        !filasProductosEmpresa[grupo].some(item => claveProductoEmpresa(item.nombre) === producto.clave));
+
+    if (disponibles.length) {
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.textContent = "+ Agregar producto";
+        boton.className = "btn-secundario";
+
+        boton.onclick = () => {
+            boton.hidden = true;
+
+            const selector = document.createElement("select");
+            selector.className = "select-particular";
+
+            agregarOpcion(selector, "", "Seleccione gas y medida...");
+
+            disponibles.forEach(producto => {
+                agregarOpcion(selector, producto.clave, producto.nombre);
+            });
+
+            const confirmar = document.createElement("button");
+            confirmar.type = "button";
+            confirmar.textContent = "Agregar";
+            confirmar.className = "btn-principal";
+
+            confirmar.onclick = () => {
+                if (!selector.value) return;
+                agregarProductoEmpresa(grupo, selector.value);
+            };
+
+            const cancelar = document.createElement("button");
+            cancelar.type = "button";
+            cancelar.textContent = "Cancelar";
+            cancelar.className = "btn-secundario";
+
+            cancelar.onclick = () => pintarSeccionesProductosEmpresa();
+
+            seccion.append(selector, confirmar, cancelar);
+        };
+
+        seccion.appendChild(boton);
+    }
+
     return seccion;
+}
+
+function pintarSeccionesProductosEmpresa() {
+    const contenedor = $("cantidades");
+    contenedor.replaceChildren();
+
+    const clase = tipoServicio(seleccion?.servicio);
+
+    if (clase === "OTRO") return;
+
+    if (clase !== "RETIRO") {
+        contenedor.appendChild(
+            crearSeccionProductosEmpresa("ENTREGADOS", "ENTREGADOS")
+        );
+    }
+
+    if (clase !== "IMPLEMENTACION") {
+        contenedor.appendChild(
+            crearSeccionProductosEmpresa("RETIRADOS", "RETIRADOS")
+        );
+    }
 }
 
 function pintarCantidades() {
     const contenedor = $("cantidades");
     contenedor.replaceChildren();
 
+    filasProductosEmpresa = {
+        ENTREGADOS: [],
+        RETIRADOS: []
+    };
+
     if (!seleccion) return;
 
     const clase = tipoServicio(seleccion.servicio);
     detalleActual = detalleLista(seleccion.detalleSolicitado);
 
-    // VENTA no requiere elementos ni contadores.
-    if (clase === "OTRO") {return;}
+    if (clase === "OTRO") return;
 
     if (!detalleActual.length) {
         const aviso = document.createElement("p");
         aviso.className = "empresa-advertencia";
-        aviso.textContent = "Este servicio no tiene elementos programados. Informe a Oficina antes de registrarlo.";
+        aviso.textContent =
+            "Este servicio no tiene elementos programados. Informe a Oficina antes de registrarlo.";
         contenedor.appendChild(aviso);
         return;
     }
 
-    if (clase === "IMPLEMENTACION") {
-        contenedor.appendChild(crearSeccion("ELEMENTOS ENTREGADOS", "ENTREGADOS", detalleActual, item => item.cantidad));
-        return;
+    // Los servicios distintos de RECARGA mantienen los
+    // contadores originales, sin ampliación del catálogo.
+    const catalogo = clase === "RECARGA"
+        ? catalogoProductosEmpresa()
+        : [];
+
+    function originales(cantidadInicial) {
+        return detalleActual.map(item => {
+            const autorizado = catalogo.find(producto =>
+                producto.clave === claveProductoEmpresa(item.nombre)
+            );
+
+            return {
+                nombre: autorizado ? autorizado.nombre : item.nombre,
+                cantidad: cantidadInicial(item),
+                original: true
+            };
+        });
     }
 
-    if (clase === "RETIRO") {
-        contenedor.appendChild(crearSeccion("ELEMENTOS RETIRADOS", "RETIRADOS", detalleActual, item => item.cantidad));
-        return;
+    if (clase !== "RETIRO") {
+        filasProductosEmpresa.ENTREGADOS = originales(
+            item => item.cantidad
+        );
     }
 
-    contenedor.appendChild(crearSeccion("ENTREGADOS", "ENTREGADOS", detalleActual, item => item.cantidad));
-    contenedor.appendChild(crearSeccion("RETIRADOS", "RETIRADOS", detalleActual, () => 0));
-}
+    if (clase !== "IMPLEMENTACION") {
+        filasProductosEmpresa.RETIRADOS = originales(
+            item => clase === "RECARGA" ? 0 : item.cantidad
+        );
+    }
 
-function valorCantidad(grupo, indice) {
-    const input = [...$("cantidades").querySelectorAll("input")].find(item =>
-        item.dataset.grupo === grupo && item.dataset.indice === String(indice)
-    );
-
-    if (!input) return 0;
-    const valor = Number(input.value);
-    if (!Number.isInteger(valor) || valor < 0 || valor > 50) throw Error("Cantidad inválida.");
-    return valor;
+    pintarSeccionesProductosEmpresa();
 }
 
 function cantidades() {
     const clase = tipoServicio(seleccion.servicio);
-    const entregados = clase === "RETIRO" ? [] : detalleActual.map((item, indice) => ({
-        nombre: item.nombre, cantidad: valorCantidad("ENTREGADOS", indice)
-    }));
 
-    const retirados = clase === "IMPLEMENTACION" ? [] : detalleActual.map((item, indice) => ({
-        nombre: item.nombre, cantidad: valorCantidad("RETIRADOS", indice)
-    }));
+    function obtener(grupo) {
+        return filasProductosEmpresa[grupo]
+            .filter(item => item.cantidad > 0)
+            .map(item => ({
+                nombre: item.nombre,
+                cantidad: item.cantidad
+            }));
+    }
 
-    return { entregados, retirados };
+    return {
+        entregados: clase === "RETIRO" ? [] : obtener("ENTREGADOS"),
+        retirados: clase === "IMPLEMENTACION" ? [] : obtener("RETIRADOS")
+    };
 }
 
 // ==========================================================
