@@ -623,10 +623,7 @@ async function sincronizarPendientesParticular() {
 
     try {
 
-        const registros =
-            await obtenerEnviosOfflineParticular();
-
-
+        const registros = await obtenerEnviosOfflineParticular();
         registros.sort(
             (a, b) =>
                 String(a.fechaCreacion || "")
@@ -637,23 +634,20 @@ async function sincronizarPendientesParticular() {
 
 
         for (const registro of registros) {
-
             try {
+                const resultado = await enviarRegistroParticular(registro);
 
-                const resultado =
-                    await enviarRegistroParticular(
-                        registro
+
+                if (resultado.estadoCorreo === "NO_REGISTRADO" || resultado.estadoCorreo === "SIN_CONFIRMAR") {
+                    console.warn(
+                        "Particular: cierre confirmado, pero correo sin persistencia D1. Se conserva en cola:",
+                        registro.envioId
                     );
+                    break;
+                }
 
-
-                await eliminarEnvioOfflineParticular(
-                    registro.envioId
-                );
-
-
-                if (
-                    resultado.duplicado === true
-                ) {
+                await eliminarEnvioOfflineParticular(registro.envioId);
+                if (resultado.duplicado === true) {
 
                     console.log(
                         "Particular offline: el envío ya había sido procesado:",
@@ -2259,6 +2253,19 @@ function inicializarFormulario() {
                 // SERVIDOR CONFIRMÓ EL REGISTRO
                 // YA PODEMOS ELIMINAR LA COPIA LOCAL
                 // ----------------------------------------------
+
+                if (
+                    resultado.estadoCorreo === "NO_REGISTRADO" ||
+                    resultado.estadoCorreo === "SIN_CONFIRMAR"
+                ) {
+                    await mostrarModalResultado(
+                        "Servicio registrado",
+                        "El cierre fue confirmado, pero el correo aún no quedó asegurado. Se conservará el envío local para recuperarlo automáticamente."
+                    );
+
+                    limpiarFormularioParticular();
+                    return;
+                }
 
                 await eliminarEnvioOfflineParticular(
                     registroParticular.envioId
