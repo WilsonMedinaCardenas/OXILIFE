@@ -516,6 +516,22 @@ async function sincronizarParticular() {
             }
 
 
+            if (
+                !resultado.estadoCorreo ||
+                resultado.estadoCorreo === "NO_REGISTRADO" ||
+                resultado.estadoCorreo === "SIN_CONFIRMAR"
+            ) {
+                console.warn(
+                    "Background Sync Particular: correo sin persistencia confirmada. Se conserva el envío:",
+                    registro.envioId,
+                    resultado.estadoCorreo
+                );
+
+                throw new Error(
+                    "El cierre fue registrado, pero la notificación todavía no está asegurada en D1."
+                );
+            }
+
             await eliminarPendiente(
                 registro.envioId
             );

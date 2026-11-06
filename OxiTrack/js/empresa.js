@@ -1102,8 +1102,22 @@ function sincronizar() {
                         );
                     }
 
-                    // Solo ahora existe una confirmación verificable
-                    // del backend sobre este envío concreto.
+                    // La hoja está confirmada, pero también debemos
+                    // asegurar la persistencia del correo en D1.
+                    if (
+                        !datos.estadoCorreo ||
+                        datos.estadoCorreo === "NO_REGISTRADO" ||
+                        datos.estadoCorreo === "SIN_CONFIRMAR"
+                    ) {
+                        throw new Error(
+                            "Servicio confirmado en la hoja, pero el correo " +
+                            "todavía no está registrado en D1. " +
+                            "Se conservará el envío para recuperarlo."
+                        );
+                    }
+
+                    // Solo eliminar cuando el cierre y la notificación
+                    // están confirmados.
                     await eliminarEnvioEmpresa(registro.envioId);
 
                     ultimoErrorSincronizacionEmpresa = "";
