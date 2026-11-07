@@ -75,25 +75,13 @@ function mostrarModalResultado(titulo, mensaje) {
 
     return new Promise(resolve => {
 
-        const modal =
-            document.getElementById("modalResultado");
-
-        const tituloElemento =
-            document.getElementById("modalResultadoTitulo");
-
-        const mensajeElemento =
-            document.getElementById("modalResultadoMensaje");
-
-        const boton =
-            document.getElementById("btnModalResultado");
-
-
+        const modal = document.getElementById("modalResultado");
+        const tituloElemento = document.getElementById("modalResultadoTitulo");
+        const mensajeElemento = document.getElementById("modalResultadoMensaje");
+        const boton = document.getElementById("btnModalResultado");
         tituloElemento.textContent = titulo;
-
         mensajeElemento.textContent = mensaje;
-
         modal.hidden = false;
-
 
         boton.onclick = () => {
 
@@ -2235,6 +2223,7 @@ function inicializarFormulario() {
                 );
 
                 limpiarFormularioParticular();
+                window.location.assign("./index.html");
                 return;
 
             }
@@ -2254,39 +2243,20 @@ function inicializarFormulario() {
                 // YA PODEMOS ELIMINAR LA COPIA LOCAL
                 // ----------------------------------------------
 
-                if (
-                    resultado.estadoCorreo === "NO_REGISTRADO" ||
-                    resultado.estadoCorreo === "SIN_CONFIRMAR"
-                ) {
+                if (resultado.estadoCorreo === "NO_REGISTRADO" || resultado.estadoCorreo === "SIN_CONFIRMAR") {
                     await mostrarModalResultado(
                         "Servicio registrado",
                         "El cierre fue confirmado, pero el correo aún no quedó asegurado. Se conservará el envío local para recuperarlo automáticamente."
                     );
 
                     limpiarFormularioParticular();
+                    window.location.assign("./index.html");
                     return;
                 }
-
-                await eliminarEnvioOfflineParticular(
-                    registroParticular.envioId
-                );
-
-
-                if (
-                    resultado.duplicado === true
-                ) {
-
-                    console.log(
-                        "El registro ya había sido procesado."
-                    );
-
-                }
-
-                await mostrarModalResultado(
-                    "Registro enviado",
-                    "El servicio fue registrado correctamente."
-                );
-                location.reload();
+                await eliminarEnvioOfflineParticular(registroParticular.envioId);
+                if (resultado.duplicado === true) {console.log("El registro ya había sido procesado.");}
+                await mostrarModalResultado("Registro enviado","El servicio fue registrado correctamente.");
+                window.location.assign("./index.html");
                 return;
 
             } catch (errorEnvio) {
@@ -2296,18 +2266,7 @@ function inicializarFormulario() {
                 // NO ES UN PROBLEMA DE CONECTIVIDAD
                 // ==================================================
 
-                if (
-                    errorEnvio.reintentable === false
-                ) {
-
-                    await eliminarEnvioOfflineParticular(
-                        registroParticular.envioId
-                    );
-
-
-                    throw errorEnvio;
-
-                }
+                if (errorEnvio.reintentable === false) {await eliminarEnvioOfflineParticular(registroParticular.envioId); throw errorEnvio;}
 
 
                 // ==================================================
@@ -2315,46 +2274,27 @@ function inicializarFormulario() {
                 // EL REGISTRO YA ESTÁ EN INDEXEDDB
                 // ==================================================
 
-                console.warn(
-                    "Registro Particular pendiente de sincronización:",
-                    errorEnvio.message
-                );
-
-
+                console.warn("Registro Particular pendiente de sincronización:",errorEnvio.message);
                 programarSyncParticular();
-
-
                 await mostrarModalResultado(
                     "Registro pendiente",
                     "No fue posible confirmar el envío con el servidor. El registro quedó guardado de forma segura y se sincronizará automáticamente cuando exista conexión."
                 );
-
                 limpiarFormularioParticular();
+                window.location.assign("./index.html");
                 return;
 
             }
 
 
         } catch (error) {
-
-            console.error(
-                "Error al procesar registro particular:",
-                error
-            );
-
-
-            alert(
-                `No fue posible enviar el registro.\n\n${error.message}`
-            );
-
+            console.error("Error al procesar registro particular:",error);
+            alert(`No fue posible enviar el registro.\n\n${error.message}`);
 
         } finally {
 
             btnEnviar.disabled = false;
-
-            btnEnviar.textContent =
-                "Enviar Registro";
-
+            btnEnviar.textContent = "Enviar Registro";
         }
     });
 }

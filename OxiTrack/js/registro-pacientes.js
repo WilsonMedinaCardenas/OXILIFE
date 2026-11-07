@@ -205,6 +205,18 @@ estiloGestionParticular.textContent = `
 `;
 
 document.head.appendChild(estiloGestionParticular);
+
+document.addEventListener("input", function(evento) {
+    if (evento.target.id !== "inputObservacionesReagendarParticular") return;
+
+    const campo = evento.target;
+    const inicio = campo.selectionStart;
+    const fin = campo.selectionEnd;
+
+    campo.value = campo.value.toLocaleUpperCase("es-CL");
+    campo.setSelectionRange(inicio, fin);
+});
+
 const observacionesReagendarParticular = document.createElement("div");
 observacionesReagendarParticular.className = "campo";
 observacionesReagendarParticular.innerHTML = `
@@ -2307,7 +2319,7 @@ btnConfirmarGestionServicio.addEventListener("click", async function () {
                 payload.append("fechaProgramada",inputNuevaFechaGestion.value);
                 payload.append("ventanaHoraria",inputAtencionInmediataGestion.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestion.value);
                 payload.append("operarioAsignado",selectNuevoOperarioGestion.value);
-                payload.append("observacionesReagendamiento",document.getElementById("inputObservacionesReagendarParticular").value.trim());
+                payload.append("observacionesReagendamiento",document.getElementById("inputObservacionesReagendarParticular").value.trim().toLocaleUpperCase("es-CL"));
                 const pedidoReagendado = obtenerPedidoReagendadoParticular();
                 payload.append("modificarDetalle",pedidoReagendado.modificar);
                 if (pedidoReagendado.modificar === "SI") {payload.append("detalleSolicitado",pedidoReagendado.detalle);}

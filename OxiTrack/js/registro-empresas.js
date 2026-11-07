@@ -320,6 +320,17 @@ function prepararDestinoGestionEmpresa(servicio) {
     });
 }
 
+document.addEventListener("input", function(evento) {
+    if (evento.target.id !== "inputObservacionesReagendarEmpresa") return;
+
+    const campo = evento.target;
+    const inicio = campo.selectionStart;
+    const fin = campo.selectionEnd;
+
+    campo.value = campo.value.toLocaleUpperCase("es-CL");
+    campo.setSelectionRange(inicio, fin);
+});
+
 const observacionesReagendarEmpresa = document.createElement("div");
 observacionesReagendarEmpresa.className = "campo";
 observacionesReagendarEmpresa.innerHTML = `
@@ -2117,7 +2128,7 @@ function construirPayloadEmpresa() {
         clienteId: empresaSeleccionada.id,
         cliente: empresaSeleccionada.nombre,
         rut: empresaSeleccionada.rut,
-        email: empresaSeleccionada.email,
+        email: String(empresaSeleccionada.email || "").trim().toLowerCase(),
         modalidadDestino: destinoServicioEmpresa,
         direccion: destinoFinal.direccion,
         comuna: destinoFinal.comuna,
@@ -2130,7 +2141,7 @@ function construirPayloadEmpresa() {
         fechaProgramada: inputFechaEmpresa.value,
         ventanaHoraria: selectVentanaEmpresa.value,
         operarioAsignado: selectOperarioEmpresa.value,
-        observaciones: inputObservacionesEmpresa.value.trim(),
+        observaciones: inputObservacionesEmpresa.value.trim().toLocaleUpperCase("es-CL"),
         llevaFlete: servicioEmpresaActual === "RETIRO" ? "NO" : llevaFleteEmpresa,
         sheet:"BLANCA"
 
@@ -2852,7 +2863,7 @@ btnConfirmarGestionServicioEmpresa.addEventListener("click", async function () {
                 payload.append("fechaProgramada",inputNuevaFechaGestionEmpresa.value);
                 payload.append("ventanaHoraria",inputAtencionInmediataGestionEmpresa.value === "SI" ? "ATENCIÓN INMEDIATA" : selectNuevaVentanaGestionEmpresa.value);
                 payload.append("operarioAsignado",selectNuevoOperarioGestionEmpresa.value);
-                payload.append("observacionesReagendamiento",document.getElementById("inputObservacionesReagendarEmpresa").value.trim());
+                payload.append("observacionesReagendamiento",document.getElementById("inputObservacionesReagendarEmpresa").value.trim().toLocaleUpperCase("es-CL"));
                 const pedidoReagendado = obtenerPedidoReagendadoEmpresa();
                 payload.append("modificarDetalle",pedidoReagendado.modificar);
                 if (pedidoReagendado.modificar === "SI") {
