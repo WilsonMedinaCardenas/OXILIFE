@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizaciones | OxiTrack by Oxilife</title>
+    <link rel="stylesheet" href="./css/oxitrack-base.css">
+    <style>
+        html:not(.oficina-autorizada) body {visibility:hidden;}
+        .cotizacion-app {width:100%;max-width:450px;}
+        .cotizacion-card {background:#fff;border-radius:15px;padding:25px;box-shadow:0 5px 20px rgba(0,0,0,.15);}
+        .cotizacion-header {text-align:center;margin-bottom:22px;}
+        .cotizacion-logo {width:65px;height:65px;object-fit:contain;}
+        .cotizacion-header h1 {font-size:26px;margin:8px 0 4px;}
+        .cotizacion-header p {color:#666;font-size:14px;}
+        .cotizacion-seccion {margin-top:24px;}
+        .cotizacion-seccion h2 {font-size:18px;color:#611e63;border-bottom:2px solid #611e63;padding-bottom:6px;}
+        .cotizacion-campo {margin-top:16px;}
+        .cotizacion-campo label {font-size:14px;margin:0 0 7px;}
+        .cotizacion-campo select {width:100%;min-height:46px;padding:12px;border:1px solid #ccc;border-radius:8px;background:white;font-size:15px;}
+        .cotizacion-campo select:disabled {background:#f2f2f2;color:#888;}
+        .cotizacion-opciones {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+        .cotizacion-opcion {margin:0;padding:13px;background:#ebebeb;color:#333;font-size:15px;font-weight:bold;}
+        .cotizacion-opcion.activo {background:#611e63;color:white;}
+        .cotizacion-opcion:disabled {opacity:.5;cursor:not-allowed;}
+        .cotizacion-ayuda {font-size:12px;color:#777;margin-top:8px;line-height:1.5;}
+        .cotizacion-garantia {margin-top:15px;padding:13px;background:#f7f2f8;border-radius:8px;color:#611e63;font-weight:bold;font-size:14px;}
+        .cotizacion-acciones {display:grid;gap:10px;margin-top:28px;}
+        .cotizacion-acciones button {margin:0;background:#611e63;color:#fff;font-weight:bold;font-size:15px;}
+        .cotizacion-acciones .secundario {background:#999;}
+        .cotizacion-acciones button:disabled {background:#aaa;cursor:not-allowed;}
+        .cotizacion-error {margin-top:15px;padding:14px;border:1px solid #e5aaaa;background:#fff0f0;color:#a02020;border-radius:8px;font-size:13px;text-align:center;}
+        .cotizacion-error[hidden], .cotizacion-campo[hidden] {display:none;}
+        .cotizacion-volver {display:block;text-align:center;margin-top:18px;color:#611e63;text-decoration:none;font-size:14px;font-weight:bold;}
+    </style>
+</head>
+<body>
+    <main class="cotizacion-app">
+        <header class="cotizacion-header">
+            <img src="../assets/img/favicon.png" alt="Oxilife" class="cotizacion-logo">
+            <h1>Cotizaciones</h1>
+            <p>OxiTrack by Oxilife</p>
+        </header>
+
+        <section class="cotizacion-card">
+            <form id="formCotizacion" autocomplete="off">
+                <section class="cotizacion-seccion">
+                    <h2>Configuración del servicio</h2>
+
+                    <div class="cotizacion-campo">
+                        <label for="cotServicio">Tipo de servicio</label>
+                        <select id="cotServicio" required disabled>
+                            <option value="">Cargando servicios...</option>
+                        </select>
+                    </div>
+
+                    <div class="cotizacion-campo">
+                        <label for="cotCiclo">Ciclo de arriendo</label>
+                        <select id="cotCiclo" required disabled>
+                            <option value="">Seleccione un servicio</option>
+                        </select>
+                    </div>
+
+                    <div class="cotizacion-campo">
+                        <label for="cotComuna">Comuna del servicio</label>
+                        <select id="cotComuna" required disabled>
+                            <option value="">Cargando comunas...</option>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="cotizacion-seccion">
+                    <h2>Flete</h2>
+                    <div class="cotizacion-opciones">
+                        <button type="button" id="cotFleteSi" class="cotizacion-opcion">SÍ</button>
+                        <button type="button" id="cotFleteNo" class="cotizacion-opcion activo">NO</button>
+                    </div>
+
+                    <div id="cotHorarioGrupo" class="cotizacion-campo" hidden>
+                        <label>Horario del flete de servicio</label>
+                        <div class="cotizacion-opciones">
+                            <button type="button" id="cotDiurno" class="cotizacion-opcion activo">DIURNO</button>
+                            <button type="button" id="cotNocturno" class="cotizacion-opcion">NOCTURNO</button>
+                        </div>
+                    </div>
+                    <p class="cotizacion-ayuda">El flete de servicio corresponde a implementación y retiro. Los fletes posteriores de recarga se mostrarán por separado.</p>
+                </section>
+
+                <section class="cotizacion-seccion">
+                    <h2>Insumos</h2>
+                    <div class="cotizacion-opciones">
+                        <button type="button" id="cotInsumosSi" class="cotizacion-opcion">CON INSUMOS</button>
+                        <button type="button" id="cotInsumosNo" class="cotizacion-opcion activo">SIN INSUMOS</button>
+                    </div>
+                    <p class="cotizacion-ayuda">Los insumos opcionales aparecerán en la descripción del servicio aunque no se contraten.</p>
+                </section>
+
+                <section class="cotizacion-seccion">
+                    <h2>Garantía</h2>
+                    <div id="cotGarantia" class="cotizacion-garantia">Seleccione un servicio para consultar su garantía.</div>
+                </section>
+
+                <div class="cotizacion-acciones">
+                    <button type="button" id="cotBorrador" disabled>Ver borrador</button>
+                    <button type="button" id="cotCrear" disabled>Crear cotización</button>
+                    <button type="button" id="cotCompartir" class="secundario" hidden>Compartir / Descargar PDF</button>
+                </div>
+
+                <div id="cotMensaje" class="cotizacion-error" role="alert" hidden></div>
+            </form>
+
+            <a href="./" class="cotizacion-volver">Volver al menú principal</a>
+        </section>
+    </main>
+
+    <script src="./js/cotizacion.js"></script>
+</body>
+</html>

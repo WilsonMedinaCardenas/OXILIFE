@@ -27,6 +27,32 @@ let llevaFleteEmpresa = "";
 let solicitudIdEmpresa = "";
 
 
+let retiroPacienteEmpresaSeleccionado = null;
+let implementacionesRetiroEmpresa = [];
+let consultaRetiroEmpresa = 0;
+
+const bloqueRetiroPacienteEmpresa = document.createElement("div");
+bloqueRetiroPacienteEmpresa.id = "bloqueRetiroPacienteEmpresa";
+bloqueRetiroPacienteEmpresa.hidden = true;
+
+const etiquetaRetiroPacienteEmpresa = document.createElement("label");
+etiquetaRetiroPacienteEmpresa.textContent = "Paciente con implementación disponible";
+
+const selectorRetiroPacienteEmpresa = document.createElement("select");
+selectorRetiroPacienteEmpresa.className = "select-particular";
+selectorRetiroPacienteEmpresa.required = false;
+
+const informacionRetiroPacienteEmpresa = document.createElement("div");
+informacionRetiroPacienteEmpresa.style.cssText = "margin:12px 0;line-height:1.7;white-space:pre-line;";
+
+bloqueRetiroPacienteEmpresa.append(
+  etiquetaRetiroPacienteEmpresa,
+  selectorRetiroPacienteEmpresa,
+  informacionRetiroPacienteEmpresa
+);
+
+
+
 // ==========================================================
 // DOM
 // ==========================================================
@@ -850,6 +876,149 @@ function pintarEmpresaSeleccionada() {
 
 }
 
+function esRetiroPacienteEmpresa() {
+  if (servicioEmpresaActual !== "RETIRO" || !empresaSeleccionada) {
+    return false;
+  }
+
+  const modalidad = normalizarTextoEmpresa(empresaSeleccionada.modalidad);
+
+  return modalidad === "INDIRECTO" ||
+    (modalidad === "MIXTO" && destinoServicioEmpresa === "PACIENTE");
+}
+
+function limpiarRetiroPacienteEmpresa() {
+  ++consultaRetiroEmpresa;
+  retiroPacienteEmpresaSeleccionado = null;
+  implementacionesRetiroEmpresa = [];
+  bloqueRetiroPacienteEmpresa.hidden = true;
+  selectorRetiroPacienteEmpresa.replaceChildren();
+  informacionRetiroPacienteEmpresa.textContent = "";
+  inputPacienteEmpresa.readOnly = false;
+  inputDireccionPacienteEmpresa.readOnly = false;
+}
+
+async function cargarRetiroPacienteEmpresa() {
+
+  limpiarRetiroPacienteEmpresa();
+  if (!esRetiroPacienteEmpresa()) return;
+  const consultaActual = ++consultaRetiroEmpresa;
+  reiniciarDireccionAlternativaEmpresa();
+  seccionPacienteEmpresa.prepend(bloqueRetiroPacienteEmpresa);
+  bloqueRetiroPacienteEmpresa.hidden = false;
+  selectorRetiroPacienteEmpresa.replaceChildren();
+  const cargando = document.createElement("option");
+  cargando.value = "";
+  cargando.textContent = "Consultando implementaciones...";
+  selectorRetiroPacienteEmpresa.appendChild(cargando);
+  selectorRetiroPacienteEmpresa.disabled = true;
+  inputPacienteEmpresa.value = "";
+  inputDireccionPacienteEmpresa.value = "";
+  selectComunaPacienteEmpresa.value = "";
+  contenedorProductosEmpresa.replaceChildren();
+  ocultarEmpresa(seccionDetalleEmpresa);
+
+  try {
+    const url = "/api/oxitrack/?modo=implementacionesRetirablesEmpresa&rut=" +
+      encodeURIComponent(empresaSeleccionada.rut);
+
+    const respuesta = await fetch(url, {
+      method:"GET",
+      headers:{"Accept":"application/json"},
+      cache:"no-store"
+    });
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || datos.ok !== true ||
+        !Array.isArray(datos.implementaciones)) {
+      throw new Error(datos.error || "No fue posible consultar los pacientes.");
+    }
+
+    if (consultaActual !== consultaRetiroEmpresa ||
+        !esRetiroPacienteEmpresa()) return;
+
+    implementacionesRetiroEmpresa = datos.implementaciones;
+
+    selectorRetiroPacienteEmpresa.replaceChildren();
+
+    const inicial = document.createElement("option");
+    inicial.value = "";
+    inicial.textContent = implementacionesRetiroEmpresa.length
+      ? "Seleccione el paciente a retirar..."
+      : "No hay implementaciones disponibles";
+    selectorRetiroPacienteEmpresa.appendChild(inicial);
+
+    implementacionesRetiroEmpresa.forEach(function(item) {
+      const opcion = document.createElement("option");
+      opcion.value = item.idOrigen;
+      opcion.textContent = item.paciente + " | " + item.tipo +
+        " | " + item.idOrigen;
+      selectorRetiroPacienteEmpresa.appendChild(opcion);
+    });
+
+    selectorRetiroPacienteEmpresa.disabled =
+      implementacionesRetiroEmpresa.length === 0;
+
+  } catch (error) {
+    if (consultaActual !== consultaRetiroEmpresa) return;
+    mostrarMensajeGeneral(error.message, "error");
+    selectorRetiroPacienteEmpresa.replaceChildren();
+    selectorRetiroPacienteEmpresa.disabled = true;
+  }
+}
+
+selectorRetiroPacienteEmpresa.addEventListener("change", function() {
+  retiroPacienteEmpresaSeleccionado =
+    implementacionesRetiroEmpresa.find(
+      item => item.idOrigen === selectorRetiroPacienteEmpresa.value
+    ) || null;
+
+  contenedorProductosEmpresa.replaceChildren();
+  informacionRetiroPacienteEmpresa.textContent = "";
+  ocultarEmpresa(seccionDetalleEmpresa);
+
+  const item = retiroPacienteEmpresaSeleccionado;
+  if (!item) return;
+  reiniciarDireccionAlternativaEmpresa();
+  inputPacienteEmpresa.value = item.paciente;
+  inputPacienteEmpresa.readOnly = true;
+
+  inputDireccionPacienteEmpresa.value = item.direccion;
+  inputDireccionPacienteEmpresa.readOnly = true;
+
+  if (!Array.from(selectComunaPacienteEmpresa.options)
+    .some(opcion => opcion.value === item.comuna)) {
+    const opcion = document.createElement("option");
+    opcion.value = item.comuna;
+    opcion.textContent = item.comuna;
+    selectComunaPacienteEmpresa.appendChild(opcion);
+  }
+  selectComunaPacienteEmpresa.value = item.comuna;
+
+  informacionRetiroPacienteEmpresa.textContent =
+    "PACIENTE: " + item.paciente + "\n" +
+    "DIRECCIÓN: " + item.direccion + "\n" +
+    "COMUNA: " + item.comuna + "\n" +
+    "TIPO: " + item.tipo + "\n" +
+    "ID ORIGEN: " + item.idOrigen;
+
+  const titulo = document.createElement("div");
+  titulo.className = "titulo";
+  titulo.textContent = "ELEMENTOS A RETIRAR";
+  contenedorProductosEmpresa.appendChild(titulo);
+
+  item.elementos.forEach(function(elemento) {
+    const fila = document.createElement("div");
+    fila.className = "elemento-fila";
+    fila.textContent = elemento.elemento + " × " + elemento.cantidad;
+    contenedorProductosEmpresa.appendChild(fila);
+  });
+
+  mostrarEmpresa(seccionDetalleEmpresa);
+});
+
+
 
 // ==========================================================
 // MODALIDAD
@@ -857,6 +1026,7 @@ function pintarEmpresaSeleccionada() {
 
 function procesarModalidadEmpresa() {
 
+    limpiarRetiroPacienteEmpresa();
     const modalidad = normalizarTextoEmpresa(empresaSeleccionada.modalidad);
     destinoServicioEmpresa = "";
     ocultarEmpresa(seccionModalidadMixta);
@@ -874,7 +1044,9 @@ function procesarModalidadEmpresa() {
     if (modalidad === "INDIRECTO") {destinoServicioEmpresa = "PACIENTE";
         mostrarEmpresa(seccionPacienteEmpresa);
         actualizarDireccionAlternativaEmpresa();
-        return;
+        if (servicioEmpresaActual === "RETIRO") {
+            void cargarRetiroPacienteEmpresa();
+        }return;
     }
 
     if (modalidad === "MIXTO") {mostrarEmpresa(seccionModalidadMixta);}
@@ -888,6 +1060,8 @@ function procesarModalidadEmpresa() {
 
 btnDestinoEmpresa.addEventListener("click",function () {
         destinoServicioEmpresa = "EMPRESA";
+        limpiarRetiroPacienteEmpresa();
+        pintarDetalleServicioEmpresa();
         btnDestinoEmpresa.classList.add("activo");
         btnDestinoPaciente.classList.remove("activo");
         ocultarEmpresa(seccionPacienteEmpresa);
@@ -904,6 +1078,9 @@ btnDestinoPaciente.addEventListener("click",function () {
         ocultarEmpresa(seccionDireccionEmpresa);
         mostrarEmpresa(seccionPacienteEmpresa);
         actualizarDireccionAlternativaEmpresa();
+        if (servicioEmpresaActual === "RETIRO") {
+            void cargarRetiroPacienteEmpresa();
+        }
     }
 );
 
@@ -913,6 +1090,13 @@ btnDestinoPaciente.addEventListener("click",function () {
 // ==========================================================
 
 function pintarDetalleServicioEmpresa() {
+
+    if (esRetiroPacienteEmpresa()) {
+        contenedorProductosEmpresa.replaceChildren();
+        ocultarEmpresa(seccionTipoImplementacionEmpresa);
+        ocultarEmpresa(seccionDetalleEmpresa);
+        return;
+    }
 
     contenedorProductosEmpresa.innerHTML = "";
     ocultarEmpresa(seccionTipoImplementacionEmpresa);
@@ -1546,49 +1730,30 @@ function modificarCantidad(elemento,cambio) {
 
 function obtenerDetalleSolicitado() {
 
-    const filas =
-        contenedorProductosEmpresa.querySelectorAll(
-            ".fila-producto-empresa"
-        );
+    if (esRetiroPacienteEmpresa()) {
+        return retiroPacienteEmpresaSeleccionado
+            ? retiroPacienteEmpresaSeleccionado.elementos.map(item => ({
+                elemento: item.elemento,
+                cantidad: item.cantidad
+              }))
+            : [];
+    }
 
+    const filas = contenedorProductosEmpresa.querySelectorAll(".fila-producto-empresa");
     const detalle = [];
+    filas.forEach(function (fila) {
 
-
-    filas.forEach(
-        function (fila) {
-
-            const cantidad =
-                Number(
-                    fila.querySelector(
-                        ".cantidad-producto-empresa"
-                    ).dataset.cantidad || 0
-                );
-
-
-            if (cantidad <= 0) {
-                return;
-            }
-
-
+            const cantidad = Number(fila.querySelector(".cantidad-producto-empresa").dataset.cantidad || 0);
+            if (cantidad <= 0) {return;}
             detalle.push({
-
-                gas:
-                    fila.dataset.gas,
-
-                medida:
-                    fila.dataset.medida,
-
-                cantidad:
-                    cantidad
-
+                gas:fila.dataset.gas,
+                medida:fila.dataset.medida,
+                cantidad:cantidad
             });
 
         }
     );
-
-
     return detalle;
-
 }
 
 
@@ -1983,6 +2148,9 @@ formRegistroEmpresa.addEventListener("submit", function (event) {
 
 function validarFormularioEmpresa() {
 
+    if (esRetiroPacienteEmpresa() && !retiroPacienteEmpresaSeleccionado) {
+        throw new Error("Debe seleccionar un paciente con implementación disponible.");
+    }
     if (!servicioEmpresaActual) { throw new Error("Seleccione un servicio.");}
     if (!empresaSeleccionada) {throw new Error("Debe seleccionar una empresa.");}
     if (!destinoServicioEmpresa) {throw new Error("Debe indicar si el servicio corresponde a la empresa o a un paciente.");}
@@ -2030,6 +2198,10 @@ function pintarResumenConfirmacion() {
     resumenConfirmacionEmpresa.innerHTML = `
 
         ${datoResumen("Servicio", servicioEmpresaActual)}
+        ${esRetiroPacienteEmpresa() && retiroPacienteEmpresaSeleccionado
+          ? datoResumen("ID origen", retiroPacienteEmpresaSeleccionado.idOrigen) : ""}
+        ${esRetiroPacienteEmpresa() && retiroPacienteEmpresaSeleccionado
+          ? datoResumen("Tipo", retiroPacienteEmpresaSeleccionado.tipo) : ""}
         ${datoResumen("Cliente", empresaSeleccionada.nombre)}
         ${paciente ? datoResumen( "Paciente", paciente) : ""}
         ${datoResumen( "Dirección", direccion)}
@@ -2135,7 +2307,9 @@ function construirPayloadEmpresa() {
         direccionAlternativa: destinoFinal.alternativa,
         paciente: esPaciente ? inputPacienteEmpresa.value.trim() : "",
         servicio: servicioEmpresaActual,
-        tipo: servicioEmpresaActual.includes("IMPLEMENTACIÓN") ? selectTipoImplementacionEmpresa.value : "",
+        tipo: esRetiroPacienteEmpresa() ? retiroPacienteEmpresaSeleccionado.tipo
+            : (servicioEmpresaActual.includes("IMPLEMENTACIÓN") ? selectTipoImplementacionEmpresa.value : ""),
+        idOrigen: esRetiroPacienteEmpresa() ? retiroPacienteEmpresaSeleccionado.idOrigen : "",
         detalleSolicitado: servicioEmpresaActual.includes("IMPLEMENTACIÓN") ? selectTipoImplementacionEmpresa.value : JSON.stringify(obtenerDetalleSolicitado()),
         estado: "PENDIENTE",
         fechaProgramada: inputFechaEmpresa.value,
