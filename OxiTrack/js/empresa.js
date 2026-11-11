@@ -54,52 +54,10 @@ async function estado() {
         ? ""
         : "Sin conexión. Se utilizarán datos guardados.";
 
-    if (!identidad) return;
-
-    try {
-        const pendientes = await enviosPendientesEmpresa();
-        const cantidad = pendientes.length;
-
-        const errores = pendientes
-            .filter(item => item.ultimoError)
-            .map(item =>
-                `SERVICIO: ${item.id || "SIN ID"}\n` +
-                `INTENTOS: ${item.intentos || 0}\n` +
-                `ERROR: ${item.ultimoError}`
-            );
-
-        const errorActual = ultimoErrorSincronizacionEmpresa;
-
-        let texto = cantidad
-            ? `ENVÍOS PENDIENTES: ${cantidad}`
-            : "SIN ENVÍOS PENDIENTES";
-
-        if (errores.length) {
-            texto += "\n\n" + errores.join("\n\n");
-        } else if (cantidad && errorActual) {
-            texto += "\n\nERROR: " + errorActual;
-        }
-
-        $("cola").textContent = texto;
-        $("cola").hidden = false;
-        $("cola").style.whiteSpace = "pre-wrap";
-        $("cola").style.padding = "12px";
-        $("cola").style.borderRadius = "8px";
-        $("cola").style.background = cantidad ? "#fff0f0" : "#f0f8f0";
-        $("cola").style.color = cantidad ? "#963636" : "#28643b";
-        $("cola").style.fontWeight = "600";
-        $("cola").style.overflowWrap = "anywhere";
-
-    } catch (error) {
-        console.error("No fue posible consultar la cola Empresa:", error);
-
-        $("cola").textContent =
-            "ERROR AL CONSULTAR ENVÍOS PENDIENTES:\n" +
-            String(error.message || error);
-
-        $("cola").hidden = false;
-        $("cola").style.whiteSpace = "pre-wrap";
-    }
+    // La cola continúa funcionando internamente.
+    // No mostrar diagnósticos en la pantalla del operario.
+    $("cola").textContent = "";
+    $("cola").hidden = true;
 }
 
 async function consultar(modo, parametros = {}) {
@@ -157,6 +115,11 @@ function abrirModalConfirmacion(filas) {
 
 function mostrarModalResultado(titulo, texto, limpiarAlAceptar = false) {
     return new Promise(resolve => {
+        $("modalResultadoTitulo").style.color =
+            titulo === "Error de procesamiento" ? "#963636" :
+            titulo === "No se pudo confirmar el envío" ? "#b45309" :
+            "#611e63";
+
         $("modalResultadoTitulo").textContent = titulo;
         $("modalResultadoMensaje").textContent = texto;
         $("modalResultado").hidden = false;
@@ -900,6 +863,52 @@ function generarEnvioId() {
         `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 }
 
+function mostrarErrorEnvioEmpresa(motivo) {
+    const error = String(motivo || "Error desconocido").trim();
+
+    // El navegador informa que no tiene conexión.
+    if (!navigator.onLine) {
+        return {
+            titulo: "Sin conexión",
+            mensaje:
+                "No hay conexión a internet.\n\n" +
+                "El servicio quedó guardado en este dispositivo y " +
+                "se enviará automáticamente cuando vuelva la señal.\n\n" +
+                "No borre los datos del navegador.",
+            color: "#611e63"
+        };
+    }
+
+    // Fallo de transporte: no permite saber si el servidor
+    // procesó o no el servicio.
+    if (
+        /failed to fetch|networkerror|load failed|aborterror|tiempo de espera agotado/i.test(error)
+    ) {
+        return {
+            titulo: "No se pudo confirmar el envío",
+            mensaje:
+                "El teléfono tiene conexión, pero no recibió " +
+                "la confirmación del servidor.\n\n" +
+                "El servicio permanece guardado en este dispositivo.\n\n" +
+                "DETALLE: " + error +
+                "\n\nTome una captura y envíela a Administración. " +
+                "No repita el servicio ni borre los datos del navegador.",
+            color: "#b45309"
+        };
+    }
+
+    // Rechazo del servidor, validación u otro error interno.
+    return {
+        titulo: "Error de procesamiento",
+        mensaje:
+            "El sistema no pudo confirmar el registro del servicio.\n\n" +
+            "DETALLE: " + error +
+            "\n\nEnvíe una captura de esta pantalla a Administración.\n" +
+            "No borre los datos del navegador.",
+        color: "#963636"
+    };
+}
+
 async function registrar() {
     if (enviando) return;
 
@@ -1009,15 +1018,20 @@ async function registrar() {
         );
 
         if (siguePendiente) {
+            const aviso = mostrarErrorEnvioEmpresa(
+                ultimoErrorSincronizacionEmpresa ||
+                "No se recibió una confirmación completa del servidor."
+            );
+
+            $("modalResultadoTitulo").style.color = aviso.color;
+
             await mostrarModalResultado(
-                "Envío pendiente",
-                "El servicio está guardado en este dispositivo, pero el servidor no confirmó su recepción.\n\n" +
-                "MOTIVO: " +
-                (ultimoErrorSincronizacionEmpresa || "No se recibió una confirmación completa del servidor.") +
-                "\n\nNo borre los datos del navegador. El envío se seguirá reintentando con el mismo ID.",
+                aviso.titulo,
+                aviso.mensaje,
                 true
             );
         } else {
+            $("modalResultadoTitulo").style.color = "#611e63";
             await mostrarModalResultado(
                 "Registro enviado",
                 "El servicio fue recibido correctamente.",
@@ -1029,11 +1043,15 @@ async function registrar() {
         console.error("Empresa: error de registro:", error);
 
         if (guardadoLocalmente) {
+            const aviso = mostrarErrorEnvioEmpresa(
+                String(error.message || error)
+            );
+
+            $("modalResultadoTitulo").style.color = aviso.color;
+
             await mostrarModalResultado(
-                "Envío pendiente",
-                "El servicio está guardado en este dispositivo.\n\n" +
-                "MOTIVO: " + String(error.message || error) +
-                "\n\nNo borre los datos del navegador.",
+                aviso.titulo,
+                aviso.mensaje,
                 true
             );
         } else {
