@@ -36,7 +36,7 @@ bloqueRetiroPacienteEmpresa.id = "bloqueRetiroPacienteEmpresa";
 bloqueRetiroPacienteEmpresa.hidden = true;
 
 const etiquetaRetiroPacienteEmpresa = document.createElement("label");
-etiquetaRetiroPacienteEmpresa.textContent = "Paciente con implementación disponible";
+etiquetaRetiroPacienteEmpresa.textContent = "Paciente con retiro disponible";
 
 const selectorRetiroPacienteEmpresa = document.createElement("select");
 selectorRetiroPacienteEmpresa.className = "select-particular";
@@ -887,13 +887,44 @@ function esRetiroPacienteEmpresa() {
     (modalidad === "MIXTO" && destinoServicioEmpresa === "PACIENTE");
 }
 
+const visibilidadOriginalPacienteEmpresa = new Map();
+
+function mostrarSoloRetiroPacienteEmpresa(activar) {
+
+  Array.from(seccionPacienteEmpresa.children).forEach(function(hijo) {
+
+    if (hijo === bloqueRetiroPacienteEmpresa) return;
+
+    if (activar) {
+
+      if (!visibilidadOriginalPacienteEmpresa.has(hijo)) {
+        visibilidadOriginalPacienteEmpresa.set(hijo, hijo.hidden);
+      }
+
+      hijo.hidden = true;
+
+    } else if (visibilidadOriginalPacienteEmpresa.has(hijo)) {
+
+      hijo.hidden = visibilidadOriginalPacienteEmpresa.get(hijo);
+      visibilidadOriginalPacienteEmpresa.delete(hijo);
+
+    }
+
+  });
+
+}
+
 function limpiarRetiroPacienteEmpresa() {
   ++consultaRetiroEmpresa;
   retiroPacienteEmpresaSeleccionado = null;
   implementacionesRetiroEmpresa = [];
+
+  mostrarSoloRetiroPacienteEmpresa(false);
+
   bloqueRetiroPacienteEmpresa.hidden = true;
   selectorRetiroPacienteEmpresa.replaceChildren();
-  informacionRetiroPacienteEmpresa.textContent = "";
+  informacionRetiroPacienteEmpresa.replaceChildren();
+
   inputPacienteEmpresa.readOnly = false;
   inputDireccionPacienteEmpresa.readOnly = false;
 }
@@ -905,6 +936,7 @@ async function cargarRetiroPacienteEmpresa() {
   const consultaActual = ++consultaRetiroEmpresa;
   reiniciarDireccionAlternativaEmpresa();
   seccionPacienteEmpresa.prepend(bloqueRetiroPacienteEmpresa);
+  mostrarSoloRetiroPacienteEmpresa(true);
   bloqueRetiroPacienteEmpresa.hidden = false;
   selectorRetiroPacienteEmpresa.replaceChildren();
   const cargando = document.createElement("option");
@@ -946,7 +978,7 @@ async function cargarRetiroPacienteEmpresa() {
     inicial.value = "";
     inicial.textContent = implementacionesRetiroEmpresa.length
       ? "Seleccione el paciente a retirar..."
-      : "No hay implementaciones disponibles";
+      : "No hay pacientes con retiro disponibles";
     selectorRetiroPacienteEmpresa.appendChild(inicial);
 
     implementacionesRetiroEmpresa.forEach(function(item) {
@@ -996,26 +1028,149 @@ selectorRetiroPacienteEmpresa.addEventListener("change", function() {
   }
   selectComunaPacienteEmpresa.value = item.comuna;
 
-  informacionRetiroPacienteEmpresa.textContent =
-    "PACIENTE: " + item.paciente + "\n" +
-    "DIRECCIÓN: " + item.direccion + "\n" +
-    "COMUNA: " + item.comuna + "\n" +
-    "TIPO: " + item.tipo + "\n" +
-    "ID ORIGEN: " + item.idOrigen;
+    informacionRetiroPacienteEmpresa.replaceChildren();
 
-  const titulo = document.createElement("div");
-  titulo.className = "titulo";
-  titulo.textContent = "ELEMENTOS A RETIRAR";
-  contenedorProductosEmpresa.appendChild(titulo);
+  function crearTarjetaRetiroEmpresa(tituloTexto) {
+
+    const tarjeta = document.createElement("div");
+
+    tarjeta.style.cssText =
+      "background:#f8f8f8;" +
+      "border:1px solid #dddddd;" +
+      "border-radius:12px;" +
+      "padding:20px;" +
+      "margin:18px 0;" +
+      "box-sizing:border-box;";
+
+    const titulo = document.createElement("h3");
+
+    titulo.textContent = tituloTexto;
+
+    titulo.style.cssText =
+      "font-size:17px;" +
+      "font-weight:700;" +
+      "color:#611e63;" +
+      "margin:0 0 16px;";
+
+    tarjeta.appendChild(titulo);
+
+    return tarjeta;
+  }
+
+  function agregarDatoRetiroEmpresa(tarjeta, etiqueta, valor) {
+
+    const fila = document.createElement("div");
+
+    fila.style.cssText =
+      "display:flex;" +
+      "justify-content:space-between;" +
+      "align-items:flex-start;" +
+      "gap:12px;" +
+      "padding:11px 0;" +
+      "border-bottom:1px solid #e3e3e3;" +
+      "font-size:14px;";
+
+    const nombre = document.createElement("span");
+    nombre.textContent = etiqueta;
+    nombre.style.color = "#666666";
+
+    const contenido = document.createElement("strong");
+    contenido.textContent = String(valor ?? "");
+    contenido.style.cssText =
+      "text-align:right;" +
+      "overflow-wrap:anywhere;" +
+      "color:#333333;";
+
+    fila.append(nombre, contenido);
+    tarjeta.appendChild(fila);
+  }
+
+  const tarjetaPaciente =
+    crearTarjetaRetiroEmpresa("Paciente seleccionado");
+
+  agregarDatoRetiroEmpresa(
+    tarjetaPaciente,
+    "Paciente",
+    item.paciente
+  );
+
+  agregarDatoRetiroEmpresa(
+    tarjetaPaciente,
+    "Dirección",
+    item.direccion
+  );
+
+  agregarDatoRetiroEmpresa(
+    tarjetaPaciente,
+    "Comuna",
+    item.comuna
+  );
+
+  informacionRetiroPacienteEmpresa.appendChild(tarjetaPaciente);
+
+  const tarjetaImplementacion =
+    crearTarjetaRetiroEmpresa("Implementación a retirar");
+
+  agregarDatoRetiroEmpresa(
+    tarjetaImplementacion,
+    "ID implementación",
+    item.idOrigen
+  );
+
+  agregarDatoRetiroEmpresa(
+    tarjetaImplementacion,
+    "Tipo",
+    item.tipo
+  );
+
+  const subtitulo = document.createElement("h4");
+
+  subtitulo.textContent = "Elementos entregados";
+
+  subtitulo.style.cssText =
+    "font-size:15px;" +
+    "font-weight:700;" +
+    "color:#444444;" +
+    "margin:18px 0 12px;";
+
+  tarjetaImplementacion.appendChild(subtitulo);
 
   item.elementos.forEach(function(elemento) {
+
     const fila = document.createElement("div");
-    fila.className = "elemento-fila";
-    fila.textContent = elemento.elemento + " × " + elemento.cantidad;
-    contenedorProductosEmpresa.appendChild(fila);
+
+    fila.style.cssText =
+      "display:flex;" +
+      "justify-content:space-between;" +
+      "align-items:center;" +
+      "gap:12px;" +
+      "padding:12px;" +
+      "margin-bottom:8px;" +
+      "background:#ffffff;" +
+      "border:1px solid #dddddd;" +
+      "border-radius:8px;" +
+      "font-size:14px;";
+
+    const nombre = document.createElement("span");
+    nombre.textContent = elemento.elemento;
+    nombre.style.overflowWrap = "anywhere";
+
+    const cantidad = document.createElement("strong");
+    cantidad.textContent = "× " + elemento.cantidad;
+    cantidad.style.cssText =
+      "color:#611e63;" +
+      "white-space:nowrap;";
+
+    fila.append(nombre, cantidad);
+    tarjetaImplementacion.appendChild(fila);
+
   });
 
-  mostrarEmpresa(seccionDetalleEmpresa);
+  informacionRetiroPacienteEmpresa.appendChild(
+    tarjetaImplementacion
+  );
+
+  ocultarEmpresa(seccionDetalleEmpresa);
 });
 
 
@@ -2149,7 +2304,7 @@ formRegistroEmpresa.addEventListener("submit", function (event) {
 function validarFormularioEmpresa() {
 
     if (esRetiroPacienteEmpresa() && !retiroPacienteEmpresaSeleccionado) {
-        throw new Error("Debe seleccionar un paciente con implementación disponible.");
+        throw new Error("Debe seleccionar un paciente con retiro disponible.");
     }
     if (!servicioEmpresaActual) { throw new Error("Seleccione un servicio.");}
     if (!empresaSeleccionada) {throw new Error("Debe seleccionar una empresa.");}
@@ -2189,7 +2344,22 @@ function pintarResumenConfirmacion() {
     const comuna = destinoFinal.comuna;
     const paciente = destinoServicioEmpresa === "PACIENTE" ? inputPacienteEmpresa.value.trim() : "";
     let detalleTexto = detalle.map(function (item) {
-            return (item.gas + " " + item.medida + " × " + item.cantidad);}).join("<br>");
+        const nombre =
+            item.elemento ||
+            item.tipoImplementacion ||
+            [item.gas, item.medida]
+                .filter(Boolean)
+                .join(" ") ||
+            item.nombre ||
+            "Elemento";
+
+        const cantidad = Number(item.cantidad || 0);
+
+        return escaparHtmlEmpresa(nombre) +
+            " × " +
+            cantidad;
+
+    }).join("<br>");
 
     if (servicioEmpresaActual.includes("IMPLEMENTACIÓN")) {
         detalleTexto = selectTipoImplementacionEmpresa.value;
@@ -3193,6 +3363,8 @@ function cargarTiposImplementacionPrueba() {
 // ==========================================================
 
 function reiniciarEmpresaSeleccionada() {
+
+    limpiarRetiroPacienteEmpresa();
 
     empresaSeleccionada = null;
     resultadosBusquedaEmpresa.replaceChildren();
