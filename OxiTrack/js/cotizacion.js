@@ -3,6 +3,13 @@
 const cot = id => document.getElementById(id);
 const estadoCot = {servicio:"",ciclo:"",comuna:"",flete:false,horario:"DIURNO",insumos:false,garantia:0};
 let catalogoCotizaciones = null;
+let borradorRevisadoCotizacion = false;
+
+function invalidarBorradorCotizacion() {
+    borradorRevisadoCotizacion = false;
+    cot("cotCrear").disabled = true;
+    cot("cotCompartir").hidden = true;
+}
 
 function mensajeCotizacion(texto) {
     cot("cotMensaje").textContent = texto;
@@ -75,9 +82,21 @@ async function ejecutarCotizacion(crear) {
         return;
     }
 
+    if (crear && !borradorRevisadoCotizacion) {
+        mensajeCotizacion("Primero genere y revise el borrador.");
+        return;
+    }
+
     const boton = cot(crear ? "cotCrear" : "cotBorrador");
     boton.disabled = true;
     mensajeCotizacion("");
+
+    const ventanaBorrador = crear ? null : window.open("about:blank", "_blank");
+
+    if (ventanaBorrador) {
+        ventanaBorrador.document.title = "Preparando borrador Oxilife";
+        ventanaBorrador.document.body.textContent = "Generando vista previa...";
+    }
 
     try {
         const datos = new FormData();
@@ -100,13 +119,24 @@ async function ejecutarCotizacion(crear) {
         const bytes = Uint8Array.from(atob(resultado.pdfBase64),c => c.charCodeAt(0));
         const url = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
 
-        if (crear) {
+                if (crear) {
             const enlace = document.createElement("a");
             enlace.href = url;
             enlace.download = resultado.nombre;
             enlace.click();
+
+            invalidarBorradorCotizacion();
         } else {
-            window.open(url,"_blank");
+            borradorRevisadoCotizacion = true;
+            cot("cotCrear").disabled = false;
+
+            if (ventanaBorrador && !ventanaBorrador.closed) {
+                ventanaBorrador.location.replace(url);
+            } else {
+                mensajeCotizacion(
+                    "Borrador generado. Utilice Compartir / Descargar PDF para revisarlo."
+                );
+            }
         }
 
         cot("cotCompartir").hidden = false;
@@ -117,14 +147,29 @@ async function ejecutarCotizacion(crear) {
             enlace.click();
         };
     } catch (error) {
+        if (ventanaBorrador && !ventanaBorrador.closed) {
+            ventanaBorrador.close();
+        }
         mensajeCotizacion(error.message);
     } finally {
-        boton.disabled = false;
+        boton.disabled = crear ? !borradorRevisadoCotizacion : false;
     }
 }
 
 cot("cotBorrador").disabled = false;
-cot("cotCrear").disabled = false;
+cot("cotCrear").disabled = true;
+
+[
+    "cotServicio", "cotCiclo", "cotComuna",
+    "cotFleteSi", "cotFleteNo",
+    "cotDiurno", "cotNocturno",
+    "cotInsumosSi", "cotInsumosNo"
+].forEach(id => {
+    cot(id).addEventListener(
+        ["cotServicio", "cotCiclo", "cotComuna"].includes(id) ? "change" : "click",
+        invalidarBorradorCotizacion
+    );
+});
 cot("cotBorrador").addEventListener("click",() => ejecutarCotizacion(false));
 cot("cotCrear").addEventListener("click",() => ejecutarCotizacion(true));
 
