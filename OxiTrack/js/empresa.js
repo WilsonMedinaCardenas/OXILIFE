@@ -1035,11 +1035,6 @@ async function registrar() {
                 "MOTIVO: " + String(error.message || error) +
                 "\n\nNo borre los datos del navegador.",
                 true
-            );if (guardadoLocalmente) {
-            await mostrarModalResultado(
-                "Envío pendiente",
-                "El servicio quedó guardado en este dispositivo. Se intentará enviarlo automáticamente cuando se restablezca la conexión.",
-                true
             );
         } else {
             await mostrarModalResultado(
