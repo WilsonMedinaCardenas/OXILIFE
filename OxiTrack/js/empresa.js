@@ -57,15 +57,48 @@ async function estado() {
     if (!identidad) return;
 
     try {
-        const cantidad = (await enviosPendientesEmpresa()).length;
+        const pendientes = await enviosPendientesEmpresa();
+        const cantidad = pendientes.length;
 
-        $("cola").textContent = cantidad
-            ? `Envíos pendientes: ${cantidad}`
-            : "";
+        const errores = pendientes
+            .filter(item => item.ultimoError)
+            .map(item =>
+                `SERVICIO: ${item.id || "SIN ID"}\n` +
+                `INTENTOS: ${item.intentos || 0}\n` +
+                `ERROR: ${item.ultimoError}`
+            );
+
+        const errorActual = ultimoErrorSincronizacionEmpresa;
+
+        let texto = cantidad
+            ? `ENVÍOS PENDIENTES: ${cantidad}`
+            : "SIN ENVÍOS PENDIENTES";
+
+        if (errores.length) {
+            texto += "\n\n" + errores.join("\n\n");
+        } else if (cantidad && errorActual) {
+            texto += "\n\nERROR: " + errorActual;
+        }
+
+        $("cola").textContent = texto;
+        $("cola").hidden = false;
+        $("cola").style.whiteSpace = "pre-wrap";
+        $("cola").style.padding = "12px";
+        $("cola").style.borderRadius = "8px";
+        $("cola").style.background = cantidad ? "#fff0f0" : "#f0f8f0";
+        $("cola").style.color = cantidad ? "#963636" : "#28643b";
+        $("cola").style.fontWeight = "600";
+        $("cola").style.overflowWrap = "anywhere";
 
     } catch (error) {
         console.error("No fue posible consultar la cola Empresa:", error);
-        $("cola").textContent = "No fue posible consultar los envíos pendientes.";
+
+        $("cola").textContent =
+            "ERROR AL CONSULTAR ENVÍOS PENDIENTES:\n" +
+            String(error.message || error);
+
+        $("cola").hidden = false;
+        $("cola").style.whiteSpace = "pre-wrap";
     }
 }
 
@@ -978,7 +1011,10 @@ async function registrar() {
         if (siguePendiente) {
             await mostrarModalResultado(
                 "Envío pendiente",
-                "No fue posible confirmar la recepción del servicio. El registro quedó guardado y se enviará automáticamente cuando se restablezca la conexión.",
+                "El servicio está guardado en este dispositivo, pero el servidor no confirmó su recepción.\n\n" +
+                "MOTIVO: " +
+                (ultimoErrorSincronizacionEmpresa || "No se recibió una confirmación completa del servidor.") +
+                "\n\nNo borre los datos del navegador. El envío se seguirá reintentando con el mismo ID.",
                 true
             );
         } else {
@@ -993,6 +1029,13 @@ async function registrar() {
         console.error("Empresa: error de registro:", error);
 
         if (guardadoLocalmente) {
+            await mostrarModalResultado(
+                "Envío pendiente",
+                "El servicio está guardado en este dispositivo.\n\n" +
+                "MOTIVO: " + String(error.message || error) +
+                "\n\nNo borre los datos del navegador.",
+                true
+            );if (guardadoLocalmente) {
             await mostrarModalResultado(
                 "Envío pendiente",
                 "El servicio quedó guardado en este dispositivo. Se intentará enviarlo automáticamente cuando se restablezca la conexión.",
