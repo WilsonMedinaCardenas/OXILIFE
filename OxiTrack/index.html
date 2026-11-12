@@ -13,6 +13,8 @@
 
     <link rel="stylesheet" href="./css/oxitrack-base.css">
     <link rel="stylesheet" href="./css/menu.css">
+    <style> .menu-botones [hidden] {display: none !important;}
+    </style>
 </head>
 
 <body>
@@ -25,15 +27,68 @@
             class="menu-logo"
         >
 
-        <div class="menu-botones">
+        <div class="menu-botones" id="menuBotones">
 
-            <a href="particular.html" class="menu-boton menu-particular">PARTICULAR</a>
-            <a href="empresa.html" class="menu-boton menu-empresa">EMPRESA</a>
-            <a href="gestion-servicios.html" class="menu-boton menu-particular">OFICINA</a>
-            <a href="cotizacion.html" class="menu-boton menu-particular">COTIZAR</a>
+            <a href="particular.html" class="menu-boton menu-particular" data-permiso="TERRENO" hidden>PARTICULAR</a>
+            <a href="empresa.html" class="menu-boton menu-empresa" data-permiso="TERRENO" hidden>EMPRESA</a>
+            <a href="gestion-servicios.html" class="menu-boton menu-particular" data-permiso="OFICINA" hidden>OFICINA</a>
+            <a href="cotizacion.html" class="menu-boton menu-particular" data-permiso="OFICINA" hidden>COTIZAR</a>
+
         </div>
 
     </main>
+
+    <script>
+    (async function () {
+        const botones = document.querySelectorAll(
+            "#menuBotones [data-permiso]"
+        );
+
+        botones.forEach(boton => {
+            boton.style.display = "none";
+        });
+
+        try {
+            const respuesta = await fetch(
+                "/api/oxitrack/?modo=perfilUsuario",
+                {
+                    method: "GET",
+                    headers: { Accept: "application/json" },
+                    cache: "no-store"
+                }
+            );
+
+            if (!respuesta.ok) {
+                throw new Error("No fue posible consultar los permisos.");
+            }
+
+            const perfil = await respuesta.json();
+
+            if (perfil.ok !== true || !Array.isArray(perfil.permisos)) {
+                throw new Error("Perfil de usuario no válido.");
+            }
+
+            const permisos = perfil.permisos.map(
+                permiso => String(permiso).trim().toUpperCase()
+            );
+
+            botones.forEach(boton => {
+                const autorizado = permisos.includes(
+                    boton.dataset.permiso
+                );
+
+                boton.hidden = !autorizado;
+                boton.style.display = autorizado ? "" : "none";
+            });
+
+        } catch (error) {
+            console.error(
+                "No fue posible verificar los permisos del menú:",
+                error
+            );
+        }
+    })();
+    </script>
 
 </body>
 
