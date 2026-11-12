@@ -118,13 +118,17 @@ async function ejecutarCotizacion(crear) {
         const bytes = Uint8Array.from(atob(resultado.pdfBase64),c => c.charCodeAt(0));
         const url = URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
 
-                if (crear) {
+        if (crear) {
             const enlace = document.createElement("a");
             enlace.href = url;
             enlace.download = resultado.nombre;
             enlace.click();
 
             invalidarBorradorCotizacion();
+
+            setTimeout(() => {
+                window.location.replace("./");
+            }, 1500);
         } else {
             borradorRevisadoCotizacion = true;
             cot("cotCrear").disabled = false;
