@@ -8,7 +8,6 @@ let borradorRevisadoCotizacion = false;
 function invalidarBorradorCotizacion() {
     borradorRevisadoCotizacion = false;
     cot("cotCrear").disabled = true;
-    cot("cotCompartir").hidden = true;
 }
 
 function mensajeCotizacion(texto) {
