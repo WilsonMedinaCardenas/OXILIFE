@@ -138,14 +138,6 @@ async function ejecutarCotizacion(crear) {
                 );
             }
         }
-
-        cot("cotCompartir").hidden = false;
-        cot("cotCompartir").onclick = () => {
-            const enlace = document.createElement("a");
-            enlace.href = url;
-            enlace.download = resultado.nombre;
-            enlace.click();
-        };
     } catch (error) {
         if (ventanaBorrador && !ventanaBorrador.closed) {
             ventanaBorrador.close();
