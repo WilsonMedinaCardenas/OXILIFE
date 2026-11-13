@@ -1009,13 +1009,38 @@ async function registrar() {
         // Con señal, intentar enviar el registro guardado.
         $("btnEnviar").textContent = "Enviando...";
 
-        await sincronizar();
+                await sincronizar();
 
-        const pendientes = await enviosPendientesEmpresa();
+        let pendientes = await enviosPendientesEmpresa();
 
-        const siguePendiente = pendientes.some(
+        let siguePendiente = pendientes.some(
             item => item.envioId === envio.envioId
         );
+
+        // Si la confirmación quedó incierta, dar tiempo
+        // a la recuperación antes de avisar al operario.
+        // Se conserva el mismo envioId y toda la evidencia.
+        const errorRecuperableEmpresa =
+            /tiempo de espera|failed to fetch|networkerror|load failed|aborterror|correo|D1|confirmación|confirmar|respuesta no JSON|JSON inválido/i
+                .test(ultimoErrorSincronizacionEmpresa);
+
+        if (
+            siguePendiente &&
+            navigator.onLine &&
+            errorRecuperableEmpresa
+        ) {
+            $("btnEnviar").textContent = "Verificando confirmación...";
+
+            await new Promise(resolve => setTimeout(resolve, 12000));
+
+            await sincronizar();
+
+            pendientes = await enviosPendientesEmpresa();
+
+            siguePendiente = pendientes.some(
+                item => item.envioId === envio.envioId
+            );
+        }
 
         if (siguePendiente) {
             const aviso = mostrarErrorEnvioEmpresa(
