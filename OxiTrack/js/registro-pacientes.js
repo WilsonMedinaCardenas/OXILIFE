@@ -1995,7 +1995,10 @@ async function buscarServiciosGestion(
 
                 const item = document.createElement( "div");
                 item.className ="resultado-busqueda-item";
-                item.textContent = servicio.nombre + " | " + servicio.servicio + " | " + servicio.estado + " | " + servicio.fechaProgramada + " | " + servicio.ventanaHoraria;
+                item.textContent = "ID: " + (servicio.id || "") + " | " +
+                    servicio.nombre + " | " + servicio.servicio + " | " +
+                    servicio.estado + " | " + servicio.fechaProgramada +
+                    " | " + servicio.ventanaHoraria;
 
                 item.addEventListener("click",function () {seleccionarServicioGestion(servicio);});
                 resultadosGestionServicio.appendChild(item);

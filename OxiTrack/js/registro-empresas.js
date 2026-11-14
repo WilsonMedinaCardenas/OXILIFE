@@ -2687,8 +2687,10 @@ async function buscarServiciosGestionEmpresa(buscar) {
                 const item = document.createElement("div");
                 item.className = "resultado-busqueda-item";
                 const nombreMostrar = servicio.paciente || servicio.cliente || servicio.nombre || "";
-                item.textContent = nombreMostrar + " | " + (servicio.servicio || "") + " | " +
-                    formatearFechaGestionEmpresa(servicio.fechaProgramada) + " | " + (servicio.ventanaHoraria || "");
+                item.textContent = "ID: " + (servicio.id || "") + " | " +
+                    nombreMostrar + " | " + (servicio.servicio || "") + " | " +
+                    formatearFechaGestionEmpresa(servicio.fechaProgramada) + " | " +
+                    (servicio.ventanaHoraria || "");
                 item.addEventListener("click",function () {seleccionarServicioGestionEmpresa(servicio);});
                 resultadosGestionServicioEmpresa.appendChild(item);
             }
