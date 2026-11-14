@@ -2597,48 +2597,20 @@ btnCerrarGestionSinSeleccionEmpresa.addEventListener(
 // BUSCADOR
 // ==========================================================
 
-inputBuscarGestionEmpresa.addEventListener(
-    "input",
-    function () {
+inputBuscarGestionEmpresa.addEventListener("input",function () {
 
-        clearTimeout(
-            temporizadorBusquedaGestionEmpresa
-        );
+        clearTimeout(temporizadorBusquedaGestionEmpresa);
+        const buscar = inputBuscarGestionEmpresa.value.trim();
+        const esIdCompleto = /^(PAR|EMP)-\d+$/i.test(buscar);
+        const esRutOTelefono = /^[\d.kK+\s()-]+$/.test(buscar) && buscar.replace(/\D/g, "").length >= 7;
+        if (!esIdCompleto && !esRutOTelefono) {
 
-
-        const buscar =
-            inputBuscarGestionEmpresa
-                .value
-                .trim();
-
-
-        if (
-            buscar.length < 3
-        ) {
-
-            resultadosGestionServicioEmpresa.innerHTML =
-                "";
-
-            ocultarEmpresa(
-                resultadosGestionServicioEmpresa
-            );
-
+            resultadosGestionServicioEmpresa.innerHTML = "";
+            ocultarEmpresa(resultadosGestionServicioEmpresa);
             return;
 
         }
-
-
-        temporizadorBusquedaGestionEmpresa =
-            setTimeout(
-                function () {
-
-                    buscarServiciosGestionEmpresa(
-                        buscar
-                    );
-
-                },
-                350
-            );
+        temporizadorBusquedaGestionEmpresa = setTimeout(function () {buscarServiciosGestionEmpresa(buscar);},350);
 
     }
 );

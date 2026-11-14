@@ -1882,45 +1882,18 @@ btnCerrarGestionSinSeleccion.addEventListener(
 );
 
 
-inputBuscarGestion.addEventListener(
-    "input",
-    function () {
+inputBuscarGestion.addEventListener("input",function () {
 
-        clearTimeout(
-            temporizadorBusquedaGestion
-        );
-
-        const buscar =
-            inputBuscarGestion.value.trim();
-
-
-        if (
-            buscar.replace(
-                /[^0-9kK]/g,
-                ""
-            ).length < 4
-        ) {
-
+        clearTimeout(temporizadorBusquedaGestion);
+        const buscar = inputBuscarGestion.value.trim();
+        const esIdCompleto = /^(PAR|EMP)-\d+$/i.test(buscar);
+        const esRutOTelefono = /^[\d.kK+\s()-]+$/.test(buscar) && buscar.replace(/\D/g, "").length >= 7;
+        if (!esIdCompleto && !esRutOTelefono) {
             resultadosGestionServicio.innerHTML = "";
-
-            ocultar(
-                resultadosGestionServicio
-            );
-
+            ocultar(resultadosGestionServicio);
             return;
-
         }
-
-
-        temporizadorBusquedaGestion =
-            setTimeout(
-                function () {
-                    buscarServiciosGestion(
-                        buscar
-                    );
-                },
-                350
-            );
+        temporizadorBusquedaGestion = setTimeout(function () {buscarServiciosGestion(buscar);},350);
 
     }
 );
