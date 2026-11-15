@@ -23,8 +23,18 @@
 
     <style>
 
-        html:not(.oficina-autorizada) body {
-            visibility: hidden;
+        html:not(.oficina-autorizada) body {visibility: hidden;}
+        .gestion-volver {
+            display: block;
+            margin-top: 18px;
+            padding: 14px;
+            background: #611e63;
+            color: #fff;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: bold;
         }
 
     </style>
@@ -113,31 +123,15 @@
 
         <div class="form-seccion">
 
-            <p class="seccion-descripcion">
-                Seleccione el tipo de cliente.
-            </p>
-
-
+            <p class="seccion-descripcion">Seleccione el tipo de cliente.</p>
             <div class="selector-tipo-paciente">
 
-                <button
-                    type="button"
-                    id="btnGestionEmpresa"
-                    class="btn-selector"
-                >
-                    EMPRESA
-                </button>
-
-
-                <button
-                    type="button"
-                    id="btnGestionParticular"
-                    class="btn-selector"
-                >
-                    PARTICULAR
-                </button>
+                <button type="button" id="btnGestionEmpresa" class="btn-selector">EMPRESA</button>
+                <button type="button" id="btnGestionParticular" class="btn-selector">PARTICULAR</button>
 
             </div>
+
+            <a href="./" class="gestion-volver">Menú principal</a>
 
         </div>
 

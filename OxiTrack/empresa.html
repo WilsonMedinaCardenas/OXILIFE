@@ -49,6 +49,18 @@
     }
 
     #firma { display: block; }
+    .terreno-volver {
+        display: block;
+        margin-top: 18px;
+        padding: 14px;
+        background: #611e63;
+        color: #fff;
+        border-radius: 8px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: bold;
+    }
 
   /* ==========================================
    CONTADORES Y PAPELERAS - TERRENO EMPRESA
@@ -264,31 +276,20 @@
 
       <canvas id="firma"></canvas>
 
-        <button type="submit" id="btnEnviar">
-        Enviar Registro
-        </button>
-
-        <button type="button" id="btnNoRealizado">
-            NO REALIZADO
-        </button>
-
+        <button type="submit" id="btnEnviar">Enviar Registro</button>
+        <button type="button" id="btnNoRealizado" hidden disabled>NO REALIZADO</button>
         <div id="avisoNoRealizado" hidden>
-        <p class="empresa-advertencia">
-            Indique el motivo y tome una fotografía.
-            No se requiere firma.
-        </p>
-
-        <button type="button" id="btnCancelarNoRealizado">
-            Volver al registro normal
-        </button>
+          <p class="empresa-advertencia">
+              Indique el motivo y tome una fotografía.
+              No se requiere firma.
+          </p>
+          <button type="button" id="btnCancelarNoRealizado">Volver al registro normal</button>
         </div>
-
-        <button type="button" id="btnLimpiar">
-            Limpiar Firma
-        </button>
+        <button type="button" id="btnLimpiar">Limpiar Firma</button>
 
     </form>
 
+    <a href="./" id="volverMenuTerreno" class="terreno-volver">Menú principal</a>
     <p id="resultado" role="status" hidden></p>
     <p id="cola" hidden></p>
 
@@ -338,6 +339,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-  <script src="./js/empresa.js?v=20261399-9" defer></script>
+  <script src="./js/empresa.js?v=20261399-1" defer></script>
 </body>
 </html>

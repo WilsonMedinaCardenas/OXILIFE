@@ -20,6 +20,118 @@ let signaturePad = null;
 let elementosDisponibles = [];
 let envioIdParticularActual = "";
 let resultadoServicioParticular = "ATENDIDO";
+let salidaConfirmadaTerreno = false;
+
+function hayDatosSinGuardarTerrenoParticular() {
+    const texto = id => document.getElementById(id)?.value.trim() || "";
+
+    const cantidadesModificadas = [
+        "e07", "e10", "r07", "r10"
+    ].some(id => Number(document.getElementById(id)?.value || 0) !== 0);
+
+    const contadoresDinamicos = Array.from(
+        document.querySelectorAll(
+            "#listaElementos input, " +
+            "#listaRecargaEntregados input, " +
+            "#listaRecargaRetirados input"
+        )
+    ).some(input =>
+        input.type === "number" && Number(input.value) !== 0
+    );
+
+    return Boolean(
+        texto("pacienteParticular") ||
+        texto("receptorParticular") ||
+        texto("obs") ||
+        fotosCapturadas.length ||
+        (signaturePad && !signaturePad.isEmpty()) ||
+        cantidadesModificadas ||
+        contadoresDinamicos
+    );
+}
+
+window.addEventListener("beforeunload", function(evento) {
+    if (
+        salidaConfirmadaTerreno ||
+        !hayDatosSinGuardarTerrenoParticular()
+    ) return;
+
+    evento.preventDefault();
+    evento.returnValue = "";
+});
+
+function instalarConfirmacionSalidaTerreno(hayDatosSinGuardar) {
+    const enlace = document.getElementById("volverMenuTerreno");
+    if (!enlace) return;
+
+    enlace.addEventListener("click", function(evento) {
+        if (!hayDatosSinGuardar()) return;
+
+        evento.preventDefault();
+
+        if (document.getElementById("confirmacionSalidaTerreno")) return;
+
+        const fondo = document.createElement("div");
+        fondo.id = "confirmacionSalidaTerreno";
+        fondo.style.cssText =
+            "position:fixed;inset:0;z-index:99999;" +
+            "background:rgba(0,0,0,.55);display:flex;" +
+            "align-items:center;justify-content:center;padding:20px;";
+
+        const ventana = document.createElement("div");
+        ventana.style.cssText =
+            "background:#fff;border-radius:16px;padding:26px 22px;" +
+            "width:100%;max-width:380px;box-sizing:border-box;" +
+            "text-align:center;box-shadow:0 10px 35px rgba(0,0,0,.2);";
+
+        const titulo = document.createElement("h2");
+        titulo.textContent = "¿Desea regresar?";
+        titulo.style.cssText =
+            "color:#611e63;font-size:24px;margin:0 0 12px;";
+
+        const mensaje = document.createElement("p");
+        mensaje.textContent = "Puede perder la información cargada.";
+        mensaje.style.cssText =
+            "color:#444;font-size:15px;line-height:1.5;margin:0 0 24px;";
+
+        const acciones = document.createElement("div");
+        acciones.style.cssText =
+            "display:grid;grid-template-columns:1fr 1fr;gap:10px;";
+
+        const permanecer = document.createElement("button");
+        permanecer.type = "button";
+        permanecer.textContent = "Permanecer aquí";
+        permanecer.style.cssText =
+            "background:#999;color:white;border:0;border-radius:8px;" +
+            "padding:13px 8px;font-size:14px;cursor:pointer;";
+
+        const regresar = document.createElement("button");
+        regresar.type = "button";
+        regresar.textContent = "Regresar";
+        regresar.style.cssText =
+            "background:#611e63;color:white;border:0;border-radius:8px;" +
+            "padding:13px 8px;font-size:14px;font-weight:bold;cursor:pointer;";
+
+        permanecer.addEventListener("click", () => fondo.remove());
+
+        regresar.addEventListener("click", () => {
+            // El navegador puede mostrar su propia advertencia.
+            // Para evitar dos confirmaciones, retiramos el listener
+            // de beforeunload mediante una autorización de salida.
+            salidaConfirmadaTerreno = true;
+            window.location.assign(enlace.href);
+        });
+
+        acciones.append(permanecer, regresar);
+        ventana.append(titulo, mensaje, acciones);
+        fondo.appendChild(ventana);
+        document.body.appendChild(fondo);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    instalarConfirmacionSalidaTerreno(hayDatosSinGuardarTerrenoParticular);
+});
 
 // ==========================================================
 // MODALES OXITRACK
@@ -2223,6 +2335,7 @@ function inicializarFormulario() {
                 );
 
                 limpiarFormularioParticular();
+                salidaConfirmadaTerreno = true;
                 window.location.assign("./index.html");
                 return;
 
@@ -2250,12 +2363,14 @@ function inicializarFormulario() {
                     );
 
                     limpiarFormularioParticular();
+                    salidaConfirmadaTerreno = true;
                     window.location.assign("./index.html");
                     return;
                 }
                 await eliminarEnvioOfflineParticular(registroParticular.envioId);
                 if (resultado.duplicado === true) {console.log("El registro ya había sido procesado.");}
                 await mostrarModalResultado("Registro enviado","El servicio fue registrado correctamente.");
+                salidaConfirmadaTerreno = true;
                 window.location.assign("./index.html");
                 return;
 
@@ -2281,6 +2396,7 @@ function inicializarFormulario() {
                     "No fue posible confirmar el envío con el servidor. El registro quedó guardado de forma segura y se sincronizará automáticamente cuando exista conexión."
                 );
                 limpiarFormularioParticular();
+                salidaConfirmadaTerreno = true;
                 window.location.assign("./index.html");
                 return;
 

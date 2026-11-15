@@ -16,6 +16,104 @@ let enviando = false, sincronizando = false, consultaAsignaciones = 0;
 let promesaSincronizacionEmpresa = null;
 let perfilCargado = false, detalleActual = [], ultimoAviso = "";
 
+// Protección de navegación: formulario Terreno Empresa.
+function hayDatosSinGuardarTerrenoEmpresa() {
+
+    const texto = id => document.getElementById(id)?.value.trim() || "";
+    const cantidadesModificadas = Array.from(document.querySelectorAll("#cantidades input")).some(input => Number(input.value) !== 0);
+    return Boolean(
+        seleccion ||
+        texto("receptor") ||
+        texto("observaciones") ||
+        fotosCapturadas.length ||
+        (firmaPad && !firmaPad.isEmpty()) ||
+        cantidadesModificadas
+    );
+}
+
+window.addEventListener("beforeunload", function(evento) {
+
+    if (salidaConfirmadaTerreno || !hayDatosSinGuardarTerrenoEmpresa()) return;
+    evento.preventDefault();
+    evento.returnValue = "";
+
+});
+
+function instalarConfirmacionSalidaTerreno(hayDatosSinGuardar) {
+    const enlace = document.getElementById("volverMenuTerreno");
+    if (!enlace) return;
+
+    enlace.addEventListener("click", function(evento) {
+        if (!hayDatosSinGuardar()) return;
+
+        evento.preventDefault();
+
+        if (document.getElementById("confirmacionSalidaTerreno")) return;
+
+        const fondo = document.createElement("div");
+        fondo.id = "confirmacionSalidaTerreno";
+        fondo.style.cssText =
+            "position:fixed;inset:0;z-index:99999;" +
+            "background:rgba(0,0,0,.55);display:flex;" +
+            "align-items:center;justify-content:center;padding:20px;";
+
+        const ventana = document.createElement("div");
+        ventana.style.cssText =
+            "background:#fff;border-radius:16px;padding:26px 22px;" +
+            "width:100%;max-width:380px;box-sizing:border-box;" +
+            "text-align:center;box-shadow:0 10px 35px rgba(0,0,0,.2);";
+
+        const titulo = document.createElement("h2");
+        titulo.textContent = "¿Desea regresar?";
+        titulo.style.cssText =
+            "color:#611e63;font-size:24px;margin:0 0 12px;";
+
+        const mensaje = document.createElement("p");
+        mensaje.textContent = "Puede perder la información cargada.";
+        mensaje.style.cssText =
+            "color:#444;font-size:15px;line-height:1.5;margin:0 0 24px;";
+
+        const acciones = document.createElement("div");
+        acciones.style.cssText =
+            "display:grid;grid-template-columns:1fr 1fr;gap:10px;";
+
+        const permanecer = document.createElement("button");
+        permanecer.type = "button";
+        permanecer.textContent = "Permanecer aquí";
+        permanecer.style.cssText =
+            "background:#999;color:white;border:0;border-radius:8px;" +
+            "padding:13px 8px;font-size:14px;cursor:pointer;";
+
+        const regresar = document.createElement("button");
+        regresar.type = "button";
+        regresar.textContent = "Regresar";
+        regresar.style.cssText =
+            "background:#611e63;color:white;border:0;border-radius:8px;" +
+            "padding:13px 8px;font-size:14px;font-weight:bold;cursor:pointer;";
+
+        permanecer.addEventListener("click", () => fondo.remove());
+
+        regresar.addEventListener("click", () => {
+            // El navegador puede mostrar su propia advertencia.
+            // Para evitar dos confirmaciones, retiramos el listener
+            // de beforeunload mediante una autorización de salida.
+            salidaConfirmadaTerreno = true;
+            window.location.assign(enlace.href);
+        });
+
+        acciones.append(permanecer, regresar);
+        ventana.append(titulo, mensaje, acciones);
+        fondo.appendChild(ventana);
+        document.body.appendChild(fondo);
+    });
+}
+
+let salidaConfirmadaTerreno = false;
+
+document.addEventListener("DOMContentLoaded", function() {
+    instalarConfirmacionSalidaTerreno(hayDatosSinGuardarTerrenoEmpresa);
+});
+
 const clave = sufijo => `oxitrack_empresa_v2_${identidad}_${sufijo}`;
 const leer = (llave, defecto) => { try { return JSON.parse(localStorage.getItem(llave)) ?? defecto; } catch { return defecto; } };
 const guardar = (llave, valor) => localStorage.setItem(llave, JSON.stringify(valor));
@@ -543,7 +641,8 @@ function cambiarResultado(resultado) {
     $("tituloFirmaEmpresa").hidden = noRealizado;
     $("firma").hidden = noRealizado;
     $("btnLimpiar").hidden = noRealizado;
-    $("btnNoRealizado").hidden = noRealizado;
+    $("btnNoRealizado").hidden = noRealizado || !seleccion;
+    $("btnNoRealizado").disabled = noRealizado || !seleccion || enviando;
     $("avisoNoRealizado").hidden = !noRealizado;
     $("seccionFotos").hidden = false;
 
@@ -621,6 +720,8 @@ async function cargarAsignaciones() {
     seleccion = null;
     asignaciones = [];
     detalleActual = [];
+    $("btnNoRealizado").hidden = true;
+    $("btnNoRealizado").disabled = true;
     $("cantidades").replaceChildren();
     $("asignacion").disabled = true;
     $("asignacion").replaceChildren();
@@ -667,22 +768,21 @@ async function cargarAsignaciones() {
 }
 
 function mostrarSeleccion() {
-    seleccion = asignaciones.find(item => String(item.id) === String($("asignacion").value)) || null;
-    if (!seleccion) {
-        $("cantidades").replaceChildren();
-        return;
-    }
 
+    seleccion = asignaciones.find(item => String(item.id) === String($("asignacion").value)) || null;
+    $("btnNoRealizado").hidden = !seleccion;
+    $("btnNoRealizado").disabled = !seleccion || enviando;
+    if (!seleccion) {$("cantidades").replaceChildren();return;}
     $("pacienteId").value = String(seleccion.id);
     $("receptor").value = "";
     $("observaciones").value = "";
     fotosCapturadas = [];
     detenerCamara();
     pintarFotos();
-
     ajustarFirma();
     pintarCantidades();
     cambiarResultado("ATENDIDO");
+
 }
 
 // ==========================================================
@@ -1068,31 +1168,25 @@ async function registrar() {
         console.error("Empresa: error de registro:", error);
 
         if (guardadoLocalmente) {
-            const aviso = mostrarErrorEnvioEmpresa(
-                String(error.message || error)
-            );
 
+            const aviso = mostrarErrorEnvioEmpresa(String(error.message || error));
             $("modalResultadoTitulo").style.color = aviso.color;
+            await mostrarModalResultado(aviso.titulo,aviso.mensaje,true);
 
-            await mostrarModalResultado(
-                aviso.titulo,
-                aviso.mensaje,
-                true
-            );
         } else {
+
             await mostrarModalResultado(
                 "No se pudo guardar",
                 "El servicio NO quedó guardado. Conserve la fotografía, la firma y los datos en pantalla. Detalle: " +
                 error.message
             );
         }
-
     } finally {
         enviando = false;
         $("btnEnviar").disabled = false;
-        $("btnNoRealizado").disabled = false;
+        $("btnNoRealizado").disabled = !seleccion || resultadoServicio === "NO REALIZADO";
+        $("btnNoRealizado").hidden = !seleccion || resultadoServicio === "NO REALIZADO";
         $("btnEnviar").textContent = "Enviar Registro";
-
         void estado();
     }
 }

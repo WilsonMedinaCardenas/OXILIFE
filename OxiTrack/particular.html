@@ -15,6 +15,21 @@
     <link rel="stylesheet" href="./css/oxitrack-base.css">
     <link rel="stylesheet" href="./css/particular.css">
 
+    <style>
+        .terreno-volver {
+            display: block;
+            margin-top: 18px;
+            padding: 14px;
+            background: #611e63;
+            color: #fff;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: bold;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -342,14 +357,11 @@
                  BOTONES
                  ================================================== -->
 
-            <button
-                type="button"
-                id="btnLimpiar"
-            >
-                Limpiar Firma
-            </button>
+            <button type="button" id="btnLimpiar">Limpiar Firma</button>
 
         </form>
+
+        <a href="./" id="volverMenuTerreno" class="terreno-volver">Menú principal</a>
 
     </div>
 
@@ -414,7 +426,7 @@
 
 
     <!-- JS EXCLUSIVO PARA PARTICULARES -->
-    <script src="./js/particular.js?v=20261963-3"></script>
+    <script src="./js/particular.js?v=20261963-4"></script>
 
     <script>
         if ("serviceWorker" in navigator) {
