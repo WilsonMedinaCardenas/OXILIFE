@@ -1938,6 +1938,8 @@ function abrirGestionServicio(tipo) {
     ocultar(nuevaProgramacionGestion);
     ocultar(observacionesReagendarParticular);
     ocultar(opcionesReagendamientoParticular);
+    ocultar(bloqueDireccionReagendarParticular);
+    ocultar(camposOtraDireccionReagendar);
     mostrar(accionesCerrarGestion);
     tituloGestionServicio.textContent = tipo === "REAGENDAR" ? "Reagendar servicio" : "Cancelar servicio";
     mostrarModal(modalGestionServicio);
@@ -2125,6 +2127,7 @@ function seleccionarServicioGestion(servicio) {
         mostrar(nuevaProgramacionGestion);
         mostrar(observacionesReagendarParticular);
         mostrar(opcionesReagendamientoParticular);
+        mostrar(bloqueDireccionReagendarParticular);
 
         pintarPedidoGestionParticular(servicio);
         inputAtencionInmediataGestion.value = "NO";
