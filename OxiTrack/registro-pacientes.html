@@ -589,13 +589,16 @@
                         </label>
 
                         <input
-                            type="email"
+                            type="text"
                             id="inputEmailPaciente"
                             name="email"
-                            placeholder="correo@ejemplo.cl"
-                            maxlength="120"
+                            placeholder="correo1@gmail.com, correo2@outlook.com"
+                            maxlength="254"
+                            inputmode="email"
                             autocomplete="off"
+                            spellcheck="false"
                         >
+                        <small class="campo-ayuda">Hasta 3 correos electrónicos, separados por comas.</small>
 
                     </div>
 
@@ -1488,7 +1491,7 @@
          JAVASCRIPT
     ========================================================== -->
 
-    <script src="./js/registro-pacientes.js?v=20260879-9" defer></script>
+    <script src="./js/registro-pacientes.js?v=20260899-9" defer></script>
 
 </body>
 

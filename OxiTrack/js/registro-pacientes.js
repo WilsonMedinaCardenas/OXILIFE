@@ -578,7 +578,39 @@ const inputNombrePaciente = document.getElementById("inputNombrePaciente");
 const inputRutPaciente = document.getElementById("inputRutPaciente");
 const inputTelefonoPaciente = document.getElementById("inputTelefonoPaciente");
 const inputEmailPaciente = document.getElementById("inputEmailPaciente");
-inputEmailPaciente.addEventListener("input",()=>{inputEmailPaciente.value=inputEmailPaciente.value.toLowerCase();});
+inputEmailPaciente.addEventListener("input", () => {inputEmailPaciente.value = inputEmailPaciente.value.toLowerCase();});
+function validarCorreosPacienteParticular(valor) {
+    const texto = String(valor || "").trim().toLowerCase();
+    if (!texto) {throw new Error("Debe ingresar al menos un correo electrónico.");}
+    if (texto.length > 254 || /[\r\n\t;<>\\]/.test(texto)) {throw new Error("El campo de correo contiene caracteres no permitidos.");}
+    const correos = texto.split(",").map(correo => correo.trim());
+    if (correos.length > 3) {throw new Error("Puede ingresar un máximo de 3 correos electrónicos.");}
+    if (correos.some(correo => !correo)) {throw new Error("Separe los correos correctamente, utilizando una sola coma.");}
+    const formato = /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/;
+    for (const correo of correos) {
+        if (correo.length > 254 || !formato.test(correo)) {throw new Error("Correo electrónico inválido: " + correo);}
+        const dominio = correo.split("@")[1];
+        const erroresComunes = {
+            "gmai.com": "gmail.com",
+            "gmial.com": "gmail.com",
+            "gmail.con": "gmail.com",
+            "hotmai.com": "hotmail.com",
+            "hotmial.com": "hotmail.com",
+            "hotmail.con": "hotmail.com",
+            "outlok.com": "outlook.com",
+            "outllok.com": "outlook.com",
+            "outlook.con": "outlook.com"
+        };
+        if (erroresComunes[dominio]) {
+            throw new Error(
+                "Revise el dominio " + dominio +
+                ". ¿Quiso escribir " + erroresComunes[dominio] + "?"
+            );
+        }
+    }
+    if (new Set(correos).size !== correos.length) {throw new Error("Hay correos electrónicos repetidos.");}
+    return correos.join(",");
+}
 const inputDireccionPaciente = document.getElementById("inputDireccionPaciente");
 const inputComunaPaciente = document.getElementById("inputComunaPaciente");
 const resultadosComunas = document.getElementById("resultadosComunas");
@@ -2461,14 +2493,12 @@ btnConfirmarRegistro.addEventListener("click", async function () {
             // PACIENTE NUEVO
             // ==================================================
 
-            if (
-                tipoPacienteActual === "NUEVO"
-            ) {
+            if (tipoPacienteActual === "NUEVO") {
 
                 payload.append("nombre", inputNombrePaciente.value.trim());
                 payload.append("rut", inputRutPaciente.value.trim());
                 payload.append("telefono", inputTelefonoPaciente.value.trim());
-                payload.append("email",inputEmailPaciente.value.trim().toLowerCase());
+                payload.append("email",validarCorreosPacienteParticular(inputEmailPaciente.value));
                 payload.append("direccion", inputDireccionPaciente.value.trim());
                 payload.append("comuna", comunaSeleccionada.value.trim());
 
@@ -2783,70 +2813,17 @@ function validarFormulario() {
 function validarPacienteNuevo() {
 
     const nombre = inputNombrePaciente.value.trim();
-
     const rut = inputRutPaciente.value.trim();
-
     const telefono = inputTelefonoPaciente.value.trim();
-
     const email = inputEmailPaciente.value.trim();
-
     const direccion = inputDireccionPaciente.value.trim();
-
     const comuna = comunaSeleccionada.value.trim();
-
-
-    if (!nombre) {
-
-        throw new Error(
-            "Debe ingresar el nombre del paciente."
-        );
-
-    }
-
-
-    if (!rut) {
-
-        throw new Error(
-            "Debe ingresar el RUT del paciente."
-        );
-
-    }
-
-
-    if (!telefono) {
-
-        throw new Error(
-            "Debe ingresar el teléfono del paciente."
-        );
-
-    }
-
-
-    if (!email) {
-
-        throw new Error(
-            "Debe ingresar el email del paciente."
-        );
-
-    }
-
-
-    if (!direccion) {
-
-        throw new Error(
-            "Debe ingresar la dirección del paciente."
-        );
-
-    }
-
-
-    if (!comuna) {
-
-        throw new Error(
-            "Debe seleccionar una comuna válida."
-        );
-
-    }
+    if (!nombre) {throw new Error("Debe ingresar el nombre del paciente.");}
+    if (!rut) {throw new Error("Debe ingresar el RUT del paciente.");}
+    if (!telefono) {throw new Error("Debe ingresar el teléfono del paciente.");}
+    validarCorreosPacienteParticular(email);
+    if (!direccion) {throw new Error("Debe ingresar la dirección del paciente.");}
+    if (!comuna) {throw new Error("Debe seleccionar una comuna válida.");}
 
 }
 
