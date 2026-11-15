@@ -578,39 +578,109 @@ const inputNombrePaciente = document.getElementById("inputNombrePaciente");
 const inputRutPaciente = document.getElementById("inputRutPaciente");
 const inputTelefonoPaciente = document.getElementById("inputTelefonoPaciente");
 const inputEmailPaciente = document.getElementById("inputEmailPaciente");
-inputEmailPaciente.addEventListener("input", () => {inputEmailPaciente.value = inputEmailPaciente.value.toLowerCase();});
+const avisoEmailPaciente = document.createElement("small");
+avisoEmailPaciente.id = "avisoEmailPaciente";
+avisoEmailPaciente.setAttribute("role", "status");
+avisoEmailPaciente.style.cssText = "display:block;margin-top:6px;font-size:12px;line-height:1.4;color:#b42318;";
+inputEmailPaciente.insertAdjacentElement("afterend", avisoEmailPaciente);
+
+// Compara dos dominios considerando también letras intercambiadas.
+function distanciaDominioCorreo(a, b) {
+    const filas = a.length + 1;
+    const columnas = b.length + 1;
+    const d = Array.from({ length: filas },() => Array(columnas).fill(0));
+    for (let i = 0; i < filas; i++) d[i][0] = i;
+    for (let j = 0; j < columnas; j++) d[0][j] = j;
+    for (let i = 1; i < filas; i++) {
+        for (let j = 1; j < columnas; j++) {
+
+            const costo = a[i - 1] === b[j - 1] ? 0 : 1;
+            d[i][j] = Math.min(d[i - 1][j] + 1,d[i][j - 1] + 1,d[i - 1][j - 1] + costo);
+            if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+                d[i][j] = Math.min(d[i][j],d[i - 2][j - 2] + 1);
+            }
+        }
+    }
+
+    return d[a.length][b.length];
+}
+
 function validarCorreosPacienteParticular(valor) {
+
     const texto = String(valor || "").trim().toLowerCase();
     if (!texto) {throw new Error("Debe ingresar al menos un correo electrónico.");}
-    if (texto.length > 254 || /[\r\n\t;<>\\]/.test(texto)) {throw new Error("El campo de correo contiene caracteres no permitidos.");}
+    if (texto.length > 254 || /[\r\n\t;<>\\]/.test(texto)) {throw new Error("El campo contiene caracteres no permitidos.");}
     const correos = texto.split(",").map(correo => correo.trim());
     if (correos.length > 3) {throw new Error("Puede ingresar un máximo de 3 correos electrónicos.");}
-    if (correos.some(correo => !correo)) {throw new Error("Separe los correos correctamente, utilizando una sola coma.");}
+    if (correos.some(correo => !correo)) {throw new Error("Separe los correos utilizando una sola coma.");}
     const formato = /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/;
+    const dominiosConocidos = ["gmail.com","hotmail.com","outlook.com","proton.me","protonmail.com"];
     for (const correo of correos) {
-        if (correo.length > 254 || !formato.test(correo)) {throw new Error("Correo electrónico inválido: " + correo);}
+
+        if (correo.length > 254 || !formato.test(correo)) {throw new Error("Revise el formato de: " + correo);}
         const dominio = correo.split("@")[1];
-        const erroresComunes = {
-            "gmai.com": "gmail.com",
-            "gmial.com": "gmail.com",
-            "gmail.con": "gmail.com",
-            "hotmai.com": "hotmail.com",
-            "hotmial.com": "hotmail.com",
-            "hotmail.con": "hotmail.com",
-            "outlok.com": "outlook.com",
-            "outllok.com": "outlook.com",
-            "outlook.con": "outlook.com"
-        };
-        if (erroresComunes[dominio]) {
-            throw new Error(
-                "Revise el dominio " + dominio +
-                ". ¿Quiso escribir " + erroresComunes[dominio] + "?"
-            );
+        if (!dominiosConocidos.includes(dominio)) {
+            const sugerencias = dominiosConocidos
+                .map(correcto => ({
+                    correcto,
+                    distancia: distanciaDominioCorreo(dominio, correcto)
+                }))
+                .sort((a, b) => a.distancia - b.distancia);
+
+            if (sugerencias[0].distancia <= 2) {
+                throw new Error(
+                    "Revise " + dominio +
+                    ". ¿Quiso escribir " +
+                    sugerencias[0].correcto + "?"
+                );
+            }
         }
     }
     if (new Set(correos).size !== correos.length) {throw new Error("Hay correos electrónicos repetidos.");}
     return correos.join(",");
+
 }
+
+function actualizarAvisoEmailPaciente() {
+
+    const valor = inputEmailPaciente.value;
+    if (!valor.trim()) {avisoEmailPaciente.textContent = "";return;}
+
+    // Permite terminar de escribir un correo o agregar otro.
+    if (valor.trimEnd().endsWith(",")) {
+
+        const anteriores = valor.trimEnd().slice(0, -1);
+        try {
+            validarCorreosPacienteParticular(anteriores);
+            avisoEmailPaciente.textContent = "";
+        } catch (error) {
+            avisoEmailPaciente.textContent = error.message;
+        }
+        return;
+    }
+
+    try {
+        validarCorreosPacienteParticular(valor);
+        avisoEmailPaciente.textContent = "";
+    } catch (error) {
+        avisoEmailPaciente.textContent = error.message;
+    }
+}
+
+inputEmailPaciente.addEventListener("input", function () {
+    const inicio = this.selectionStart;
+    const fin = this.selectionEnd;
+
+    this.value = this.value.toLowerCase();
+
+    if (inicio !== null && fin !== null) {
+        this.setSelectionRange(inicio, fin);
+    }
+
+    actualizarAvisoEmailPaciente();
+});
+
+inputEmailPaciente.addEventListener("blur", actualizarAvisoEmailPaciente);
 const inputDireccionPaciente = document.getElementById("inputDireccionPaciente");
 const inputComunaPaciente = document.getElementById("inputComunaPaciente");
 const resultadosComunas = document.getElementById("resultadosComunas");
@@ -3154,21 +3224,14 @@ function reiniciarFlujoServicio() {
 function limpiarPacienteNuevo() {
 
     inputNombrePaciente.value = "";
-
     inputRutPaciente.value = "";
-
     inputTelefonoPaciente.value = "";
-
     inputEmailPaciente.value = "";
-
+    avisoEmailPaciente.textContent = "";
     inputDireccionPaciente.value = "";
-
     inputComunaPaciente.value = "";
-
     comunaSeleccionada.value = "";
-
     resultadosComunas.innerHTML = "";
-
     ocultar(resultadosComunas);
 
 }
@@ -3181,32 +3244,18 @@ function limpiarPacienteNuevo() {
 function limpiarPacienteRegistrado() {
 
     pacienteSeleccionado = null;
-
     pacienteSeleccionadoId.value = "";
-
     inputBuscarPaciente.value = "";
-
     resultadosBusquedaPaciente.innerHTML = "";
-
     ocultar(resultadosBusquedaPaciente);
-
     ocultar(pacienteSeleccionadoCard);
-
     pacienteSeleccionadoNombre.textContent = "-";
-
     pacienteSeleccionadoDireccion.textContent = "-";
-
     pacienteSeleccionadoComuna.textContent = "-";
-
-
     inputRetiroIdOrigen.value = "";
-
     retiroIdOrigen.textContent = "-";
-
     retiroTipoOrigen.textContent = "-";
-
     retiroElementosOrigen.innerHTML = "";
-
     ocultar(retiroOrigenCard);
 
 }
@@ -3219,19 +3268,12 @@ function limpiarPacienteRegistrado() {
 function limpiarDetalleFlete() {
 
     horarioFleteActual = "";
-
     convenioActual = "";
-
     inputHorarioFlete.value = "";
-
     inputConvenio.value = "";
-
     btnFleteDiurno.classList.remove("activo");
-
     btnFleteNocturno.classList.remove("activo");
-
     btnConvenioSi.classList.remove("activo");
-
     btnConvenioNo.classList.remove("activo");
 
 }
@@ -3243,15 +3285,8 @@ function limpiarDetalleFlete() {
 
 function limpiarBotones() {
 
-    const botones = document.querySelectorAll(
-        ".btn-selector"
-    );
-
-    botones.forEach(function (boton) {
-
-        boton.classList.remove("activo");
-
-    });
+    const botones = document.querySelectorAll(".btn-selector");
+    botones.forEach(function (boton) {boton.classList.remove("activo");});
 
 }
 
@@ -3263,15 +3298,10 @@ function limpiarBotones() {
 function limpiarValoresInternos() {
 
     pacienteSeleccionadoId.value = "";
-
     comunaSeleccionada.value = "";
-
     inputRetiroIdOrigen.value = "";
-
     inputLlevaFlete.value = "";
-
     inputHorarioFlete.value = "";
-
     inputConvenio.value = "";
 
 }
@@ -3284,7 +3314,6 @@ function limpiarValoresInternos() {
 function activarBoton(activo, inactivo) {
 
     activo.classList.add("activo");
-
     inactivo.classList.remove("activo");
 
 }
@@ -3294,44 +3323,15 @@ function activarBoton(activo, inactivo) {
 // MOSTRAR / OCULTAR
 // ==========================================================
 
-function mostrar(elemento) {
-
-    if (!elemento) return;
-
-    elemento.hidden = false;
-
-}
-
-
-function ocultar(elemento) {
-
-    if (!elemento) return;
-
-    elemento.hidden = true;
-
-}
-
+function mostrar(elemento) {if (!elemento) return;elemento.hidden = false;}
+function ocultar(elemento) {if (!elemento) return;elemento.hidden = true;}
 
 // ==========================================================
 // MODALES
 // ==========================================================
 
-function mostrarModal(modal) {
-
-    if (!modal) return;
-
-    modal.hidden = false;
-
-}
-
-
-function ocultarModal(modal) {
-
-    if (!modal) return;
-
-    modal.hidden = true;
-
-}
+function mostrarModal(modal) {if (!modal) return;modal.hidden = false;}
+function ocultarModal(modal) {if (!modal) return;modal.hidden = true;}
 
 
 // ==========================================================
@@ -3341,14 +3341,8 @@ function ocultarModal(modal) {
 function mostrarMensaje(texto, tipo) {
 
     mensajeRegistro.textContent = texto;
-
-    mensajeRegistro.classList.remove(
-        "exito",
-        "error"
-    );
-
+    mensajeRegistro.classList.remove("exito","error");
     mensajeRegistro.classList.add(tipo);
-
     mensajeRegistro.hidden = false;
 
 }
@@ -3371,12 +3365,7 @@ function mostrarError(texto) {
 function ocultarMensaje() {
 
     mensajeRegistro.textContent = "";
-
-    mensajeRegistro.classList.remove(
-        "exito",
-        "error"
-    );
-
+    mensajeRegistro.classList.remove("exito","error");
     mensajeRegistro.hidden = true;
 
 }
@@ -3389,10 +3378,7 @@ function ocultarMensaje() {
 function textoOpcionSeleccionada(select) {
 
     if (!select || !select.value) return "";
-
-    return select.options[
-        select.selectedIndex
-    ].text.trim();
+    return select.options[select.selectedIndex].text.trim();
 
 }
 
@@ -3409,27 +3395,11 @@ function normalizarServicio(valor) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
 
-
-    if (texto.includes("IMPLEMENT")) {
-        return "IMPLEMENTACIÓN";
-    }
-
-    if (texto.includes("RECARGA")) {
-        return "RECARGA";
-    }
-
-    if (texto.includes("RETIRO")) {
-        return "RETIRO";
-    }
-
-    if (texto.includes("VENTA")) {
-        return "VENTA";
-    }
-
-    if (texto.includes("VISITA") && texto.includes("TECNICA")) {
-        return "VISITA TÉCNICA";
-    }
-
+    if (texto.includes("IMPLEMENT")) {return "IMPLEMENTACIÓN";}
+    if (texto.includes("RECARGA")) {return "RECARGA";}
+    if (texto.includes("RETIRO")) {return "RETIRO";}
+    if (texto.includes("VENTA")) {return "VENTA";}
+    if (texto.includes("VISITA") && texto.includes("TECNICA")) {return "VISITA TÉCNICA";}
     return "";
 
 }
@@ -3444,27 +3414,11 @@ function normalizarServicio(valor) {
 
 function formatearRut(valor) {
 
-    let rut = String(valor || "")
-        .replace(/[^0-9kK]/g, "")
-        .toUpperCase();
-
-
-    if (rut.length <= 1) {
-        return rut;
-    }
-
-
+    let rut = String(valor || "").replace(/[^0-9kK]/g, "").toUpperCase();
+    if (rut.length <= 1) {return rut;}
     const dv = rut.slice(-1);
-
     let cuerpo = rut.slice(0, -1);
-
-
-    cuerpo = cuerpo.replace(
-        /\B(?=(\d{3})+(?!\d))/g,
-        "."
-    );
-
-
+    cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g,".");
     return cuerpo + "-" + dv;
 
 }
@@ -3476,11 +3430,8 @@ function formatearRut(valor) {
 function formatearFechaVisual(fecha) {
 
     if (!fecha) return "";
-
     const partes = fecha.split("-");
-
     if (partes.length !== 3) return fecha;
-
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
 
 }
